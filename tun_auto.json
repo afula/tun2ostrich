@@ -1,0 +1,77 @@
+{
+  "log": {
+    "level": "trace",
+    "output": "console"
+  },
+  "dns": {
+    "servers": [
+      "1.1.1.1",
+      "8.8.8.8"
+    ]
+  },
+  "inbounds": [
+    {
+      "protocol": "tun",
+      "settings": {
+        "auto": true
+      },
+      "tag": "tun_in"
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "trojan",
+      "settings": {
+        "address": "walkonbit.site",
+        "password": "251f6edc",
+        "port": 9443,
+        "alpn": [
+          "http/1.1"
+        ],
+        "suites": "TLS13_AES_256_GCM_SHA384:TLS13_AES_128_GCM_SHA256:TLS13_CHACHA20_POLY1305_SHA256"
+      },
+      "tag": "proxy_out"
+    },
+    {
+      "protocol": "direct",
+      "tag": "direct_out"
+    }
+  ],
+  "router": {
+    "domainResolve": true,
+    "rules": [
+      {
+        "ip": [
+          "1.1.1.1",
+          "1.0.0.1",
+          "8.8.8.8",
+          "8.8.4.4",
+          "9.9.9.9",
+          "149.112.112.112",
+          "208.67.222.222",
+          "208.67.220.220",
+          "64.6.64.6",
+          "64.6.65.6",
+          "91.239.100.100",
+          "89.233.43.71",
+          "84.200.69.80",
+          "84.200.70.40",
+          "108.61.199.26"
+        ],
+        "target": "direct_out"
+      },
+      {
+        "external": [
+          "site:/home/damo/test/site.dat:cn"
+        ],
+        "target": "direct_out"
+      },
+      {
+        "external": [
+          "mmdb:/home/damo/test/geo.mmdb:cn"
+        ],
+        "target": "direct_out"
+      }
+    ]
+  }
+}

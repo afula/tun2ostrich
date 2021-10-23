@@ -1,0 +1,33 @@
+[package]
+name = "ostrich-bin"
+version = "0.3.1"
+authors = ["eycorsican <eric.y.corsican@gmail.com>"]
+edition = "2018"
+
+[[bin]]
+name = "ostrich"
+path = "src/main.rs"
+
+[features]
+default = [
+    "default-ring",
+]
+
+default-ring = [
+    "ostrich/default-ring",
+    "ostrich/ctrlc",
+    "auto-reload",
+]
+
+default-openssl = [
+    "ostrich/default-openssl",
+    "ostrich/ctrlc",
+    "auto-reload",
+]
+
+auto-reload = ["ostrich/auto-reload"]
+
+[dependencies]
+ostrich = { path = "../ostrich", default-features = false, optional = true }
+tokio = { version = "1", features = ["rt"] }
+argh = "0.1"
