@@ -14,6 +14,7 @@ use crate::{
 fn get_start_options(
     config_path: String,
     #[cfg(feature = "auto-reload")] auto_reload: bool,
+    #[cfg(target_os = "android")] socket_protect_path: Option<String>,
     multi_thread: bool,
     auto_threads: bool,
     threads: usize,
@@ -24,6 +25,8 @@ fn get_start_options(
             config: crate::Config::File(config_path),
             #[cfg(feature = "auto-reload")]
             auto_reload,
+            #[cfg(target_os = "android")]
+            socket_protect_path,
             runtime_opt: crate::RuntimeOption::SingleThread,
         };
     }
@@ -32,6 +35,8 @@ fn get_start_options(
             config: crate::Config::File(config_path),
             #[cfg(feature = "auto-reload")]
             auto_reload,
+            #[cfg(target_os = "android")]
+            socket_protect_path,
             runtime_opt: crate::RuntimeOption::MultiThreadAuto(stack_size),
         };
     }
@@ -47,6 +52,7 @@ pub fn run_with_options(
     rt_id: crate::RuntimeId,
     config_path: String,
     #[cfg(feature = "auto-reload")] auto_reload: bool,
+    #[cfg(target_os = "android")] socket_protect_path: Option<String>,
     multi_thread: bool,
     auto_threads: bool,
     threads: usize,
@@ -62,6 +68,7 @@ pub fn run_with_options(
         config_path,
         #[cfg(feature = "auto-reload")]
         auto_reload,
+        #[cfg(target_os = "android")] socket_protect_path,
         multi_thread,
         auto_threads,
         threads,
