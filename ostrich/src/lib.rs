@@ -62,26 +62,21 @@ pub enum Error {
 pub type Runner = futures::future::BoxFuture<'static, ()>;
 
 pub struct RuntimeManager {
-    #[cfg(feature = "auto-reload")]
-    rt_id: RuntimeId,
+    // #[cfg(feature = "auto-reload")]
+    // rt_id: RuntimeId,
     config_path: Option<String>,
-    #[cfg(feature = "auto-reload")]
-    auto_reload: bool,
     reload_tx: mpsc::Sender<std::sync::mpsc::SyncSender<Result<(), Error>>>,
     shutdown_tx: mpsc::Sender<()>,
     router: Arc<RwLock<Router>>,
     dns_client: Arc<RwLock<DnsClient>>,
     outbound_manager: Arc<RwLock<OutboundManager>>,
-    #[cfg(feature = "auto-reload")]
-    watcher: Mutex<Option<RecommendedWatcher>>,
 }
 
 impl RuntimeManager {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        #[cfg(feature = "auto-reload")] rt_id: RuntimeId,
+        // #[cfg(feature = "auto-reload")] rt_id: RuntimeId,
         config_path: Option<String>,
-        #[cfg(feature = "auto-reload")] auto_reload: bool,
         reload_tx: mpsc::Sender<std::sync::mpsc::SyncSender<Result<(), Error>>>,
         shutdown_tx: mpsc::Sender<()>,
         router: Arc<RwLock<Router>>,
@@ -89,18 +84,14 @@ impl RuntimeManager {
         outbound_manager: Arc<RwLock<OutboundManager>>,
     ) -> Arc<Self> {
         Arc::new(Self {
-            #[cfg(feature = "auto-reload")]
-            rt_id,
+            // #[cfg(feature = "auto-reload")]
+            // rt_id,
             config_path,
-            #[cfg(feature = "auto-reload")]
-            auto_reload,
             reload_tx,
             shutdown_tx,
             router,
             dns_client,
             outbound_manager,
-            #[cfg(feature = "auto-reload")]
-            watcher: Mutex::new(None),
         })
     }
 
@@ -178,113 +169,36 @@ impl RuntimeManager {
         true
     }
 
-    #[cfg(feature = "auto-reload")]
-    pub(crate) fn new_watcher(&self) -> Result<(), Error> {
-        let config_path = if let Some(p) = self.config_path.as_ref() {
-            p
-        } else {
-            return Err(Error::NoConfigFile);
-        };
-        if self.auto_reload {
-            log::trace!("starting new watcher for config file: {}", config_path);
-            let rt_id = self.rt_id;
-            let mut watcher: RecommendedWatcher =
-                notify::recommended_watcher(move |res: NotifyResult<event::Event>| {
-                    match res {
-                        // FIXME Not sure what are the most appropriate events to
-                        // filter on different platforms.
-                        Ok(ev) => {
-                            match ev.kind {
-                                #[cfg(any(target_os = "macos", target_os = "ios"))]
-                                event::EventKind::Modify(event::ModifyKind::Data(
-                                    event::DataChange::Content,
-                                )) => {
-                                    log::info!("config file event matched: {:?}", ev);
-                                    if let Err(e) = reload(rt_id) {
-                                        log::warn!("reload config file failed: {}", e);
-                                    }
-                                }
-                                #[cfg(any(target_os = "linux", target_os = "android"))]
-                                event::EventKind::Access(event::AccessKind::Close(
-                                    event::AccessMode::Write,
-                                ))
-                                | event::EventKind::Remove(event::RemoveKind::File) => {
-                                    log::info!("config file event matched: {:?}", ev);
-                                    if let Err(e) = reload(rt_id) {
-                                        log::warn!("reload config file failed: {}", e);
-                                    }
-                                }
-                                #[cfg(target_os = "windows")]
-                                event::EventKind::Modify(event::ModifyKind::Data(
-                                    event::DataChange::Any,
-                                )) => {
-                                    log::info!("config file event matched: {:?}", ev);
-                                    if let Err(e) = reload(rt_id) {
-                                        log::warn!("reload config file failed: {}", e);
-                                    }
-                                }
-                                _ => {
-                                    log::trace!("skip config file event: {:?}", ev);
-                                }
-                            }
-                            // The config file could somehow be removed and re-created
-                            // by an editor, in that case create a new watcher to watch
-                            // the new file.
-                            if let event::EventKind::Remove(event::RemoveKind::File) = ev.kind {
-                                if let Ok(g) = RUNTIME_MANAGER.lock() {
-                                    if let Some(m) = g.get(&rt_id) {
-                                        let _ = m.new_watcher();
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            log::error!("config file watch error: {:?}", e);
-                        }
-                    }
-                })
-                .map_err(Error::Watcher)?;
-            watcher
-                .watch(
-                    std::path::Path::new(&config_path),
-                    RecursiveMode::NonRecursive,
-                )
-                .map_err(Error::Watcher)?;
-            log::info!("watching changes of file: {}", config_path);
-            self.watcher.lock().unwrap().replace(watcher);
-        }
-        Ok(())
-    }
 }
 
-pub type RuntimeId = u16;
+/*pub type RuntimeId = u16;*/
 
-lazy_static! {
+/*lazy_static! {
     pub static ref RUNTIME_MANAGER: Mutex<HashMap<RuntimeId, Arc<RuntimeManager>>> =
         Mutex::new(HashMap::new());
-}
+}*/
 
-pub fn reload(key: RuntimeId) -> Result<(), Error> {
+/*pub fn reload(key: RuntimeId) -> Result<(), Error> {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&key) {
             return m.blocking_reload();
         }
     }
     Err(Error::RuntimeManager)
-}
+}*/
 
-pub fn shutdown(key: RuntimeId) -> bool {
+/*pub fn shutdown(key: RuntimeId) -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&key) {
             return m.blocking_shutdown();
         }
     }
     false
-}
+}*/
 
-pub fn is_running(key: RuntimeId) -> bool {
+/*pub fn is_running(key: RuntimeId) -> bool {
     RUNTIME_MANAGER.lock().unwrap().contains_key(&key)
-}
+}*/
 
 pub fn test_config(config_path: &str) -> Result<(), Error> {
     config::from_file(config_path)
@@ -292,26 +206,13 @@ pub fn test_config(config_path: &str) -> Result<(), Error> {
         .map_err(Error::Config)
 }
 
-fn new_runtime(opt: &RuntimeOption) -> Result<tokio::runtime::Runtime, Error> {
-    match opt {
-        RuntimeOption::SingleThread => tokio::runtime::Builder::new_current_thread()
+fn new_runtime() -> Result<tokio::runtime::Runtime, Error> {
+
+         tokio::runtime::Builder::new_multi_thread()
+            // .thread_stack_size(*stack_size)
             .enable_all()
             .build()
-            .map_err(Error::Io),
-        RuntimeOption::MultiThreadAuto(stack_size) => tokio::runtime::Builder::new_multi_thread()
-            .thread_stack_size(*stack_size)
-            .enable_all()
-            .build()
-            .map_err(Error::Io),
-        RuntimeOption::MultiThread(worker_threads, stack_size) => {
-            tokio::runtime::Builder::new_multi_thread()
-                .worker_threads(*worker_threads)
-                .thread_stack_size(*stack_size)
-                .enable_all()
-                .build()
-                .map_err(Error::Io)
-        }
-    }
+            .map_err(Error::Io)
 }
 
 #[derive(Debug)]
@@ -335,16 +236,11 @@ pub enum Config {
 pub struct StartOptions {
     // The path of the config.
     pub config: Config,
-    // Enable auto reload, take effect only when "auto-reload" feature is enabled.
-    #[cfg(feature = "auto-reload")]
-    pub auto_reload: bool,
     #[cfg(target_os = "android")]
     pub socket_protect_path: Option<String>,
-    // Tokio runtime options.
-    pub runtime_opt: RuntimeOption,
 }
 
-pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
+pub fn start( opts: StartOptions) -> Result<(), Error> {
     println!("start with options:\n{:#?}", opts);
 
     let (reload_tx, mut reload_rx) = mpsc::channel(1);
@@ -372,7 +268,7 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
         app::logger::setup_logger(log).expect("setup logger failed");
     });
 
-    let rt = new_runtime(&opts.runtime_opt)?;
+    let rt = new_runtime()?;
     let _g = rt.enter();
     #[cfg(target_os = "android")]
     if let Some(p) = opts.socket_protect_path.as_ref() {
@@ -444,11 +340,9 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
     sys::post_tun_creation_setup(&net_info);
 
     let runtime_manager = RuntimeManager::new(
-        #[cfg(feature = "auto-reload")]
-        rt_id,
+/*        #[cfg(feature = "auto-reload")]
+        rt_id,*/
         config_path,
-        #[cfg(feature = "auto-reload")]
-        opts.auto_reload,
         reload_tx,
         shutdown_tx,
         router,
@@ -456,13 +350,13 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
         outbound_manager,
     );
 
-    // Monitor config file changes.
+/*    // Monitor config file changes.
     #[cfg(feature = "auto-reload")]
     {
         if let Err(e) = runtime_manager.new_watcher() {
             log::warn!("start config file watcher failed: {}", e);
         }
-    }
+    }*/
 
     #[cfg(feature = "api")]
     {
@@ -491,21 +385,6 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
 
     drop(config); // explicitly free the memory
 
-    // Monitor reload signal.
-    let rm = runtime_manager.clone();
-    tasks.push(Box::pin(async move {
-        loop {
-            if let Some(res_tx) = reload_rx.recv().await {
-                let res = rm.reload().await;
-                if let Err(e) = res_tx.send(res) {
-                    log::warn!("sending reload result failed: {}", e);
-                }
-            } else {
-                log::warn!("receiving none reload signal");
-            }
-        }
-    }));
-
     // The main task joining all runners.
     tasks.push(Box::pin(async move {
         futures::future::join_all(runners).await;
@@ -522,12 +401,12 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
         let _ = tokio::signal::ctrl_c().await;
     }));
 
-    RUNTIME_MANAGER
+/*    RUNTIME_MANAGER
         .lock()
         .map_err(|_| Error::RuntimeManager)?
         .insert(rt_id, runtime_manager);
 
-    log::trace!("added runtime {}", &rt_id);
+    log::trace!("added runtime {}", &rt_id);*/
 
     rt.block_on(futures::future::select_all(tasks));
 
@@ -536,12 +415,12 @@ pub fn start(rt_id: RuntimeId, opts: StartOptions) -> Result<(), Error> {
 
     rt.shutdown_background();
 
-    RUNTIME_MANAGER
-        .lock()
-        .map_err(|_| Error::RuntimeManager)?
-        .remove(&rt_id);
-
-    log::trace!("removed runtime {}", &rt_id);
+    // RUNTIME_MANAGER
+    //     .lock()
+    //     .map_err(|_| Error::RuntimeManager)?
+    //     .remove(&rt_id);
+    //
+    // log::trace!("removed runtime {}", &rt_id);
 
     Ok(())
 }
@@ -569,9 +448,6 @@ Direct = direct
             thread::spawn(move || {
                 let opts = StartOptions {
                     config: Config::Str(conf.to_string()),
-                    #[cfg(feature = "auto-reload")]
-                    auto_reload: false,
-                    runtime_opt: RuntimeOption::SingleThread,
                 };
                 start(0, opts);
             });

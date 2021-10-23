@@ -31,7 +31,7 @@ struct Args {
     #[argh(option, short = 'c', default = "String::from(\"config.conf\")")]
     config: String,
 
-    /// enables auto reloading when config file changes
+ /*   /// enables auto reloading when config file changes
     #[cfg(feature = "auto-reload")]
     #[argh(switch)]
     auto_reload: bool,
@@ -54,46 +54,14 @@ struct Args {
 
     /// prints version
     #[argh(switch, short = 'V')]
-    version: bool,
+    version: bool,*/
 }
 
 fn main() {
     let args: Args = argh::from_env();
 
-    if args.version {
-        println!("{}", get_version_string());
-        exit(0);
-    }
-
-    if args.test {
-        if let Err(e) = ostrich::test_config(&args.config) {
-            println!("{}", e);
-            exit(1);
-        } else {
-            println!("ok");
-            exit(0);
-        }
-    }
-
-    if let Some(tag) = args.test_outbound {
-        let config = ostrich::config::from_file(&args.config).unwrap();
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        rt.block_on(ostrich::util::test_outbound(&tag, &config));
-        exit(0);
-    }
-
     if let Err(e) = ostrich::util::run_with_options(
-        0,
         args.config,
-        #[cfg(feature = "auto-reload")]
-        false,
-        !args.single_thread,
-        true,
-        0, // auto_threads is true, this value no longer matters
-        args.thread_stack_size,
     ) {
         println!("start ostrich failed: {}", e);
         exit(1);

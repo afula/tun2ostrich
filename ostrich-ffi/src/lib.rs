@@ -53,24 +53,13 @@ fn to_errno(e: ostrich::Error) -> i32 {
 /// @return ERR_OK on finish running, any other errors means a startup failure.
 #[no_mangle]
 pub extern "C" fn leaf_run_with_options(
-    rt_id: u16,
+    // rt_id: u16,
     config_path: *const c_char,
-    auto_reload: bool, // requires this parameter anyway
-    multi_thread: bool,
-    auto_threads: bool,
-    threads: i32,
-    stack_size: i32,
 ) -> i32 {
     if let Ok(config_path) = unsafe { CStr::from_ptr(config_path).to_str() } {
         if let Err(e) = ostrich::util::run_with_options(
-            rt_id,
+            // rt_id,
             config_path.to_string(),
-            #[cfg(feature = "auto-reload")]
-            auto_reload,
-            multi_thread,
-            auto_threads,
-            threads as usize,
-            stack_size as usize,
         ) {
             return to_errno(e);
         }
@@ -93,9 +82,6 @@ pub extern "C" fn leaf_run(rt_id: u16, config_path: *const c_char) -> i32 {
     if let Ok(config_path) = unsafe { CStr::from_ptr(config_path).to_str() } {
         let opts = ostrich::StartOptions {
             config: ostrich::Config::File(config_path.to_string()),
-            #[cfg(feature = "auto-reload")]
-            auto_reload: false,
-            runtime_opt: ostrich::RuntimeOption::SingleThread,
         };
         if let Err(e) = ostrich::start(rt_id, opts) {
             return to_errno(e);
@@ -106,7 +92,7 @@ pub extern "C" fn leaf_run(rt_id: u16, config_path: *const c_char) -> i32 {
     }
 }
 
-/// Reloads DNS servers, outbounds and routing rules from the config file.
+/*/// Reloads DNS servers, outbounds and routing rules from the config file.
 ///
 /// @param rt_id The ID of the ostrich instance to reload.
 ///
@@ -117,9 +103,9 @@ pub extern "C" fn leaf_reload(rt_id: u16) -> i32 {
         return to_errno(e);
     }
     ERR_OK
-}
+}*/
 
-/// Shuts down ostrich.
+/*/// Shuts down ostrich.
 ///
 /// @param rt_id The ID of the ostrich instance to reload.
 ///
@@ -128,7 +114,7 @@ pub extern "C" fn leaf_reload(rt_id: u16) -> i32 {
 pub extern "C" fn leaf_shutdown(rt_id: u16) -> bool {
     ostrich::shutdown(rt_id)
 }
-
+*/
 /// Tests the configuration.
 ///
 /// @param config_path The path of the config file, must be a file with suffix .conf

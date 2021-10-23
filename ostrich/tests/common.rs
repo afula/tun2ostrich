@@ -54,9 +54,6 @@ pub fn run_leaf_instances(
         let config = ostrich::config::json::from_string(&config).unwrap();
         let opts = ostrich::StartOptions {
             config: ostrich::Config::Internal(config),
-            #[cfg(feature = "auto-reload")]
-            auto_reload: false,
-            runtime_opt: ostrich::RuntimeOption::SingleThread,
         };
         rt.spawn_blocking(move || {
             ostrich::start(rt_id, opts).unwrap();

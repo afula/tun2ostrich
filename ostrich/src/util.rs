@@ -13,70 +13,27 @@ use crate::{
 
 fn get_start_options(
     config_path: String,
-    #[cfg(feature = "auto-reload")] auto_reload: bool,
     #[cfg(target_os = "android")] socket_protect_path: Option<String>,
-    multi_thread: bool,
-    auto_threads: bool,
-    threads: usize,
-    stack_size: usize,
 ) -> crate::StartOptions {
-    if !multi_thread {
-        return crate::StartOptions {
+
+         crate::StartOptions {
             config: crate::Config::File(config_path),
-            #[cfg(feature = "auto-reload")]
-            auto_reload,
             #[cfg(target_os = "android")]
             socket_protect_path,
-            runtime_opt: crate::RuntimeOption::SingleThread,
-        };
-    }
-    if auto_threads {
-        return crate::StartOptions {
-            config: crate::Config::File(config_path),
-            #[cfg(feature = "auto-reload")]
-            auto_reload,
-            #[cfg(target_os = "android")]
-            socket_protect_path,
-            runtime_opt: crate::RuntimeOption::MultiThreadAuto(stack_size),
-        };
-    }
-    crate::StartOptions {
-        config: crate::Config::File(config_path),
-        #[cfg(feature = "auto-reload")]
-        auto_reload,
-        #[cfg(target_os = "android")]
-        socket_protect_path,
-        runtime_opt: crate::RuntimeOption::MultiThread(threads, stack_size),
-    }
+        }
+
 }
 
 pub fn run_with_options(
-    rt_id: crate::RuntimeId,
+    // rt_id: crate::RuntimeId,
     config_path: String,
-    #[cfg(feature = "auto-reload")] auto_reload: bool,
     #[cfg(target_os = "android")] socket_protect_path: Option<String>,
-    multi_thread: bool,
-    auto_threads: bool,
-    threads: usize,
-    stack_size: usize,
 ) -> Result<(), crate::Error> {
-    #[cfg(feature = "auto-reload")]
-        {
-        if auto_reload{
-            println!("reload enabled");
-        }
-    }
     let opts = get_start_options(
         config_path,
-        #[cfg(feature = "auto-reload")]
-        auto_reload,
         #[cfg(target_os = "android")] socket_protect_path,
-        multi_thread,
-        auto_threads,
-        threads,
-        stack_size,
     );
-    crate::start(rt_id, opts)
+    crate::start( opts)
 }
 
 pub async fn test_outbound(tag: &str, config: &Config) {
