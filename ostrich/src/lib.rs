@@ -46,9 +46,9 @@ pub enum Error {
     NoConfigFile,
     #[error(transparent)]
     Io(#[from] io::Error),
-    #[cfg(feature = "auto-reload")]
+    /*    #[cfg(feature = "auto-reload")]
     #[error(transparent)]
-    Watcher(#[from] NotifyError),
+    Watcher(#[from] NotifyError),*/
     #[error(transparent)]
     AsyncChannelSend(
         #[from] tokio::sync::mpsc::error::SendError<std::sync::mpsc::SyncSender<Result<(), Error>>>,

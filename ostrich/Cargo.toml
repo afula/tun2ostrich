@@ -68,7 +68,7 @@ all-endpoints = [
     "outbound-chain",
     "outbound-retry",
     # "outbound-select",
-    "auto-reload",
+#    "auto-reload",
 ]
 
 # Ring-related

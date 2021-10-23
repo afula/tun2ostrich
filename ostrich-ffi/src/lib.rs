@@ -24,8 +24,8 @@ fn to_errno(e: ostrich::Error) -> i32 {
         ostrich::Error::Config(..) => ERR_CONFIG,
         ostrich::Error::NoConfigFile => ERR_NO_CONFIG_FILE,
         ostrich::Error::Io(..) => ERR_IO,
-        #[cfg(feature = "auto-reload")]
-        ostrich::Error::Watcher(..) => ERR_WATCHER,
+        // #[cfg(feature = "auto-reload")]
+        // ostrich::Error::Watcher(..) => ERR_WATCHER,
         ostrich::Error::AsyncChannelSend(..) => ERR_ASYNC_CHANNEL_SEND,
         ostrich::Error::SyncChannelRecv(..) => ERR_SYNC_CHANNEL_RECV,
         ostrich::Error::RuntimeManager => ERR_RUNTIME_MANAGER,
@@ -78,7 +78,7 @@ pub extern "C" fn leaf_run_with_options(
 ///                    or .json, according to the enabled features.
 /// @return ERR_OK on finish running, any other errors means a startup failure.
 #[no_mangle]
-pub extern "C" fn leaf_run( config_path: *const c_char) -> i32 {
+pub extern "C" fn leaf_run(config_path: *const c_char) -> i32 {
     if let Ok(config_path) = unsafe { CStr::from_ptr(config_path).to_str() } {
         let opts = ostrich::StartOptions {
             config: ostrich::Config::File(config_path.to_string()),
