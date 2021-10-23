@@ -11,10 +11,8 @@ use crate::proxy;
 use crate::proxy::AnyInboundHandler;
 use crate::Runner;
 
-
 #[cfg(feature = "inbound-socks")]
 use crate::proxy::socks;
-
 
 use super::network_listener::NetworkInboundListener;
 

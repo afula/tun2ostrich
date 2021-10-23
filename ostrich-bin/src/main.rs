@@ -30,8 +30,7 @@ struct Args {
     /// the configuration file
     #[argh(option, short = 'c', default = "String::from(\"config.conf\")")]
     config: String,
-
- /*   /// enables auto reloading when config file changes
+    /*   /// enables auto reloading when config file changes
     #[cfg(feature = "auto-reload")]
     #[argh(switch)]
     auto_reload: bool,
@@ -60,9 +59,7 @@ struct Args {
 fn main() {
     let args: Args = argh::from_env();
 
-    if let Err(e) = ostrich::util::run_with_options(
-        args.config,
-    ) {
+    if let Err(e) = ostrich::util::run_with_options(args.config) {
         println!("start ostrich failed: {}", e);
         exit(1);
     }

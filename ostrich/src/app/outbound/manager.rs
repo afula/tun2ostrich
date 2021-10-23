@@ -26,7 +26,6 @@ use crate::proxy::select;
 #[cfg(feature = "outbound-tryall")]
 use crate::proxy::tryall;*/
 
-
 #[cfg(feature = "outbound-direct")]
 use crate::proxy::direct;
 /*#[cfg(feature = "outbound-drop")]
@@ -35,13 +34,12 @@ use crate::proxy::drop;*/
 #[cfg(feature = "outbound-trojan")]
 use crate::proxy::trojan;
 
-
+use crate::proxy::trojan::outbound::tls::make_config;
 use crate::{
     app::SyncDnsClient,
     config::{self, Outbound},
     proxy::{self, outbound::HandlerBuilder, *},
 };
-use crate::proxy::trojan::outbound::tls::make_config;
 
 // use super::selector::OutboundSelector;
 
@@ -124,7 +122,7 @@ impl OutboundManager {
         }
 
         // FIXME a better way to find outbound deps?
-/*        for _i in 0..8 {
+        /*        for _i in 0..8 {
             'outbounds: for outbound in outbounds.iter() {
                 let tag = String::from(&outbound.tag);
                 if handlers.contains_key(&tag) {
@@ -331,7 +329,7 @@ impl OutboundManager {
         Ok(())
     }
 
-/*    fn load_selectors(
+    /*    fn load_selectors(
         outbounds: &protobuf::RepeatedField<Outbound>,
         handlers: &mut HashMap<String, AnyOutboundHandler>,
         external_handlers: &mut super::plugin::ExternalHandlers,
@@ -407,12 +405,12 @@ impl OutboundManager {
         outbounds: &protobuf::RepeatedField<Outbound>,
         dns_client: SyncDnsClient,
     ) -> Result<()> {
-/*        // Save outound select states.
-        let mut selected_outbounds = HashMap::new();
-        for (k, v) in self.selectors.iter() {
-            selected_outbounds.insert(k.to_owned(), v.read().await.get_selected_tag());
-        }
-*/
+        /*        // Save outound select states.
+                let mut selected_outbounds = HashMap::new();
+                for (k, v) in self.selectors.iter() {
+                    selected_outbounds.insert(k.to_owned(), v.read().await.get_selected_tag());
+                }
+        */
         // Load new outbounds.
         let mut handlers: HashMap<String, AnyOutboundHandler> = HashMap::new();
 
@@ -429,7 +427,7 @@ impl OutboundManager {
                 &mut default_handler,
                 &mut abort_handles,
             )?;
-/*            Self::load_selectors(
+            /*            Self::load_selectors(
                 outbounds,
                 &mut handlers,
                 &mut external_handlers,
@@ -437,7 +435,7 @@ impl OutboundManager {
             )?;*/
         }
 
-/*        // Restore outbound select states.
+        /*        // Restore outbound select states.
         for (k, v) in selected_outbounds.iter() {
             for (k2, v2) in selectors.iter_mut() {
                 if k == k2 {
@@ -479,7 +477,7 @@ impl OutboundManager {
                 &mut default_handler,
                 &mut abort_handles,
             )?;
-/*            Self::load_selectors(
+            /*            Self::load_selectors(
                 outbounds,
                 &mut handlers,
                 &mut external_handlers,
@@ -513,7 +511,7 @@ impl OutboundManager {
         }
     }
 
-/*    pub fn get_selector(&self, tag: &str) -> Option<Arc<RwLock<OutboundSelector>>> {
+    /*    pub fn get_selector(&self, tag: &str) -> Option<Arc<RwLock<OutboundSelector>>> {
         self.selectors.get(tag).map(Clone::clone)
     }*/
 }

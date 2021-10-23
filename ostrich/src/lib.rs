@@ -95,7 +95,7 @@ impl RuntimeManager {
         })
     }
 
-/*    pub async fn set_outbound_selected(&self, outbound: &str, select: &str) -> Result<(), Error> {
+    /*    pub async fn set_outbound_selected(&self, outbound: &str, select: &str) -> Result<(), Error> {
         if let Some(selector) = self.outbound_manager.read().await.get_selector(outbound) {
             selector
                 .write()
@@ -168,7 +168,6 @@ impl RuntimeManager {
         }
         true
     }
-
 }
 
 /*pub type RuntimeId = u16;*/
@@ -207,12 +206,11 @@ pub fn test_config(config_path: &str) -> Result<(), Error> {
 }
 
 fn new_runtime() -> Result<tokio::runtime::Runtime, Error> {
-
-         tokio::runtime::Builder::new_multi_thread()
-            // .thread_stack_size(*stack_size)
-            .enable_all()
-            .build()
-            .map_err(Error::Io)
+    tokio::runtime::Builder::new_multi_thread()
+        // .thread_stack_size(*stack_size)
+        .enable_all()
+        .build()
+        .map_err(Error::Io)
 }
 
 #[derive(Debug)]
@@ -240,7 +238,7 @@ pub struct StartOptions {
     pub socket_protect_path: Option<String>,
 }
 
-pub fn start( opts: StartOptions) -> Result<(), Error> {
+pub fn start(opts: StartOptions) -> Result<(), Error> {
     println!("start with options:\n{:#?}", opts);
 
     let (reload_tx, mut reload_rx) = mpsc::channel(1);
@@ -340,7 +338,7 @@ pub fn start( opts: StartOptions) -> Result<(), Error> {
     sys::post_tun_creation_setup(&net_info);
 
     let runtime_manager = RuntimeManager::new(
-/*        #[cfg(feature = "auto-reload")]
+        /*        #[cfg(feature = "auto-reload")]
         rt_id,*/
         config_path,
         reload_tx,
@@ -350,7 +348,7 @@ pub fn start( opts: StartOptions) -> Result<(), Error> {
         outbound_manager,
     );
 
-/*    // Monitor config file changes.
+    /*    // Monitor config file changes.
     #[cfg(feature = "auto-reload")]
     {
         if let Err(e) = runtime_manager.new_watcher() {
@@ -401,7 +399,7 @@ pub fn start( opts: StartOptions) -> Result<(), Error> {
         let _ = tokio::signal::ctrl_c().await;
     }));
 
-/*    RUNTIME_MANAGER
+    /*    RUNTIME_MANAGER
         .lock()
         .map_err(|_| Error::RuntimeManager)?
         .insert(rt_id, runtime_manager);

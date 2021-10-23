@@ -15,13 +15,11 @@ fn get_start_options(
     config_path: String,
     #[cfg(target_os = "android")] socket_protect_path: Option<String>,
 ) -> crate::StartOptions {
-
-         crate::StartOptions {
-            config: crate::Config::File(config_path),
-            #[cfg(target_os = "android")]
-            socket_protect_path,
-        }
-
+    crate::StartOptions {
+        config: crate::Config::File(config_path),
+        #[cfg(target_os = "android")]
+        socket_protect_path,
+    }
 }
 
 pub fn run_with_options(
@@ -31,9 +29,10 @@ pub fn run_with_options(
 ) -> Result<(), crate::Error> {
     let opts = get_start_options(
         config_path,
-        #[cfg(target_os = "android")] socket_protect_path,
+        #[cfg(target_os = "android")]
+        socket_protect_path,
     );
-    crate::start( opts)
+    crate::start(opts)
 }
 
 pub async fn test_outbound(tag: &str, config: &Config) {

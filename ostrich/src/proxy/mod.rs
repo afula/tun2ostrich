@@ -38,7 +38,6 @@ pub mod stream;
 
 pub mod null;
 
-
 #[cfg(any(feature = "inbound-chain", feature = "outbound-chain"))]
 pub mod chain;
 #[cfg(feature = "outbound-direct")]
@@ -73,7 +72,6 @@ pub mod tryall;
     )
 ))]
 pub mod tun;
-
 
 pub use datagram::{
     SimpleInboundDatagram, SimpleInboundDatagramRecvHalf, SimpleInboundDatagramSendHalf,

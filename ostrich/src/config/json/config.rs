@@ -79,7 +79,7 @@ pub struct TunInboundSettings {
     pub fake_dns_exclude: Option<Vec<String>>,
     #[serde(rename = "fakeDnsInclude")]
     pub fake_dns_include: Option<Vec<String>>,
-    pub auto: Option<bool>
+    pub auto: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -323,8 +323,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                     } else if ext_settings.auto.is_some() {
                         settings.fd = -1; // disable fd option
                         settings.auto = ext_settings.auto.unwrap_or(true);
-                    }
-                    else {
+                    } else {
                         settings.fd = -1; // disable fd option
                         if let Some(ext_name) = ext_settings.name {
                             settings.name = ext_name;
