@@ -78,12 +78,12 @@ pub extern "C" fn leaf_run_with_options(
 ///                    or .json, according to the enabled features.
 /// @return ERR_OK on finish running, any other errors means a startup failure.
 #[no_mangle]
-pub extern "C" fn leaf_run(rt_id: u16, config_path: *const c_char) -> i32 {
+pub extern "C" fn leaf_run( config_path: *const c_char) -> i32 {
     if let Ok(config_path) = unsafe { CStr::from_ptr(config_path).to_str() } {
         let opts = ostrich::StartOptions {
             config: ostrich::Config::File(config_path.to_string()),
         };
-        if let Err(e) = ostrich::start(rt_id, opts) {
+        if let Err(e) = ostrich::start(opts) {
             return to_errno(e);
         }
         ERR_OK
