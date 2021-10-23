@@ -44,6 +44,8 @@ fn get_start_options(
         config: crate::Config::File(config_path),
         #[cfg(feature = "auto-reload")]
         auto_reload,
+        #[cfg(target_os = "android")]
+        socket_protect_path,
         runtime_opt: crate::RuntimeOption::MultiThread(threads, stack_size),
     }
 }
