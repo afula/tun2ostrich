@@ -2,28 +2,6 @@ use std::process::exit;
 
 use argh::FromArgs;
 
-const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
-const COMMIT_HASH: Option<&'static str> = option_env!("CFG_COMMIT_HASH");
-const COMMIT_DATE: Option<&'static str> = option_env!("CFG_COMMIT_DATE");
-
-fn get_version_string() -> String {
-    match (VERSION, COMMIT_HASH, COMMIT_DATE) {
-        (Some(ver), None, None) => ver.to_string(),
-        (Some(ver), Some(hash), Some(date)) => format!("{} ({} - {})", ver, hash, date),
-        _ => "unknown".to_string(),
-    }
-}
-
-#[cfg(debug_assertions)]
-fn default_thread_stack_size() -> usize {
-    2 * 1024 * 1024
-}
-
-#[cfg(not(debug_assertions))]
-fn default_thread_stack_size() -> usize {
-    256 * 1024
-}
-
 #[derive(FromArgs)]
 /// A lightweight and fast proxy utility
 struct Args {

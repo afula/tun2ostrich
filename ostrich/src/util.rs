@@ -45,7 +45,10 @@ pub async fn test_outbound(tag: &str, config: &Config) {
     };
 
     let dns_client = Arc::new(RwLock::new(DnsClient::new(&config.dns).unwrap()));
-    let outbound_manager = OutboundManager::new(&config.outbounds, dns_client.clone()).unwrap();
+    let outbound_manager = OutboundManager::new(
+        &config.outbounds, // , dns_client.clone()
+    )
+    .unwrap();
     let handler = if let Some(v) = outbound_manager.get(tag) {
         v
     } else {
