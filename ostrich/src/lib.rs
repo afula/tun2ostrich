@@ -1,14 +1,14 @@
 #[cfg(feature = "api")]
 use crate::app::api::api_server::ApiServer;
 use anyhow::anyhow;
-use lazy_static::lazy_static;
 use app::{
     dispatcher::Dispatcher, dns_client::DnsClient, inbound::manager::InboundManager,
     nat_manager::NatManager, outbound::manager::OutboundManager, router::Router,
 };
-use std::io;
-use std::sync::{Arc};
+use lazy_static::lazy_static;
 use std::collections::HashMap;
+use std::io;
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Once;
 use thiserror::Error;
@@ -101,7 +101,7 @@ impl RuntimeManager {
         Err(Error::Config(anyhow!("not found")))
     }*/
 
-/*    // This function could block by an in-progress connection dialing.
+    /*    // This function could block by an in-progress connection dialing.
     //
     // TODO Reload FakeDns. And perhaps the inbounds as long as the listening
     // addresses haven't changed.
@@ -124,7 +124,7 @@ impl RuntimeManager {
         Ok(())
     }*/
 
-/*    pub fn blocking_reload(&self) -> Result<(), Error> {
+    /*    pub fn blocking_reload(&self) -> Result<(), Error> {
         let tx = self.reload_tx.clone();
         let (res_tx, res_rx) = sync_channel(0);
         if let Err(e) = tx.blocking_send(res_tx) {
@@ -325,7 +325,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     sys::post_tun_creation_setup(&net_info);
 
-        let runtime_manager = RuntimeManager::new(
+    let runtime_manager = RuntimeManager::new(
         /*        #[cfg(feature = "auto-reload")]
         rt_id,*/
         // config_path,
@@ -376,7 +376,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         futures::future::join_all(runners).await;
     }));
 
-        // Monitor shutdown signal.
+    // Monitor shutdown signal.
     tasks.push(Box::pin(async move {
         let _ = shutdown_rx.recv().await;
     }));
@@ -387,7 +387,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         let _ = tokio::signal::ctrl_c().await;
     }));
 
-        RUNTIME_MANAGER
+    RUNTIME_MANAGER
         .lock()
         .map_err(|_| Error::RuntimeManager)?
         .insert(INSTANCE_ID, runtime_manager);

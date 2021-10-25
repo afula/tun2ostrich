@@ -16,16 +16,13 @@ default = [
 default-ring = [
     "ostrich/default-ring",
     "ostrich/ctrlc",
-    "auto-reload",
 ]
 
 default-openssl = [
     "ostrich/default-openssl",
     "ostrich/ctrlc",
-    "auto-reload",
 ]
 
-auto-reload = ["ostrich/auto-reload"]
 
 [dependencies]
 ostrich = { path = "../ostrich", default-features = false, optional = true }

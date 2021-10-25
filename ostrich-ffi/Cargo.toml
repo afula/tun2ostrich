@@ -22,7 +22,6 @@ default-openssl = [
     "ostrich/default-openssl",
 ]
 
-auto-reload = ["ostrich/auto-reload"]
 
 [dependencies]
 ostrich = { path = "../ostrich", default-features = false, optional = true }
