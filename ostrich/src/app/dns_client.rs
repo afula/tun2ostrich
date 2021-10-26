@@ -131,7 +131,7 @@ impl DnsClient {
         }
 
         let resolvers = {
-            #[cfg(feature = "dns-over-tls")]
+/*            #[cfg(feature = "dns-over-tls")]
             {
                 let mut resolver_option = ResolverOpts::default();
                 resolver_option.try_tcp_on_error = true;
@@ -154,7 +154,7 @@ impl DnsClient {
                     TokioHandle,
                 )?
             }
-            #[cfg(not(feature = "dns-over-tls"))]
+            #[cfg(not(feature = "dns-over-tls"))]*/
             return_tokio_asyncresolver(nameservers, options)
         };
 
@@ -480,7 +480,7 @@ impl DnsClient {
         let resolver_fut = self.resolvers.lookup_ip(host.clone() + ".");
         let trustable_resolver_fut = self.trustable_resolver.lookup_ip(host.clone() + ".");
 
-        if let Ok(ip) = trustable_resolver_fut.await {
+        if let Ok(ip) = resolver_fut.await {
             let mut v = ip.iter().collect::<Vec<IpAddr>>();
             log::debug!("customize resolver lookup result: {:?} - {:?}", host, v);
             self.cache_insert(
@@ -492,7 +492,7 @@ impl DnsClient {
             )
             .await;
             ips.append(&mut v);
-        } else if let Ok(ip) = resolver_fut.await {
+        } else if let Ok(ip) = trustable_resolver_fut.await {
             let mut v = ip.iter().collect::<Vec<IpAddr>>();
             log::debug!("builtin resolver lookup result: {:?} - {:?}", host, v);
             self.cache_insert(
