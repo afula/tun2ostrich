@@ -82,7 +82,7 @@ outbound-ws = ["tungstenite", "tokio-tungstenite", "url", "http"]
 outbound-failover = ["lru_time_cache"]
 outbound-tryall = []
 outbound-retry = []
-
+dns-over-tls = []
 # Inbounds
 inbound-socks = []
 inbound-tun = ["tun"]
@@ -128,8 +128,8 @@ memmap = "0.7"
 cidr = { version = "0.1", default-features = false }
 
 # DNS
-trust-dns-proto = { version = "0.20", default-features = false }
-trust-dns-resolver = { git = "https://github.com/bluejekyll/trust-dns.git",features = ["dns-over-rustls"] }
+trust-dns-proto = "0.21.0-alpha.4"
+trust-dns-resolver = { version = "0.21.0-alpha.4",features = ["dns-over-rustls"] }
 trust-dns-client = {version = "0.21.0-alpha.4", features = ["dns-over-rustls"]}
 lru = "0.6"
 

@@ -92,6 +92,11 @@ pub extern "C" fn leaf_run(config_path: *const c_char) -> i32 {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn is_running() -> bool {
+        ostrich::is_running()
+}
+
 /*/// Reloads DNS servers, outbounds and routing rules from the config file.
 ///
 /// @param rt_id The ID of the ostrich instance to reload.

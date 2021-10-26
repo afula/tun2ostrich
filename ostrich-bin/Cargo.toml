@@ -16,6 +16,7 @@ default = [
 default-ring = [
     "ostrich/default-ring",
     "ostrich/ctrlc",
+#    "ostrich/dns-over-tls"
 ]
 
 default-openssl = [

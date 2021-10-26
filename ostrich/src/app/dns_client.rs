@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::ops::Add;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -26,7 +26,7 @@ use trust_dns_resolver::{
         ResolverOpts,
     },
     name_server::{GenericConnection, GenericConnectionProvider, TokioRuntime},
-    AsyncResolver, TokioAsyncResolver,
+    AsyncResolver, TokioAsyncResolver, TokioHandle,
 };
 
 #[derive(Clone, Debug)]
@@ -129,7 +129,34 @@ impl DnsClient {
         } else {
             nameservers = built_in_nameservers.clone();
         }
-        let resolvers = return_tokio_asyncresolver(nameservers, options);
+
+        let resolvers = {
+            #[cfg(feature = "dns-over-tls")]
+            {
+                let mut resolver_option = ResolverOpts::default();
+                resolver_option.try_tcp_on_error = true;
+                let resolver_config = ResolverConfig::from_parts(
+                    None,
+                    vec![],
+                    NameServerConfigGroup::from_ips_tls(
+                        // &[IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1))],
+                        &[IpAddr::V4(Ipv4Addr::new(108, 61, 199, 26))],
+                        2053,
+                        // "cloudflare-dns.com".to_string(),
+                        "walkonbit.site".to_string(),
+                        true,
+                    )
+                );
+
+                TokioAsyncResolver::new(
+                    resolver_config,
+                    resolver_option,
+                    TokioHandle,
+                )?
+            }
+            #[cfg(not(feature = "dns-over-tls"))]
+            return_tokio_asyncresolver(nameservers, options)
+        };
 
         let trustable_resolver = return_tokio_asyncresolver(built_in_nameservers, options);
         Ok(DnsClient {
