@@ -110,16 +110,16 @@ pub extern "C" fn leaf_reload(rt_id: u16) -> i32 {
     ERR_OK
 }*/
 
-/*/// Shuts down ostrich.
+/// Shuts down ostrich.
 ///
 /// @param rt_id The ID of the ostrich instance to reload.
 ///
 /// @return Returns true on success, false otherwise.
 #[no_mangle]
-pub extern "C" fn leaf_shutdown(rt_id: u16) -> bool {
-    ostrich::shutdown(rt_id)
+pub extern "C" fn leaf_shutdown() -> bool {
+    ostrich::shutdown()
 }
-*/
+
 /// Tests the configuration.
 ///
 /// @param config_path The path of the config file, must be a file with suffix .conf
