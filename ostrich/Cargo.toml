@@ -192,6 +192,9 @@ libc = "0.2"
 [target.'cfg(any(target_os = "ios", target_os = "macos", target_os = "android"))'.dependencies]
 memchr = { version = "2" }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+simple_wintun = { git = "https://github.com/xutianyi1999/SimpleWintun.git" }
+
 [dev-dependencies]
 rcgen = "0.8"
 
