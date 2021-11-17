@@ -4,8 +4,8 @@ use std::process::Command;
 use std::ptr::null_mut;
 use std::sync::Arc;
 
-use simple_wintun::{raw, ReadResult};
 use simple_wintun::adapter::{WintunAdapter, WintunStream};
+use simple_wintun::{raw, ReadResult};
 
 pub const MTU: usize = 1420;
 use super::{Rx, TunDevice, Tx};
@@ -34,7 +34,15 @@ impl Wintun {
         adapter.set_ipaddr(&address.to_string(), netmask_count)?;
 
         let status = Command::new("netsh")
-            .args(vec!["interface", "ipv4", "set", "subinterface", ADAPTER_NAME, &format!("mtu={}", MTU), "store=persistent"])
+            .args(vec![
+                "interface",
+                "ipv4",
+                "set",
+                "subinterface",
+                ADAPTER_NAME,
+                &format!("mtu={}", MTU),
+                "store=persistent",
+            ])
             .output()?
             .status;
 
@@ -74,7 +82,7 @@ impl Rx for Wintun {
 
         match res {
             ReadResult::Success(len) => Ok(len),
-            ReadResult::NotEnoughSize(_) => Ok(0)
+            ReadResult::NotEnoughSize(_) => Ok(0),
         }
     }
 }
@@ -82,7 +90,9 @@ impl Rx for Wintun {
 impl TunDevice for Wintun {
     fn split(self: Box<Self>) -> (Box<dyn Tx>, Box<dyn Rx>) {
         let wintun = Arc::new(*self);
-        let wintun_tx = WintunTx { wintun: wintun.clone() };
+        let wintun_tx = WintunTx {
+            wintun: wintun.clone(),
+        };
         let wintun_rx = WintunRx { wintun };
 
         (Box::new(wintun_rx), Box::new(wintun_tx))
@@ -128,7 +138,7 @@ fn get_netmask_bit_count(ipv4: Ipv4Addr) -> u8 {
                 return count;
             }
         }
-    };
+    }
     count
 }
 
@@ -138,6 +148,6 @@ fn to_bits(v: u8) -> [u8; 8] {
     for x in 0..8 {
         let b = (v << x) >> 7;
         bits[7 - x] = b;
-    };
+    }
     bits
 }

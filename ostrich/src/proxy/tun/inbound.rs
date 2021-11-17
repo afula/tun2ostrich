@@ -8,6 +8,7 @@ use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
 use tun::{self, Device, TunPacket};
 
+use crate::proxy::tun::win::create_device;
 use crate::{
     app::dispatcher::Dispatcher,
     app::fake_dns::{FakeDns, FakeDnsMode},
@@ -80,7 +81,12 @@ pub fn new(
         (FakeDnsMode::Exclude, fake_dns_exclude)
     };
 
-    let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
+    let tun_addr = "172.0.0.2";
+    let netmask = "255.255.255.0";
+    // let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
+    let device = create_device(tun_addr.parse()?, netmask.parse()?)?;
+    info!("Tun adapter ip address: {}", tun_addr);
+    let (mut tun_tx, mut tun_rx) = device.split();
 
     if settings.auto {
         assert!(settings.fd == -1, "tun-auto is not compatible with tun-fd");
@@ -95,12 +101,12 @@ pub fn new(
 
         let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
 
-        let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
-        let framed = tun.into_framed();
-        let (mut tun_sink, mut tun_stream) = framed.split();
+        let mtu = MTU as i32;
+
+        // let (mut tun_sink, mut tun_stream) = framed.split();
         let (mut stack_reader, mut stack_writer) = io::split(stack);
 
-        let s2t = Box::pin(async move {
+        let s2t = tokio::task::spawn_blocking(async move {
             let mut buf = vec![0; mtu as usize];
             loop {
                 match stack_reader.read(&mut buf).await {
@@ -108,7 +114,7 @@ pub fn new(
                         debug!("read stack eof");
                         return;
                     }
-                    Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
+                    Ok(n) => match tun_tx.send_packet(&buf[..n]) {
                         Ok(_) => (),
                         Err(e) => {
                             warn!("send pkt to tun failed: {}", e);
@@ -123,18 +129,17 @@ pub fn new(
             }
         });
 
-        let t2s = Box::pin(async move {
-            while let Some(packet) = tun_stream.next().await {
-                match packet {
-                    Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("write pkt to stack failed: {}", e);
-                            return;
-                        }
-                    },
-                    Err(err) => {
-                        warn!("read tun failed {:?}", err);
+        let t2s = tokio::task::spawn_blocking(async move {
+            let mut packet = [0u8; MTU];
+
+            while let Ok(size) = tun_rx.recv_packet(&mut packet) {
+                if size == 0 {
+                    continue;
+                }
+                match stack_writer.write(packet.get_bytes()).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        warn!("write pkt to stack failed: {}", e);
                         return;
                     }
                 }

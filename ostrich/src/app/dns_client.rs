@@ -131,7 +131,7 @@ impl DnsClient {
         }
 
         let resolvers = {
-/*            #[cfg(feature = "dns-over-tls")]
+            /*            #[cfg(feature = "dns-over-tls")]
             {
                 let mut resolver_option = ResolverOpts::default();
                 resolver_option.try_tcp_on_error = true;
