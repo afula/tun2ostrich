@@ -62,18 +62,6 @@
           "108.61.199.26"
         ],
         "target": "direct_out"
-      },
-      {
-        "external": [
-          "site:/home/damo/test/site.dat:cn"
-        ],
-        "target": "direct_out"
-      },
-      {
-        "external": [
-          "mmdb:/home/damo/test/geo.mmdb:cn"
-        ],
-        "target": "direct_out"
       }
     ]
   }

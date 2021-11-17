@@ -6,6 +6,7 @@ use log::*;
 use protobuf::Message;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
+#[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
 use tun::{self, Device, TunPacket};
 
 use crate::proxy::tun::win::create_device;
@@ -28,44 +29,44 @@ pub fn new(
 ) -> Result<Runner> {
     let settings = TunInboundSettings::parse_from_bytes(&inbound.settings)?;
 
-    let mut cfg = tun::Configuration::default();
-    if settings.fd >= 0 {
-        cfg.raw_fd(settings.fd);
-    } else if settings.auto {
-        cfg.name(&*option::DEFAULT_TUN_NAME)
-            .address(&*option::DEFAULT_TUN_IPV4_ADDR)
-            .destination(&*option::DEFAULT_TUN_IPV4_GW)
-            .mtu(1500);
+    // let mut cfg = tun::Configuration::default();
+    // if settings.fd >= 0 {
+    //     cfg.raw_fd(settings.fd);
+    // } else if settings.auto {
+    //     cfg.name(&*option::DEFAULT_TUN_NAME)
+    //         .address(&*option::DEFAULT_TUN_IPV4_ADDR)
+    //         .destination(&*option::DEFAULT_TUN_IPV4_GW)
+    //         .mtu(1500);
 
-        #[cfg(not(any(
-            target_arch = "mips",
-            target_arch = "mips64",
-            target_arch = "mipsel",
-            target_arch = "mipsel64",
-        )))]
-        {
-            cfg.netmask(&*option::DEFAULT_TUN_IPV4_MASK);
-        }
+    //     #[cfg(not(any(
+    //         target_arch = "mips",
+    //         target_arch = "mips64",
+    //         target_arch = "mipsel",
+    //         target_arch = "mipsel64",
+    //     )))]
+    //     {
+    //         cfg.netmask(&*option::DEFAULT_TUN_IPV4_MASK);
+    //     }
 
-        cfg.up();
-    } else {
-        cfg.name(settings.name)
-            .address(settings.address)
-            .destination(settings.gateway)
-            .mtu(settings.mtu);
+    //     cfg.up();
+    // } else {
+    //     cfg.name(settings.name)
+    //         .address(settings.address)
+    //         .destination(settings.gateway)
+    //         .mtu(settings.mtu);
 
-        #[cfg(not(any(
-            target_arch = "mips",
-            target_arch = "mips64",
-            target_arch = "mipsel",
-            target_arch = "mipsel64",
-        )))]
-        {
-            cfg.netmask(settings.netmask);
-        }
+    //     #[cfg(not(any(
+    //         target_arch = "mips",
+    //         target_arch = "mips64",
+    //         target_arch = "mipsel",
+    //         target_arch = "mipsel64",
+    //     )))]
+    //     {
+    //         cfg.netmask(settings.netmask);
+    //     }
 
-        cfg.up();
-    }
+    //     cfg.up();
+    // }
 
     // FIXME it's a bad design to have 2 lists in config while we need only one
     let fake_dns_exclude = settings.fake_dns_exclude;
@@ -84,7 +85,7 @@ pub fn new(
     let tun_addr = "172.0.0.2";
     let netmask = "255.255.255.0";
     // let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
-    let device = create_device(tun_addr.parse()?, netmask.parse()?)?;
+    let device = create_device(tun_addr.parse()?, netmask.parse()?).unwrap();
     info!("Tun adapter ip address: {}", tun_addr);
     let (mut tun_tx, mut tun_rx) = device.split();
 
@@ -106,7 +107,7 @@ pub fn new(
         // let (mut tun_sink, mut tun_stream) = framed.split();
         let (mut stack_reader, mut stack_writer) = io::split(stack);
 
-        let s2t = tokio::task::spawn_blocking(async move {
+        let s2t = tokio::task::spawn(async move {
             let mut buf = vec![0; mtu as usize];
             loop {
                 match stack_reader.read(&mut buf).await {
@@ -129,14 +130,14 @@ pub fn new(
             }
         });
 
-        let t2s = tokio::task::spawn_blocking(async move {
+        let t2s = tokio::task::spawn(async move {
             let mut packet = [0u8; MTU];
 
             while let Ok(size) = tun_rx.recv_packet(&mut packet) {
                 if size == 0 {
                     continue;
                 }
-                match stack_writer.write(packet.get_bytes()).await {
+                match stack_writer.write(&packet[..size]).await {
                     Ok(_) => (),
                     Err(e) => {
                         warn!("write pkt to stack failed: {}", e);
