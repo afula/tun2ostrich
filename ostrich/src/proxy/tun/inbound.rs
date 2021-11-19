@@ -92,7 +92,7 @@ pub fn new(
         assert!(settings.fd == -1, "tun-auto is not compatible with tun-fd");
     }
 
-    Ok(Box::pin(async move {
+/*    Ok(Box::pin(async move {
         let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
 
         for filter in fake_dns_filters.into_iter() {
@@ -149,5 +149,5 @@ pub fn new(
         info!("tun inbound started");
         futures::future::select(t2s, s2t).await;
         info!("tun inbound exited");
-    }))
+    }))*/
 }
