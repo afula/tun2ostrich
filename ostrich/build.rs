@@ -134,12 +134,12 @@ fn generate_mobile_bindings() {
 fn main() {
     if env::var("CARGO_FEATURE_INBOUND_TUN").is_ok() {
         let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
-        if os == "ios" || os == "android" || os == "linux" || os == "macos" {
+        if os == "ios" || os == "android" || os == "linux" || os == "macos"|| os == "windows" {
             compile_lwip();
         }
 
         if env::var("BINDINGS_GEN").is_ok()
-            && (os == "ios" || os == "android" || os == "linux" || os == "macos")
+            && (os == "ios" || os == "android" || os == "linux" || os == "macos"|| os == "windows")
         {
             generate_lwip_bindings();
         }
