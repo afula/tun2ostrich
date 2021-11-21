@@ -132,64 +132,64 @@ fn generate_mobile_bindings() {
 }
 
 fn main() {
-    if env::var("CARGO_FEATURE_INBOUND_TUN").is_ok() {
-        let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
-        if os == "ios" || os == "android" || os == "linux" || os == "macos" {
-            compile_lwip();
-        }
-
-        if env::var("BINDINGS_GEN").is_ok()
-            && (os == "ios" || os == "android" || os == "linux" || os == "macos")
-        {
-            generate_lwip_bindings();
-        }
-    }
-
-    let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
-    if os == "ios" || os == "macos" || os == "android" {
-        generate_mobile_bindings();
-    }
-
-    if env::var("PROTO_GEN").is_ok() {
-        // println!("cargo:rerun-if-changed=src/config/internal/config.proto");
-        protoc_rust::Codegen::new()
-            .out_dir("src/config/internal")
-            .inputs(&["src/config/internal/config.proto"])
-            .customize(protoc_rust::Customize {
-                expose_oneof: Some(true),
-                expose_fields: Some(true),
-                generate_accessors: Some(false),
-                lite_runtime: Some(true),
-                ..Default::default()
-            })
-            .run()
-            .expect("protoc");
-
-        // println!("cargo:rerun-if-changed=src/config/geosite.proto");
-        protoc_rust::Codegen::new()
-            .out_dir("src/config")
-            .inputs(&["src/config/geosite.proto"])
-            .customize(protoc_rust::Customize {
-                expose_oneof: Some(true),
-                expose_fields: Some(true),
-                generate_accessors: Some(false),
-                lite_runtime: Some(true),
-                ..Default::default()
-            })
-            .run()
-            .expect("protoc");
-
-        protoc_rust::Codegen::new()
-            .out_dir("src/app/outbound")
-            .inputs(&["src/app/outbound/selector_cache.proto"])
-            .customize(protoc_rust::Customize {
-                expose_oneof: Some(true),
-                expose_fields: Some(true),
-                generate_accessors: Some(false),
-                lite_runtime: Some(true),
-                ..Default::default()
-            })
-            .run()
-            .expect("protoc");
-    }
+    // if env::var("CARGO_FEATURE_INBOUND_TUN").is_ok() {
+    //     let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    //     if os == "ios" || os == "android" || os == "linux" || os == "macos" {
+    //         compile_lwip();
+    //     }
+    //
+    //     if env::var("BINDINGS_GEN").is_ok()
+    //         && (os == "ios" || os == "android" || os == "linux" || os == "macos")
+    //     {
+    //         generate_lwip_bindings();
+    //     }
+    // }
+    //
+    // let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    // if os == "ios" || os == "macos" || os == "android" {
+    //     generate_mobile_bindings();
+    // }
+    //
+    // if env::var("PROTO_GEN").is_ok() {
+    //     // println!("cargo:rerun-if-changed=src/config/internal/config.proto");
+    //     protoc_rust::Codegen::new()
+    //         .out_dir("src/config/internal")
+    //         .inputs(&["src/config/internal/config.proto"])
+    //         .customize(protoc_rust::Customize {
+    //             expose_oneof: Some(true),
+    //             expose_fields: Some(true),
+    //             generate_accessors: Some(false),
+    //             lite_runtime: Some(true),
+    //             ..Default::default()
+    //         })
+    //         .run()
+    //         .expect("protoc");
+    //
+    //     // println!("cargo:rerun-if-changed=src/config/geosite.proto");
+    //     protoc_rust::Codegen::new()
+    //         .out_dir("src/config")
+    //         .inputs(&["src/config/geosite.proto"])
+    //         .customize(protoc_rust::Customize {
+    //             expose_oneof: Some(true),
+    //             expose_fields: Some(true),
+    //             generate_accessors: Some(false),
+    //             lite_runtime: Some(true),
+    //             ..Default::default()
+    //         })
+    //         .run()
+    //         .expect("protoc");
+    //
+    //     protoc_rust::Codegen::new()
+    //         .out_dir("src/app/outbound")
+    //         .inputs(&["src/app/outbound/selector_cache.proto"])
+    //         .customize(protoc_rust::Customize {
+    //             expose_oneof: Some(true),
+    //             expose_fields: Some(true),
+    //             generate_accessors: Some(false),
+    //             lite_runtime: Some(true),
+    //             ..Default::default()
+    //         })
+    //         .run()
+    //         .expect("protoc");
+    // }
 }

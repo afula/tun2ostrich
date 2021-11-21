@@ -6,9 +6,10 @@ use log::*;
 use protobuf::Message;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
-use tun::{self, Device, TunPacket};
+use tun::{self, Device, Layer, TunPacket};
 
-use crate::proxy::tun::win::create_device;
+use crate::proxy::tun::netstack::tun_build;
+// use crate::proxy::tun::win::create_device;
 use crate::{
     app::dispatcher::Dispatcher,
     app::fake_dns::{FakeDns, FakeDnsMode},
@@ -16,8 +17,6 @@ use crate::{
     config::{Inbound, TunInboundSettings},
     option, Runner,
 };
-
-use super::netstack::NetStack;
 
 const MTU: usize = 1500;
 
@@ -32,6 +31,7 @@ pub fn new(
     if settings.fd >= 0 {
         cfg.raw_fd(settings.fd);
     } else if settings.auto {
+        // assert_eq!(settings.fd, -1, "tun-auto is not compatible with tun-fd");
         cfg.name(&*option::DEFAULT_TUN_NAME)
             .address(&*option::DEFAULT_TUN_IPV4_ADDR)
             .destination(&*option::DEFAULT_TUN_IPV4_GW)
@@ -81,18 +81,16 @@ pub fn new(
         (FakeDnsMode::Exclude, fake_dns_exclude)
     };
 
-    let tun_addr = "172.0.0.2";
-    let netmask = "255.255.255.0";
-    // let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
-    let device = create_device(tun_addr.parse()?, netmask.parse()?)?;
-    info!("Tun adapter ip address: {}", tun_addr);
-    let (mut tun_tx, mut tun_rx) = device.split();
+    cfg.layer(Layer::L3).up();
+    #[cfg(any(target_os = "linux"))]
+    cfg.platform(|tun_config| {
+        // IFF_NO_PI preventing excessive buffer reallocating
+        tun_config.packet_information(false);
+    });
 
-    if settings.auto {
-        assert!(settings.fd == -1, "tun-auto is not compatible with tun-fd");
-    }
+    tun_build(inbound.tag.clone(), &cfg, dispatcher, nat_manager,fake_dns_mode,fake_dns_filters)
 
-/*    Ok(Box::pin(async move {
+    /*    Ok(Box::pin(async move {
         let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
 
         for filter in fake_dns_filters.into_iter() {

@@ -1,5 +1,4 @@
 use cfg_if::cfg_if;
-#[cfg(unix)]
 cfg_if! {
     if #[cfg(unix)] {
         mod unix;

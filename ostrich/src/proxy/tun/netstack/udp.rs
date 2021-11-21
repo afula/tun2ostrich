@@ -4,44 +4,144 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-
 use async_trait::async_trait;
 use bytes::{BufMut, BytesMut};
 use etherparse::PacketBuilder;
-use log::trace;
-
-use tokio::sync::mpsc;
-
-use crate::local::{
-    context::ServiceContext,
-    loadbalancing::PingBalancer,
-    net::{UdpAssociationManager, UdpInboundWrite},
-    utils::to_ipv4_mapped,
-};
+use log::{debug, trace, warn};
+use crate::app::dispatcher::Dispatcher;
+use crate::app::nat_manager::{NatManager, UdpPacket};
+use crate::session::{DatagramSource, Network, Session, SocksAddr};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
+use crate::app::fake_dns::FakeDns;
+use tokio::sync::Mutex as TokioMutex;
 
 pub struct UdpTun {
-    tun_rx: mpsc::Receiver<BytesMut>,
-    manager: UdpAssociationManager<UdpTunInboundWriter>,
+    dispatcher: Arc<Dispatcher>,
+    nat_manager: Arc<NatManager>,
+    udp_tun_rx: Receiver<UdpPacket>,
+    udp_processor_tx: Sender<UdpPacket>,
+    fakedns: Arc<TokioMutex<FakeDns>>,
 }
 
 impl UdpTun {
     pub fn new(
-        context: Arc<ServiceContext>,
-        balancer: PingBalancer,
-        time_to_live: Option<Duration>,
-        capacity: Option<usize>,
+        inbound_tag: String,
+        dispatcher: Arc<Dispatcher>,
+        nat_manager: Arc<NatManager>,
+        fakedns: Arc<TokioMutex<FakeDns>>,
     ) -> UdpTun {
-        let (tun_tx, tun_rx) = mpsc::channel(64);
+        let (udp_tun_tx, udp_tun_rx) = channel(1024);
 
+        let (udp_processor_tx, mut udp_processor_rx): (Sender<UdpPacket>, Receiver<UdpPacket>) =
+            channel(1024);
+        let udp_nat_manager = nat_manager.clone();
+        let udp_fakedns = fakedns.clone();
+        tokio::spawn(async move {
+            while let Some(pkt) = udp_processor_rx.recv().await {
+                let src_addr = match pkt.src_addr {
+                    Some(a) => match a {
+                        SocksAddr::Ip(a) => a,
+                        _ => {
+                            warn!("unexpected domain addr");
+                            continue;
+                        }
+                    },
+                    None => {
+                        warn!("unexpected none src addr");
+                        continue;
+                    }
+                };
+                let dst_addr = match pkt.dst_addr {
+                    Some(a) => match a {
+                        SocksAddr::Ip(a) => a,
+                        _ => {
+                            warn!("unexpected domain addr");
+                            continue;
+                        }
+                    },
+                    None => {
+                        warn!("unexpected dst addr");
+                        continue;
+                    }
+                };
+
+                if dst_addr.port() == 53 {
+                    match fakedns.lock().await.generate_fake_response(&pkt.data) {
+                        Ok(resp) => {
+                            // send_udp(lwip_lock.clone(), &dst_addr, &src_addr, pcb, resp.as_ref());
+                            let packet = UdpPacket{
+                                data: resp,
+                                src_addr: Some(SocksAddr::Ip(src_addr)),
+                                dst_addr: Some(SocksAddr::Ip(dst_addr))
+                            };
+                            udp_tun_tx.send(packet).await.map_err(|e| anyhow::anyhow!("{:?}",e))?;
+                            continue;
+                        }
+                        Err(err) => {
+                            trace!("generate fake ip failed: {}", err);
+                        }
+                    }
+                }
+
+                // We're sending UDP packets to a fake IP, and there should be a paired domain,
+                // that said, the application connects a UDP socket with a domain address.
+                // It also means the back packets on this UDP session shall only come from a
+                // single source address.
+                let socks_dst_addr =
+                    if fakedns.lock().await.is_fake_ip(&dst_addr.ip()) {
+                    // TODO we're doing this for every packet! optimize needed
+                    // trace!("uplink querying domain for fake ip {}", &dst_addr.ip(),);
+                    if let Some(domain) = fakedns.lock().await.query_domain(&dst_addr.ip()) {
+                        SocksAddr::Domain(domain, dst_addr.port())
+                    } else {
+                        // Skip this packet. Requests targeting fake IPs are
+                        // assumed never happen in real network traffic.
+                        continue;
+                    }
+                } else {
+                    SocksAddr::Ip(dst_addr)
+                };
+
+                let dgram_src = DatagramSource::new(src_addr, None);
+                if !nat_manager.contains_key(&dgram_src).await {
+                    let sess = Session {
+                        network: Network::Udp,
+                        source: dgram_src.address,
+                        destination: socks_dst_addr.clone(),
+                        inbound_tag: inbound_tag.clone(),
+                        ..Default::default()
+                    };
+
+                    nat_manager
+                        .add_session(&sess, dgram_src, udp_tun_tx.clone())
+                        .await;
+
+                    // Note that subsequent packets on this session may have different
+                    // destination addresses.
+                    debug!(
+                        "added udp session {} -> {}:{} ({})",
+                        &dgram_src,
+                        &dst_addr.ip(),
+                        &dst_addr.port(),
+                        nat_manager.size().await,
+                    );
+                }
+
+                let pkt = UdpPacket {
+                    data: pkt.data,
+                    src_addr: Some(SocksAddr::Ip(dgram_src.address)),
+                    dst_addr: Some(socks_dst_addr),
+                };
+                nat_manager.send(&dgram_src, pkt).await;
+            }
+            Ok(()) as anyhow::Result<()>
+        });
         UdpTun {
-            tun_rx,
-            manager: UdpAssociationManager::new(
-                context,
-                UdpTunInboundWriter::new(tun_tx),
-                time_to_live,
-                capacity,
-                balancer,
-            ),
+            dispatcher,
+            nat_manager: udp_nat_manager,
+            udp_tun_rx,
+            udp_processor_tx,
+            fakedns: udp_fakedns
         }
     }
 
@@ -50,20 +150,103 @@ impl UdpTun {
         src_addr: SocketAddr,
         dst_addr: SocketAddr,
         payload: &[u8],
-    ) -> io::Result<()> {
-        trace!("UDP {} -> {} payload.size: {} bytes", src_addr, dst_addr, payload.len());
-        self.manager.send_to(src_addr, dst_addr.into(), payload).await
+    ) -> anyhow::Result<()> {
+        trace!(
+            "UDP {} -> {} payload.size: {} bytes",
+            src_addr,
+            dst_addr,
+            payload.len()
+        );
+        let packet = UdpPacket {
+            data: payload.to_vec(),
+            src_addr: Some(SocksAddr::Ip(src_addr)),
+            dst_addr: Some(SocksAddr::Ip(dst_addr)),
+        };
+        self.udp_processor_tx
+            .send(packet)
+            .await
+            .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+        Ok(())
     }
 
-    pub async fn recv_packet(&mut self) -> BytesMut {
-        match self.tun_rx.recv().await {
-            Some(b) => b,
+    pub async fn recv_packet(&mut self) -> UdpPacket {
+        match self.udp_tun_rx.recv().await {
+            Some(udp_packet) => {
+                let data = udp_packet.data;
+
+                let socks_src_addr = match udp_packet.src_addr {
+                    Some(ref a) => a.to_owned(),
+                    None => {
+                        unreachable!("unexpected none src addr");
+                    }
+                };
+                let dst_addr = match udp_packet.dst_addr {
+                    Some(ref a) => match a {
+                        SocksAddr::Ip(a) => a.to_owned(),
+                        _ => {
+                            unreachable!("unexpected domain addr");
+                        }
+                    },
+                    None => {
+                        unreachable!("unexpected dst addr");
+                    }
+                };
+                let src_addr = match socks_src_addr {
+                    SocksAddr::Ip(ref a) => a.to_owned(),
+
+                    // If the socket gives us a domain source address,
+                    // we assume there must be a paired fake IP, otherwise
+                    // we have no idea how to deal with it.
+                    SocksAddr::Domain(domain, port) => {
+                        // TODO we're doing this for every packet! optimize needed
+                        // trace!("downlink querying fake ip for domain {}", &domain);
+                        if let Some(ip) = self.fakedns.lock().await.query_fake_ip(&domain) {
+                            SocketAddr::new(ip, port)
+                        } else {
+                            unreachable!(
+                                    "unexpected domain src addr {}:{} without paired fake IP",
+                                    &domain, &port
+                                );
+                        }
+                    }
+                };
+                let packet = match (src_addr, dst_addr) {
+                    (SocketAddr::V4(peer), SocketAddr::V4(remote)) => {
+                        let builder =
+                            PacketBuilder::ipv4(remote.ip().octets(), peer.ip().octets(), 20).udp(remote.port(), peer.port());
+
+                        let packet = BytesMut::with_capacity(builder.size(data.len()));
+                        let mut packet_writer = packet.writer();
+                        builder.write(&mut packet_writer, data.as_slice()).expect("PacketBuilder::write");
+
+                        packet_writer.into_inner()
+                    }
+                    (SocketAddr::V6(peer), SocketAddr::V6(remote)) => {
+                        let builder =
+                            PacketBuilder::ipv6(remote.ip().octets(), peer.ip().octets(), 20).udp(remote.port(), peer.port());
+
+                        let packet = BytesMut::with_capacity(builder.size(data.len()));
+                        let mut packet_writer = packet.writer();
+                        builder.write(&mut packet_writer, data.as_slice()).expect("PacketBuilder::write");
+
+                        packet_writer.into_inner()
+                    }
+                    _ => {
+                        warn!("{} = {}",src_addr, dst_addr);
+                        unreachable!("recv_packet")}
+                };
+                UdpPacket{
+                    data: packet.to_vec(),
+                    src_addr: udp_packet.src_addr.to_owned(),
+                    dst_addr: udp_packet.dst_addr.to_owned()
+                }
+            },
             None => unreachable!("channel closed unexpectedly"),
         }
     }
 }
 
-#[derive(Clone)]
+/*#[derive(Clone)]
 struct UdpTunInboundWriter {
     tun_tx: mpsc::Sender<BytesMut>,
 }
@@ -130,3 +313,4 @@ impl UdpInboundWrite for UdpTunInboundWriter {
         Ok(())
     }
 }
+*/

@@ -9,16 +9,14 @@ use etherparse::TcpHeader;
 use ipnet::IpNet;
 use log::{debug, error, trace};
 use lru_time_cache::LruCache;
-
-use tokio::{net::TcpStream, sync::Mutex, task::JoinHandle, time};
+use tokio::sync::Mutex as TokioMutex;
+use crate::app::dispatcher::Dispatcher;
+use crate::app::nat_manager::NatManager;
 use tokio::net::TcpListener;
+use tokio::{net::TcpStream, sync::Mutex, task::JoinHandle, time};
+use crate::app::fake_dns::FakeDns;
 
-use crate::local::{
-    context::ServiceContext,
-    loadbalancing::PingBalancer,
-    net::AutoProxyClientStream,
-    utils::{establish_tcp_tunnel, to_ipv4_mapped},
-};
+use crate::session::{Network, Session, SocksAddr};
 
 struct TcpAddressTranslator {
     connections: LruCache<SocketAddr, TcpConnection>,
@@ -38,7 +36,9 @@ pub struct TcpTun {
     tcp_daddr: SocketAddr,
     free_addrs: Vec<IpAddr>,
     translator: Arc<Mutex<TcpAddressTranslator>>,
-    abortable: JoinHandle<io::Result<()>>,
+    abortable: JoinHandle<anyhow::Result<()>>,
+    // dispatcher: Arc<Dispatcher>,
+    nat_manager: Arc<NatManager>,
 }
 
 impl Drop for TcpTun {
@@ -48,15 +48,26 @@ impl Drop for TcpTun {
 }
 
 impl TcpTun {
-    pub async fn new(tun_network: IpNet, balancer: PingBalancer) -> io::Result<TcpTun> {
+    pub async fn new(
+        inbound_tag: String,
+        tun_network: IpNet,
+        dispatcher: Arc<Dispatcher>,
+        nat_manager: Arc<NatManager>,
+        fakedns: Arc<TokioMutex<FakeDns>>,
+    ) -> io::Result<TcpTun> {
         let mut hosts = tun_network.hosts();
         let tcp_daddr = match hosts.next() {
             Some(d) => d,
-            None => return Err(io::Error::new(ErrorKind::Other, "tun network doesn't have any hosts")),
+            None => {
+                return Err(io::Error::new(
+                    ErrorKind::Other,
+                    "tun network doesn't have any hosts",
+                ))
+            }
         };
 
         // Take up to 10 IPs as saddr for NAT allocating
-        let free_addrs = hosts.take(10).collect::<Vec<IpAddr>>();
+        let free_addrs = hosts.take(1024).collect::<Vec<IpAddr>>();
         if free_addrs.is_empty() {
             return Err(io::Error::new(
                 ErrorKind::InvalidInput,
@@ -73,7 +84,13 @@ impl TcpTun {
 
         let abortable = {
             let translator = translator.clone();
-            tokio::spawn(TcpTun::tunnel( listener, balancer, translator))
+            tokio::spawn(TcpTun::tunnel(
+                inbound_tag,
+                listener,
+                translator,
+                dispatcher,
+                fakedns
+            ))
         };
 
         Ok(TcpTun {
@@ -81,6 +98,8 @@ impl TcpTun {
             free_addrs,
             translator,
             abortable,
+            // dispatcher,
+            nat_manager,
         })
     }
 
@@ -104,7 +123,12 @@ impl TcpTun {
 
                 let addr = SocketAddr::new(self.free_addrs[addr_idx], port);
                 if !connections.contains_key(&addr) {
-                    trace!("allocated tcp addr {} for {} -> {}", addr, src_addr, dst_addr);
+                    trace!(
+                        "allocated tcp addr {} for {} -> {}",
+                        addr,
+                        src_addr,
+                        dst_addr
+                    );
 
                     // Create one in the connection map.
                     connections.insert(
@@ -175,10 +199,12 @@ impl TcpTun {
     }
 
     async fn tunnel(
+        inbound_tag: String,
         listener: TcpListener,
-        balancer: PingBalancer,
         translator: Arc<Mutex<TcpAddressTranslator>>,
-    ) -> io::Result<()> {
+        dispatcher: Arc<Dispatcher>,
+        fakedns: Arc<TokioMutex<FakeDns>>,
+    ) -> anyhow::Result<()> {
         loop {
             let (stream, peer_addr) = match listener.accept().await {
                 Ok(s) => s,
@@ -200,52 +226,51 @@ impl TcpTun {
                     }
                 }
             };
-
             debug!("establishing tcp tunnel {} -> {}", saddr, daddr);
 
-            let balancer = balancer.clone();
-            tokio::spawn(async move {
-                if let Err(err) = handle_redir_client( balancer, stream, peer_addr, daddr).await {
-                    debug!("TCP redirect client, error: {:?}", err);
+            let inbound_tag = inbound_tag.clone();
+            let dispatcher = dispatcher.clone();
+            let fakedns = fakedns.clone();
+            let mut sess = Session {
+                network: Network::Tcp,
+                source: saddr,
+                local_addr: daddr,
+                destination: SocksAddr::Ip(daddr),
+                inbound_tag,
+                ..Default::default()
+            };
+
+            if fakedns.lock().await.is_fake_ip(&daddr.ip()) {
+                if let Some(domain) = fakedns
+                    .lock()
+                    .await
+                    .query_domain(&&daddr.ip())
+                {
+                    sess.destination =
+                        SocksAddr::Domain(domain, daddr.port());
+                } else {
+                    // Although requests targeting fake IPs are assumed
+                    // never happen in real network traffic, which are
+                    // likely caused by poisoned DNS cache records, we
+                    // still have a chance to sniff the request domain
+                    // for TLS traffic in dispatcher.
+                    if daddr.port() != 443 {
+                        return Err(anyhow::anyhow!("fake ip with error: {:?}",&daddr))
+                    }
                 }
+            }
+            // tokio::spawn(async move {
+            //     if let Err(err) = handle_redir_client(balancer, stream, peer_addr, daddr).await {
+            //         debug!("TCP redirect client, error: {:?}", err);
+            //     }
+            // });
+
+            tokio::spawn(async move {
+
+                dispatcher.dispatch_tcp(&mut sess, stream).await;
             });
         }
     }
-}
-
-/// Established Client Transparent Proxy
-///
-/// This method must be called after handshaking with client (for example, socks5 handshaking)
-async fn establish_client_tcp_redir<'a>(
-    balancer: PingBalancer,
-    mut stream: TcpStream,
-    peer_addr: SocketAddr,
-    addr: &Address,
-) -> io::Result<()> {
-    let server = balancer.best_tcp_server();
-    let svr_cfg = server.server_config();
-
-    let mut remote = AutoProxyClientStream::connect(context, &server, addr).await?;
-
-    establish_tcp_tunnel(svr_cfg, &mut stream, &mut remote, peer_addr, addr).await
-}
-
-async fn handle_redir_client(
-    balancer: PingBalancer,
-    s: TcpStream,
-    peer_addr: SocketAddr,
-    mut daddr: SocketAddr,
-) -> io::Result<()> {
-    // Get forward address from socket
-    //
-    // Try to convert IPv4 mapped IPv6 address for dual-stack mode.
-    if let SocketAddr::V6(ref a) = daddr {
-        if let Some(v4) = to_ipv4_mapped(a.ip()) {
-            daddr = SocketAddr::new(IpAddr::from(v4), a.port());
-        }
-    }
-    let target_addr = Address::from(daddr);
-    establish_client_tcp_redir( balancer, s, peer_addr, &target_addr).await
 }
 
 #[derive(Debug, Eq, PartialEq)]
