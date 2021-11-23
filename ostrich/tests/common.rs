@@ -107,7 +107,7 @@ pub fn test_configs(configs: Vec<String>, socks_addr: &str, socks_port: u16) {
         };
         let config = ostrich::config::json::to_internal(&mut config).unwrap();
         let dns_client = Arc::new(RwLock::new(
-            ostrich::app::dns_client::DnsClient::new(&config.dns).unwrap(),
+            ostrich::app::dns_client_old::DnsClient::new(&config.dns).unwrap(),
         ));
         let outbound_manager =
             ostrich::app::outbound::manager::OutboundManager::new(&config.outbounds, dns_client)

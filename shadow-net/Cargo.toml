@@ -1,0 +1,18 @@
+[package]
+name = "shadow-net"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pin-project = "1.0"
+socket2 = { version = "0.4", features = ["all"] }
+log = "0.4.14"
+futures = "0.3"
+cfg-if = "1"
+tokio = { version = "1.9.0", features = ["io-util", "macros", "net", "parking_lot", "process", "rt", "sync", "time"] }
+
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["mswsock", "winsock2", "netioapi"] }

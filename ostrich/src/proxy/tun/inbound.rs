@@ -88,7 +88,14 @@ pub fn new(
         tun_config.packet_information(false);
     });
 
-    tun_build(inbound.tag.clone(), &cfg, dispatcher, nat_manager,fake_dns_mode,fake_dns_filters)
+    tun_build(
+        inbound.tag.clone(),
+        &cfg,
+        dispatcher,
+        nat_manager,
+        fake_dns_mode,
+        fake_dns_filters,
+    )
 
     /*    Ok(Box::pin(async move {
         let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));

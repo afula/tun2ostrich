@@ -50,9 +50,9 @@ fn log_request(
 }
 
 pub struct Dispatcher {
-    outbound_manager: Arc<RwLock<OutboundManager>>,
+    pub outbound_manager: Arc<RwLock<OutboundManager>>,
     router: Arc<RwLock<Router>>,
-    dns_client: SyncDnsClient,
+    pub dns_client: SyncDnsClient,
 }
 
 impl Dispatcher {

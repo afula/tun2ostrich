@@ -1,11 +1,11 @@
 {
   "log": {
-    "level": "debug",
+    "level": "trace",
     "output": "console"
   },
   "dns": {
     "servers": [
-      "108.61.199.26:2053"
+      "8.8.8.8"
     ],
     "hosts": {
         "walkonbit.site":[

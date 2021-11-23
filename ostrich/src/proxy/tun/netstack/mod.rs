@@ -7,6 +7,10 @@ use std::{
     time::Duration,
 };
 
+use crate::app::dispatcher::Dispatcher;
+use crate::app::fake_dns::{FakeDns, FakeDnsMode};
+use crate::app::nat_manager::{NatManager, UdpPacket};
+use crate::Runner;
 use byte_string::ByteStr;
 use bytes::BytesMut;
 use etherparse::{IpHeader, PacketHeaders, ReadError, TransportHeader};
@@ -14,12 +18,8 @@ use futures::future;
 use ipnet::{IpNet, Ipv4Net};
 use log::{error, info, trace, warn};
 use protobuf::RepeatedField;
-use tokio::sync::Mutex as TokioMutex;
-use crate::app::dispatcher::Dispatcher;
-use crate::app::fake_dns::{FakeDns, FakeDnsMode};
-use crate::app::nat_manager::{NatManager, UdpPacket};
-use crate::Runner;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::sync::Mutex as TokioMutex;
 use tun::{AsyncDevice, Configuration as TunConfiguration, Device, Error as TunError, Layer};
 
 use self::{
@@ -38,7 +38,7 @@ pub fn tun_build(
     dispatcher: Arc<Dispatcher>,
     nat_manager: Arc<NatManager>,
     fake_dns_mode: FakeDnsMode,
-    fake_dns_filters: RepeatedField<String>
+    fake_dns_filters: RepeatedField<String>,
 ) -> anyhow::Result<Runner> {
     let device = match tun::create_as_async(tun_config) {
         Ok(d) => d,
@@ -90,7 +90,6 @@ pub fn tun_build(
         Ipv4Net::new(tun_address, tun_netmask_u32.leading_ones() as u8).expect("Ipv4Net::new");
 
     Ok(Box::pin(async move {
-
         let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
 
         for filter in fake_dns_filters.into_iter() {
@@ -104,11 +103,16 @@ pub fn tun_build(
                 tun_network.into(),
                 dispatcher.clone(),
                 nat_manager.clone(),
-                fakedns.clone()
+                fakedns.clone(),
             )
             .await
             .unwrap(),
-            udp: UdpTun::new(inbound_tag.clone(), dispatcher.clone(), nat_manager.clone(),fakedns),
+            udp: UdpTun::new(
+                inbound_tag.clone(),
+                dispatcher.clone(),
+                nat_manager.clone(),
+                fakedns,
+            ),
         };
         tun.run().await.unwrap();
     }))
@@ -155,7 +159,7 @@ impl Tun {
                     }
 
                     let packet = &mut packet_buffer[IFF_PI_PREFIX_LEN..n];
-                    trace!("[TUN] received IP packet {:?}", ByteStr::new(packet));
+                    // trace!("[TUN] received IP packet {:?}", ByteStr::new(packet));
 
                     if self.handle_packet(packet).await? {
                         self.device.write_all(&packet_buffer[..n]).await?;

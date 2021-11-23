@@ -5,16 +5,16 @@ use std::{
     time::Duration,
 };
 
+use crate::app::dispatcher::Dispatcher;
+use crate::app::fake_dns::FakeDns;
+use crate::app::nat_manager::NatManager;
 use etherparse::TcpHeader;
 use ipnet::IpNet;
 use log::{debug, error, trace};
 use lru_time_cache::LruCache;
-use tokio::sync::Mutex as TokioMutex;
-use crate::app::dispatcher::Dispatcher;
-use crate::app::nat_manager::NatManager;
 use tokio::net::TcpListener;
+use tokio::sync::Mutex as TokioMutex;
 use tokio::{net::TcpStream, sync::Mutex, task::JoinHandle, time};
-use crate::app::fake_dns::FakeDns;
 
 use crate::session::{Network, Session, SocksAddr};
 
@@ -56,7 +56,7 @@ impl TcpTun {
         fakedns: Arc<TokioMutex<FakeDns>>,
     ) -> io::Result<TcpTun> {
         let mut hosts = tun_network.hosts();
-        let tcp_daddr = match hosts.next() {
+        let tcp_daddr = match hosts.nth(1) {
             Some(d) => d,
             None => {
                 return Err(io::Error::new(
@@ -67,7 +67,9 @@ impl TcpTun {
         };
 
         // Take up to 10 IPs as saddr for NAT allocating
-        let free_addrs = hosts.take(1024).collect::<Vec<IpAddr>>();
+        let mut free_addrs = hosts.take(256).collect::<Vec<IpAddr>>();
+        debug!("tcp_daddr: {:?}", &tcp_daddr);
+        debug!("before: {:?}", &free_addrs);
         if free_addrs.is_empty() {
             return Err(io::Error::new(
                 ErrorKind::InvalidInput,
@@ -89,7 +91,7 @@ impl TcpTun {
                 listener,
                 translator,
                 dispatcher,
-                fakedns
+                fakedns,
             ))
         };
 
@@ -164,7 +166,10 @@ impl TcpTun {
                     match connections.get_mut(&dst_addr) {
                         Some(c) => (c, true),
                         None => {
-                            debug!("unknown tcp connection {} -> {}", src_addr, dst_addr);
+                            debug!(
+                                "unknown tcp connection {} -> {}, tcp_header {:?}",
+                                src_addr, dst_addr, &tcp_header
+                            );
                             return Ok(None);
                         }
                     }
@@ -173,10 +178,10 @@ impl TcpTun {
         };
 
         let (trans_saddr, trans_daddr) = if is_reply {
-            trace!("TCP {} <- {} {:?}", conn.saddr, conn.daddr, tcp_header);
+            // trace!("TCP {} <- {} {:?}", conn.saddr, conn.daddr, tcp_header);
             (conn.daddr, conn.saddr)
         } else {
-            trace!("TCP {} -> {} {:?}", conn.saddr, conn.daddr, tcp_header);
+            // trace!("TCP {} -> {} {:?}", conn.saddr, conn.daddr, tcp_header);
             (conn.faked_saddr, self.tcp_daddr)
         };
 
@@ -240,14 +245,9 @@ impl TcpTun {
                 ..Default::default()
             };
 
-            if fakedns.lock().await.is_fake_ip(&daddr.ip()) {
-                if let Some(domain) = fakedns
-                    .lock()
-                    .await
-                    .query_domain(&&daddr.ip())
-                {
-                    sess.destination =
-                        SocksAddr::Domain(domain, daddr.port());
+            /*            if fakedns.lock().await.is_fake_ip(&daddr.ip()) {
+                if let Some(domain) = fakedns.lock().await.query_domain(&&daddr.ip()) {
+                    sess.destination = SocksAddr::Domain(domain, daddr.port());
                 } else {
                     // Although requests targeting fake IPs are assumed
                     // never happen in real network traffic, which are
@@ -255,10 +255,10 @@ impl TcpTun {
                     // still have a chance to sniff the request domain
                     // for TLS traffic in dispatcher.
                     if daddr.port() != 443 {
-                        return Err(anyhow::anyhow!("fake ip with error: {:?}",&daddr))
+                        return Err(anyhow::anyhow!("fake ip with error: {:?}", &daddr));
                     }
                 }
-            }
+            }*/
             // tokio::spawn(async move {
             //     if let Err(err) = handle_redir_client(balancer, stream, peer_addr, daddr).await {
             //         debug!("TCP redirect client, error: {:?}", err);
@@ -266,7 +266,6 @@ impl TcpTun {
             // });
 
             tokio::spawn(async move {
-
                 dispatcher.dispatch_tcp(&mut sess, stream).await;
             });
         }

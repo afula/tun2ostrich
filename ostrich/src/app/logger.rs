@@ -83,3 +83,30 @@ pub fn setup_logger(config: &config::Log) -> Result<()> {
 
     Ok(())
 }
+
+pub fn setup_logger_debug(config: &config::Log) -> Result<()> {
+    let loglevel = match config.level {
+        config::Log_Level::TRACE => log::LevelFilter::Trace,
+        config::Log_Level::DEBUG => log::LevelFilter::Debug,
+        config::Log_Level::INFO => log::LevelFilter::Info,
+        config::Log_Level::WARN => log::LevelFilter::Warn,
+        config::Log_Level::ERROR => log::LevelFilter::Error,
+    };
+    use std::io::Write;
+    env_logger::Builder::new()
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "{}:{} {} [{}] - {}",
+                record.file().unwrap_or("unknown"),
+                record.line().unwrap_or(0),
+                chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
+                record.level(),
+                record.args()
+            )
+        })
+        // .filter(None, loglevel)
+        .filter(Some("ostrich"), loglevel)
+        .init();
+    Ok(())
+}

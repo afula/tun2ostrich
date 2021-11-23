@@ -1,5 +1,6 @@
-use std::collections::HashMap;
-use std::net::{IpAddr, SocketAddr};
+use std::collections::{HashMap, HashSet};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::ops::Add;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -19,6 +20,14 @@ use trust_dns_proto::{
 };
 
 use crate::{option, proxy::UdpConnector};
+use trust_dns_resolver::{
+    config::{
+        LookupIpStrategy, NameServerConfig, NameServerConfigGroup, Protocol, ResolverConfig,
+        ResolverOpts,
+    },
+    name_server::{GenericConnection, GenericConnectionProvider, TokioRuntime},
+    AsyncResolver, TokioAsyncResolver, TokioHandle,
+};
 
 #[derive(Clone, Debug)]
 struct CacheEntry {
@@ -32,13 +41,15 @@ pub struct DnsClient {
     hosts: HashMap<String, Vec<IpAddr>>,
     ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
     ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
+    resolvers: AsyncResolver<GenericConnection, GenericConnectionProvider<TokioRuntime>>,
+    trustable_resolver: AsyncResolver<GenericConnection, GenericConnectionProvider<TokioRuntime>>,
 }
 
 impl DnsClient {
     fn load_servers(dns: &crate::config::Dns) -> Result<Vec<SocketAddr>> {
         let mut servers = Vec::new();
         for server in dns.servers.iter() {
-            servers.push(SocketAddr::new(server.parse::<IpAddr>()?, 53));
+            servers.push(server.parse::<SocketAddr>()?);
         }
         if servers.is_empty() {
             return Err(anyhow!("no dns servers"));
@@ -78,12 +89,83 @@ impl DnsClient {
         let ipv6_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
             *option::DNS_CACHE_SIZE,
         )));
+        let options = ResolverOpts::default();
+        let built_in_nameservers: Vec<SocketAddr> = vec![
+            // Cloudflare
+            "1.1.1.1:53",
+            "1.0.0.1:53",
+            // Google
+            "8.8.8.8:53",
+            "8.8.4.4:53",
+            // Quad9
+            "9.9.9.9:53",
+            "149.112.112.112:53",
+            // OpenDNS
+            "208.67.222.222:53",
+            "208.67.220.220:53",
+            // Verisign
+            "64.6.64.6:53",
+            "64.6.65.6:53",
+            // UncensoredDNS
+            "91.239.100.100:53",
+            "89.233.43.71:53",
+            // dns.watch
+            "84.200.69.80:53",
+            "84.200.70.40:53",
+        ]
+        .iter()
+        .map(|server| {
+            server
+                .parse::<SocketAddr>()
+                .expect(format!("can not parse ip:{}", &server).as_str())
+        })
+        .collect();
 
+        // Create resolvers
+        let mut nameservers;
+
+        if !servers.is_empty() {
+            nameservers = servers.clone();
+        } else {
+            nameservers = built_in_nameservers.clone();
+        }
+
+        let resolvers = {
+            /*            #[cfg(feature = "dns-over-tls")]
+            {
+                let mut resolver_option = ResolverOpts::default();
+                resolver_option.try_tcp_on_error = true;
+                let resolver_config = ResolverConfig::from_parts(
+                    None,
+                    vec![],
+                    NameServerConfigGroup::from_ips_tls(
+                        // &[IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1))],
+                        &[IpAddr::V4(Ipv4Addr::new(108, 61, 199, 26))],
+                        2053,
+                        // "cloudflare-dns.com".to_string(),
+                        "walkonbit.site".to_string(),
+                        true,
+                    )
+                );
+
+                TokioAsyncResolver::new(
+                    resolver_config,
+                    resolver_option,
+                    TokioHandle,
+                )?
+            }
+            #[cfg(not(feature = "dns-over-tls"))]*/
+            return_tokio_asyncresolver(nameservers, options)
+        };
+
+        let trustable_resolver = return_tokio_asyncresolver(built_in_nameservers, options);
         Ok(DnsClient {
             servers,
             hosts,
             ipv4_cache,
             ipv6_cache,
+            resolvers,
+            trustable_resolver,
         })
     }
 
@@ -393,107 +475,72 @@ impl DnsClient {
                 }
             }
         }
-
-        let mut fqdn = host.to_owned();
-        fqdn.push('.');
-        let name = match Name::from_str(&fqdn) {
-            Ok(n) => n,
-            Err(e) => return Err(anyhow!("invalid domain name [{}]: {}", host, e)),
-        };
-
-        let mut query_tasks = Vec::new();
-
-        // TODO reduce boilerplates
-        match (*crate::option::ENABLE_IPV6, *crate::option::PREFER_IPV6) {
-            (true, true) => {
-                let msg = Self::new_query(name.clone(), RecordType::AAAA);
-                let msg_buf = match msg.to_vec() {
-                    Ok(b) => b,
-                    Err(e) => return Err(anyhow!("encode message to buffer failed: {}", e)),
-                };
-                let mut tasks = Vec::new();
-                for server in &self.servers {
-                    let t = self.query_task(msg_buf.clone(), host, server);
-                    tasks.push(Box::pin(t));
-                }
-                let query_task = select_ok(tasks.into_iter());
-                query_tasks.push(query_task);
-
-                let msg = Self::new_query(name.clone(), RecordType::A);
-                let msg_buf = match msg.to_vec() {
-                    Ok(b) => b,
-                    Err(e) => return Err(anyhow!("encode message to buffer failed: {}", e)),
-                };
-                let mut tasks = Vec::new();
-                for server in &self.servers {
-                    let t = self.query_task(msg_buf.clone(), host, server);
-                    tasks.push(Box::pin(t));
-                }
-                let query_task = select_ok(tasks.into_iter());
-                query_tasks.push(query_task);
-            }
-            (true, false) => {
-                let msg = Self::new_query(name.clone(), RecordType::A);
-                let msg_buf = match msg.to_vec() {
-                    Ok(b) => b,
-                    Err(e) => return Err(anyhow!("encode message to buffer failed: {}", e)),
-                };
-                let mut tasks = Vec::new();
-                for server in &self.servers {
-                    let t = self.query_task(msg_buf.clone(), host, server);
-                    tasks.push(Box::pin(t));
-                }
-                let query_task = select_ok(tasks.into_iter());
-                query_tasks.push(query_task);
-
-                let msg = Self::new_query(name.clone(), RecordType::AAAA);
-                let msg_buf = match msg.to_vec() {
-                    Ok(b) => b,
-                    Err(e) => return Err(anyhow!("encode message to buffer failed: {}", e)),
-                };
-                let mut tasks = Vec::new();
-                for server in &self.servers {
-                    let t = self.query_task(msg_buf.clone(), host, server);
-                    tasks.push(Box::pin(t));
-                }
-                let query_task = select_ok(tasks.into_iter());
-                query_tasks.push(query_task);
-            }
-            _ => {
-                let msg = Self::new_query(name.clone(), RecordType::A);
-                let msg_buf = match msg.to_vec() {
-                    Ok(b) => b,
-                    Err(e) => return Err(anyhow!("encode message to buffer failed: {}", e)),
-                };
-                let mut tasks = Vec::new();
-                for server in &self.servers {
-                    let t = self.query_task(msg_buf.clone(), host, server);
-                    tasks.push(Box::pin(t));
-                }
-                let query_task = select_ok(tasks.into_iter());
-                query_tasks.push(query_task);
-            }
-        }
-
         let mut ips = Vec::new();
-        let mut last_err = None;
 
-        for v in futures::future::join_all(query_tasks).await {
-            match v {
-                Ok(mut v) => {
-                    self.cache_insert(host, v.0.clone()).await;
-                    ips.append(&mut v.0.ips);
-                }
-                Err(e) => last_err = Some(anyhow!("all dns servers failed, last error: {}", e)),
-            }
+        let resolver_fut = self.resolvers.lookup_ip(host.clone() + ".");
+        let trustable_resolver_fut = self.trustable_resolver.lookup_ip(host.clone() + ".");
+
+        if let Ok(ip) = resolver_fut.await {
+            let mut v = ip.iter().collect::<Vec<IpAddr>>();
+            log::debug!("customize resolver lookup result: {:?} - {:?}", host, v);
+            self.cache_insert(
+                host,
+                CacheEntry {
+                    ips: v.clone(),
+                    deadline: Instant::now().add(Duration::from_secs(u64::from(MAX_TTL))),
+                },
+            )
+            .await;
+            ips.append(&mut v);
+        } else if let Ok(ip) = trustable_resolver_fut.await {
+            let mut v = ip.iter().collect::<Vec<IpAddr>>();
+            log::debug!("builtin resolver lookup result: {:?} - {:?}", host, v);
+            self.cache_insert(
+                host,
+                CacheEntry {
+                    ips: v.clone(),
+                    deadline: Instant::now().add(Duration::from_secs(u64::from(MAX_TTL))),
+                },
+            )
+            .await;
+            ips.append(&mut v);
         }
 
         if !ips.is_empty() {
             return Ok(ips);
         }
 
-        Err(last_err.unwrap_or_else(|| anyhow!("could not resolve to any address")))
+        Err(anyhow!("{:?} could not resolve to any address", host))
     }
 }
 
 impl UdpConnector for DnsClient {}
+
+const MAX_TTL: u32 = 86400_u32;
+pub fn return_tokio_asyncresolver(
+    nameservers: Vec<SocketAddr>,
+    options: ResolverOpts,
+) -> AsyncResolver<GenericConnection, GenericConnectionProvider<TokioRuntime>> {
+    let mut name_servers = NameServerConfigGroup::with_capacity(nameservers.len() * 2);
+    name_servers.extend(nameservers.into_iter().flat_map(|socket_addr| {
+        std::iter::once(NameServerConfig {
+            socket_addr,
+            protocol: Protocol::Udp,
+            tls_dns_name: None,
+            trust_nx_responses: false,
+            tls_config: None,
+        })
+        .chain(std::iter::once(NameServerConfig {
+            socket_addr,
+            protocol: Protocol::Tcp,
+            tls_dns_name: None,
+            trust_nx_responses: false,
+            tls_config: None,
+        }))
+    }));
+    TokioAsyncResolver::tokio(
+        ResolverConfig::from_parts(None, vec![], name_servers),
+        options,
+    )
+    .unwrap()
+}
