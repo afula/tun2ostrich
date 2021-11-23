@@ -151,7 +151,7 @@ pub async fn set_route_configuration(device: &TunDevice) -> io::Result<()> {
             rtmsg.netmask.sin_len = mem::size_of_val(&rtmsg.netmask) as u8;
         }
 
-        trace!("add route {:?}", rtmsg);
+        // trace!("add route {:?}", rtmsg);
 
         let fd = libc::socket(libc::PF_ROUTE, libc::SOCK_RAW, 0);
         if fd < 0 {
