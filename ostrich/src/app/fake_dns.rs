@@ -172,14 +172,14 @@ impl FakeDns {
         println!("testing outbound {}", &handler.tag());*/
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)), 53);
         let start = tokio::time::Instant::now();
-/*        let sess = Session {
+        /*        let sess = Session {
             destination: SocksAddr::Ip(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)), 53)),
             ..Default::default()
         };*/
 
         // new socket to communicate with the target.
         debug!("before new_udp_socket");
-        let socket = match        self.new_udp_socket(&addr).await{
+        let socket = match self.new_udp_socket(&addr).await {
             Ok(s) => s,
             Err(e) => {
                 // sessions.lock().await.remove(&raddr);

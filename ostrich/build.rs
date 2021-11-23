@@ -132,7 +132,7 @@ fn generate_mobile_bindings() {
 }
 
 fn main() {
-/*    if env::var("CARGO_FEATURE_INBOUND_TUN").is_ok() {
+    /*    if env::var("CARGO_FEATURE_INBOUND_TUN").is_ok() {
         let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
         if os == "ios" || os == "android" || os == "linux" || os == "macos" {
             compile_lwip();

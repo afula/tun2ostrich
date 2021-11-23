@@ -48,7 +48,7 @@ struct rt_msghdr {
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
-#[derive( Clone, Copy)]
+#[derive(Clone, Copy)]
 struct rt_msg {
     rtm: rt_msghdr,
     dst: libc::sockaddr_in,
