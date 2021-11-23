@@ -3,7 +3,8 @@ members = [
     "ostrich",
     "ostrich-bin",
     "ostrich-ffi",
-    "shadow-net"
+    "shadow-net",
+    "rust-tun"
 ]
 default-members = ["ostrich-bin"]
 

@@ -1,5 +1,7 @@
 #[cfg(unix)]
 use std::os::unix::io::RawFd;
+#[cfg(any(target_os = "ios", target_os = "android"))]
+use std::str::FromStr;
 use std::{
     io::{self, Cursor, ErrorKind},
     net::{Ipv4Addr, Ipv6Addr, SocketAddr},
@@ -45,7 +47,14 @@ pub fn tun_build(
         Err(TunError::Io(err)) => return Err(anyhow::anyhow!("{:?}", err)),
         Err(err) => return Err(anyhow::anyhow!("{:?}", err)),
     };
+    #[cfg(any(target_os = "ios", target_os = "android"))]
+    let tun_address = Ipv4Addr::from_str("172.16.0.2").unwrap();
+    #[cfg(any(target_os = "ios", target_os = "android"))]
+    let tun_netmask = Ipv4Addr::from_str("255.255.255.0").unwrap();
+    #[cfg(any(target_os = "ios", target_os = "android"))]
+    let tun_name = "utun7";
 
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     let tun_address = match device.get_ref().address() {
         Ok(t) => t,
         Err(err) => {
@@ -57,6 +66,7 @@ pub fn tun_build(
         }
     };
 
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     let tun_netmask = match device.get_ref().netmask() {
         Ok(m) => m,
         Err(err) => {
@@ -67,7 +77,7 @@ pub fn tun_build(
             return Err(anyhow::anyhow!("{:?}", err));
         }
     };
-
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     let tun_name = device.get_ref().name();
 
     trace!(
@@ -126,9 +136,12 @@ pub struct Tun {
 
 impl Tun {
     pub async fn run(mut self) -> anyhow::Result<()> {
+        #[cfg(any(target_os = "ios", target_os = "android"))]
+        let mtu = 1500;
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
         let mtu = self.device.get_ref().mtu().expect("mtu");
         assert!(mtu > 0 && mtu as usize > IFF_PI_PREFIX_LEN);
-
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
         info!(
             "tun device {}, address {}, netmask {}, mtu {}",
             self.device.get_ref().name(),

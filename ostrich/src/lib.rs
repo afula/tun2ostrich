@@ -250,7 +250,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         .ok_or_else(|| Error::Config(anyhow!("empty log setting")))?;
     static ONCE: Once = Once::new();
     ONCE.call_once(move || {
-        app::logger::setup_logger_debug(log).expect("setup logger failed");
+        app::logger::setup_logger(log).expect("setup logger failed");
     });
 
     let rt = new_runtime()?;

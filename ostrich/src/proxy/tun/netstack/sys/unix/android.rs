@@ -7,7 +7,7 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tun::platform::Device as TunDevice;
 
 /// Packet Information length in bytes
-pub const IFF_PI_PREFIX_LEN: usize = 4;
+pub const IFF_PI_PREFIX_LEN: usize = 0;
 
 /// Prepending Packet Information
 ///
@@ -16,7 +16,7 @@ pub const IFF_PI_PREFIX_LEN: usize = 4;
 /// | Flags (0)       | Protocol        |
 /// +--------+--------+--------+--------+
 /// ```
-pub async fn write_packet_with_pi<W: AsyncWrite + Unpin>(
+/*pub async fn write_packet_with_pi<W: AsyncWrite + Unpin>(
     writer: &mut W,
     packet: &[u8],
 ) -> io::Result<()> {
@@ -42,25 +42,32 @@ pub async fn write_packet_with_pi<W: AsyncWrite + Unpin>(
     let protocol_bytes = (protocol as u16).to_be_bytes();
     protocol_buf.copy_from_slice(&protocol_bytes);
 
-    let bufs = [IoSlice::new(&header), IoSlice::new(packet)];
-    let n = writer.write_vectored(&bufs).await?;
+    // let bufs = [IoSlice::new(&header), IoSlice::new(packet)];
+    // let n = writer.write_vectored(&bufs).await?;
+    let m = writer.write(&header).await?;
+    let n = writer.write(packet).await?;
 
     // Packets must be written together with the header
-    if n != header.len() + packet.len() {
+    if (m + n) != (header.len() + packet.len()) {
         return Err(io::Error::new(
             ErrorKind::Other,
             format!(
                 "write_vectored header {} bytes, packet {} bytes, but sent {} bytes",
                 header.len(),
                 packet.len(),
-                n
+                (m + n)
             ),
         ));
     }
 
     Ok(())
+}*/
+pub async fn write_packet_with_pi<W: AsyncWrite + Unpin>(
+    writer: &mut W,
+    packet: &[u8],
+) -> io::Result<()> {
+    writer.write_all(packet).await
 }
-
 /// Set platform specific route configuration
 pub async fn set_route_configuration(_device: &TunDevice) -> io::Result<()> {
     Ok(())

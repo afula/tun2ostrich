@@ -1,7 +1,7 @@
 use crate::config;
 
 use anyhow::{anyhow, Result};
-
+#[cfg(any(target_os = "ios"))]
 pub fn setup_logger(config: &config::Log) -> Result<()> {
     let loglevel = match config.level {
         config::Log_Level::TRACE => log::LevelFilter::Trace,
@@ -83,8 +83,8 @@ pub fn setup_logger(config: &config::Log) -> Result<()> {
 
     Ok(())
 }
-
-pub fn setup_logger_debug(config: &config::Log) -> Result<()> {
+#[cfg(any(target_os = "ios", target_os = "linux", target_os = "macos"))]
+pub fn setup_logger(config: &config::Log) -> Result<()> {
     let loglevel = match config.level {
         config::Log_Level::TRACE => log::LevelFilter::Trace,
         config::Log_Level::DEBUG => log::LevelFilter::Debug,
@@ -108,5 +108,41 @@ pub fn setup_logger_debug(config: &config::Log) -> Result<()> {
         // .filter(None, loglevel)
         .filter(Some("ostrich"), loglevel)
         .init();
+    Ok(())
+}
+#[cfg(target_os = "android")]
+pub fn setup_logger(config: &config::Log) -> Result<()> {
+    use android_logger::{Config, FilterBuilder};
+    use log::Level;
+
+    let loglevel = match config.level {
+        config::Log_Level::TRACE => Level::Trace,
+        config::Log_Level::DEBUG => Level::Debug,
+        config::Log_Level::INFO => Level::Info,
+        config::Log_Level::WARN => Level::Warn,
+        config::Log_Level::ERROR => Level::Error,
+    };
+    android_logger::init_once(
+        Config::default()
+            .with_min_level(loglevel) // limit log level
+            .with_tag("ostrich")
+            .format(|f, record| {
+                write!(
+                    f,
+                    "ostrich:{}:{} {} [{}] - {}",
+                    chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
+                    record.file().unwrap_or("unknown"),
+                    record.line().unwrap_or(0),
+                    record.level(),
+                    record.args()
+                )
+            }), // logs will show under mytag tag
+                /*            .with_filter(
+                    // configure messages for specific crate
+                    FilterBuilder::new()
+                        .parse("debug,hello::crate=error")
+                        .build(),
+                )*/
+    );
     Ok(())
 }
