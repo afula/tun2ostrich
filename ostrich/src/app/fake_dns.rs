@@ -3,7 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
 use crate::app::dispatcher::Dispatcher;
-use crate::proxy::UdpOutboundHandler;
+use crate::proxy::{new_udp_socket, UdpConnector, UdpOutboundHandler};
 use crate::session::{Session, SocksAddr};
 use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, ByteOrder};
@@ -34,7 +34,7 @@ pub struct FakeDns {
     filters: Vec<String>,
     mode: FakeDnsMode,
 }
-
+impl UdpConnector for FakeDns {}
 impl FakeDns {
     pub fn new(mode: FakeDnsMode) -> Self {
         let min_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 0, 0));
@@ -170,30 +170,29 @@ impl FakeDns {
             return  Err(anyhow!("outbound {} not found", tag));;
         };
         println!("testing outbound {}", &handler.tag());*/
-
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)), 53);
         let start = tokio::time::Instant::now();
-        let sess = Session {
+/*        let sess = Session {
             destination: SocksAddr::Ip(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)), 53)),
             ..Default::default()
-        };
+        };*/
 
         // new socket to communicate with the target.
-        let socket = match dispatcher.dispatch_udp(&sess).await {
+        debug!("before new_udp_socket");
+        let socket = match        self.new_udp_socket(&addr).await{
             Ok(s) => s,
             Err(e) => {
                 // sessions.lock().await.remove(&raddr);
                 return Err(anyhow!("dispatch udp error {:?}", e));
             }
         };
-
-        let addr = SocksAddr::Ip(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8)), 53));
-
-        let (mut recv, mut send) = socket.split();
-        if let Err(e) = send.send_to(&request, &addr).await {
+        debug!("after new_udp_socket");
+        // let (mut recv, mut send) = socket.split();
+        if let Err(e) = socket.send_to(&request, &addr).await {
             debug!("send message failed: {}", e);
         }
         let mut buf = [0u8; 1500];
-        match recv.recv_from(&mut buf).await {
+        match socket.recv_from(&mut buf).await {
             Ok((i, _)) => {
                 let resp = &buf[..i];
                 let elapsed = tokio::time::Instant::now().duration_since(start);
