@@ -136,7 +136,7 @@ pub fn setup_logger(config: &config::Log) -> Result<()> {
                     record.level(),
                     record.args()
                 )
-            }), // logs will show under mytag tag
+            }).with_filter(FilterBuilder::new().filter(Some("ostrich"), loglevel.to_level_filter()).build()), // logs will show under mytag tag
                 /*            .with_filter(
                     // configure messages for specific crate
                     FilterBuilder::new()
