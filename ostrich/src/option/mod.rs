@@ -74,7 +74,7 @@ lazy_static! {
 
     /// Downlink timeout after uplink EOF.
     pub static ref TCP_DOWNLINK_TIMEOUT: u64 = {
-        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 4)
+        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 60)
     };
 
     /// Buffer size for uplink and downlink connections, in KB.

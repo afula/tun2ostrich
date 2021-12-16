@@ -1,10 +1,8 @@
 use anyhow::{anyhow, Result};
+use indexmap::{map::Values, IndexMap};
 use log::*;
 use protobuf::Message;
-use std::{
-    collections::{hash_map, HashMap},
-    convert::From,
-};
+use std::convert::From;
 /*#[cfg(feature = "outbound-chain")]
 use crate::proxy::chain;
 #[cfg(feature = "outbound-failover")]
@@ -36,7 +34,7 @@ use crate::{
 // use super::selector::OutboundSelector;
 
 pub struct OutboundManager {
-    handlers: HashMap<String, AnyOutboundHandler>,
+    handlers: IndexMap<String, AnyOutboundHandler>,
     // external_handlers: super::plugin::ExternalHandlers,
     // selectors: Arc<super::Selectors>,
     default_handler: Option<String>,
@@ -48,7 +46,7 @@ impl OutboundManager {
     fn load_handlers(
         outbounds: &protobuf::RepeatedField<Outbound>,
         // dns_client: SyncDnsClient,
-        handlers: &mut HashMap<String, AnyOutboundHandler>,
+        handlers: &mut IndexMap<String, AnyOutboundHandler>,
         // external_handlers: &mut super::plugin::ExternalHandlers,
         default_handler: &mut Option<String>,
         // abort_handles: &mut Vec<AbortHandle>,
@@ -122,18 +120,18 @@ impl OutboundManager {
         // dns_client: SyncDnsClient,
     ) -> Result<()> {
         /*        // Save outound select states.
-                let mut selected_outbounds = HashMap::new();
+                let mut selected_outbounds = IndexMap::new();
                 for (k, v) in self.selectors.iter() {
                     selected_outbounds.insert(k.to_owned(), v.read().await.get_selected_tag());
                 }
         */
         // Load new outbounds.
-        let mut handlers: HashMap<String, AnyOutboundHandler> = HashMap::new();
+        let mut handlers: IndexMap<String, AnyOutboundHandler> = IndexMap::new();
 
         // let mut external_handlers = super::plugin::ExternalHandlers::new();
         let mut default_handler: Option<String> = None;
         // let mut abort_handles: Vec<AbortHandle> = Vec::new();
-        // let mut selectors: super::Selectors = HashMap::new();
+        // let mut selectors: super::Selectors = IndexMap::new();
         for _i in 0..4 {
             Self::load_handlers(
                 outbounds,
@@ -179,11 +177,11 @@ impl OutboundManager {
         outbounds: &protobuf::RepeatedField<Outbound>,
         // dns_client: SyncDnsClient,
     ) -> Result<Self> {
-        let mut handlers: HashMap<String, AnyOutboundHandler> = HashMap::new();
+        let mut handlers: IndexMap<String, AnyOutboundHandler> = IndexMap::new();
         // let mut external_handlers = super::plugin::ExternalHandlers::new();
         let mut default_handler: Option<String> = None;
         // let mut abort_handles: Vec<AbortHandle> = Vec::new();
-        // let mut selectors: super::Selectors = HashMap::new();
+        // let mut selectors: super::Selectors = IndexMap::new();
         for _i in 0..4 {
             Self::load_handlers(
                 outbounds,
@@ -233,7 +231,7 @@ impl OutboundManager {
 }
 
 pub struct Handlers<'a> {
-    inner: hash_map::Values<'a, String, AnyOutboundHandler>,
+    inner: Values<'a, String, AnyOutboundHandler>,
 }
 
 impl<'a> Iterator for Handlers<'a> {

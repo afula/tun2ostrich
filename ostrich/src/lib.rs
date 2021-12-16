@@ -5,8 +5,8 @@ use app::{
     dispatcher::Dispatcher, dns_client::DnsClient, inbound::manager::InboundManager,
     nat_manager::NatManager, outbound::manager::OutboundManager, router::Router,
 };
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
-use std::collections::HashMap;
 use std::io;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -158,8 +158,8 @@ impl RuntimeManager {
 pub type RuntimeId = u16;
 const INSTANCE_ID: RuntimeId = 1;
 lazy_static! {
-    pub static ref RUNTIME_MANAGER: Mutex<HashMap<RuntimeId, Arc<RuntimeManager>>> =
-        Mutex::new(HashMap::new());
+    pub static ref RUNTIME_MANAGER: Mutex<IndexMap<RuntimeId, Arc<RuntimeManager>>> =
+        Mutex::new(IndexMap::new());
 }
 
 /*pub fn reload(key: RuntimeId) -> Result<(), Error> {

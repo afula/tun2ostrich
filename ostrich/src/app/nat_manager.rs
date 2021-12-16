@@ -1,4 +1,3 @@
-// use std::collections::HashMap;
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -20,16 +19,15 @@ pub struct UdpPacket {
     pub src_addr: Option<SocksAddr>,
     pub dst_addr: Option<SocksAddr>,
 }
-struct SessionEntry{
+struct SessionEntry {
     packet_sender: Sender<UdpPacket>,
     abort_sender: oneshot::Sender<bool>,
-    time_stamp: Instant
+    time_stamp: Instant,
 }
 
 // type SessionMap =
 //     Arc<TokioMutex<HashMap<DatagramSource, (Sender<UdpPacket>, oneshot::Sender<bool>, Instant)>>>;
-type SessionMap =
-Arc<DashMap<DatagramSource, SessionEntry>>;
+type SessionMap = Arc<DashMap<DatagramSource, SessionEntry>>;
 
 pub struct NatManager {
     sessions: SessionMap,
@@ -45,12 +43,13 @@ impl NatManager {
         // The task is lazy, will not run until any sessions added.
         let timeout_check_task: BoxFuture<'static, ()> = Box::pin(async move {
             loop {
-
                 let n_total = sessions2.len();
                 let now = Instant::now();
                 let mut to_be_remove = Vec::new();
                 for session in sessions2.iter() {
-                    if now.duration_since(session.time_stamp).as_secs() >= *option::UDP_SESSION_TIMEOUT {
+                    if now.duration_since(session.time_stamp).as_secs()
+                        >= *option::UDP_SESSION_TIMEOUT
+                    {
                         to_be_remove.push(session.key().to_owned());
                     }
                 }
@@ -94,7 +93,6 @@ impl NatManager {
     }
 
     pub async fn send(&self, key: &DatagramSource, pkt: UdpPacket) {
-
         if let Some(mut sess) = self.sessions.get_mut(key) {
             if let Err(err) = sess.packet_sender.try_send(pkt) {
                 debug!("send uplink packet failed {}", err);
@@ -123,12 +121,14 @@ impl NatManager {
         let (target_ch_tx, mut target_ch_rx) = mpsc::channel(64);
         let (downlink_abort_tx, downlink_abort_rx) = oneshot::channel();
 
-        self.sessions
-            .insert(raddr, SessionEntry{
+        self.sessions.insert(
+            raddr,
+            SessionEntry {
                 packet_sender: target_ch_tx,
                 abort_sender: downlink_abort_tx,
-                time_stamp: Instant::now()
-            });
+                time_stamp: Instant::now(),
+            },
+        );
 
         let dispatcher = self.dispatcher.clone();
         let sessions = self.sessions.clone();

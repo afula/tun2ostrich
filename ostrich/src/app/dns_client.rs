@@ -1,4 +1,3 @@
-// use std::collections::HashMap;
 use indexmap::IndexMap;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
@@ -181,7 +180,7 @@ impl DnsClient {
                         Duration::from_secs(*option::DNS_TIMEOUT),
                         socket.recv_from(&mut buf),
                     )
-                        .await
+                    .await
                     {
                         Ok(res) => match res {
                             Ok((n, _)) => {
@@ -227,7 +226,7 @@ impl DnsClient {
                                         elapsed.as_millis(),
                                     );
                                     let deadline = if let Some(d) =
-                                    Instant::now().checked_add(Duration::from_secs(ttl.into()))
+                                        Instant::now().checked_add(Duration::from_secs(ttl.into()))
                                     {
                                         d
                                     } else {
@@ -388,7 +387,7 @@ impl DnsClient {
                                 deadline,
                             },
                         )
-                            .await;
+                        .await;
                     }
                     return Ok(ips.to_vec());
                 }

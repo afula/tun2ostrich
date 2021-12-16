@@ -13,6 +13,7 @@ pub mod router;
 #[cfg(feature = "api")]
 pub mod api;
 
+pub mod copy;
 #[cfg(any(
     target_os = "ios",
     target_os = "android",

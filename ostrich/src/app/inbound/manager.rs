@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
@@ -28,7 +28,7 @@ use super::network_listener::NetworkInboundListener;
 use super::tun_listener::TunInboundListener;
 
 pub struct InboundManager {
-    network_listeners: HashMap<String, NetworkInboundListener>,
+    network_listeners: IndexMap<String, NetworkInboundListener>,
     #[cfg(all(
         feature = "inbound-tun",
         any(
@@ -48,7 +48,7 @@ impl InboundManager {
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,
     ) -> Result<Self> {
-        let mut handlers: HashMap<String, AnyInboundHandler> = HashMap::new();
+        let mut handlers: IndexMap<String, AnyInboundHandler> = IndexMap::new();
 
         for inbound in inbounds.iter() {
             let tag = String::from(&inbound.tag);
@@ -68,7 +68,7 @@ impl InboundManager {
             }
         }
 
-        let mut network_listeners: HashMap<String, NetworkInboundListener> = HashMap::new();
+        let mut network_listeners: IndexMap<String, NetworkInboundListener> = IndexMap::new();
 
         #[cfg(all(
             feature = "inbound-tun",
