@@ -1,5 +1,5 @@
 ios:
-	cargo lipo --release -p ostrich-ffi
+	RUSTFLAGS="-Z strip=symbols" cargo lipo --release -p ostrich-ffi
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/universal/release/ostrich.h
 
 ios-dev:
@@ -11,15 +11,15 @@ ios-opt:
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/universal/release/ostrich.h
 
 mac:
-	RUSTFLAGS="-Z strip=symbols" cargo lipo --release --targets x86_64-apple-darwin -p ostrich-ffi
+	RUSTFLAGS="-Z strip=symbols" cargo build --release --targets x86_64-apple-darwin -p ostrich-ffi
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/debug/ostrich.h
 
 mac-m1:
-    RUSTFLAGS="-Z strip=symbols" cargo lipo --release --targets aarch64-apple-darwin -p ostrich-ffi
+    RUSTFLAGS="-Z strip=symbols" cargo build --release --targets aarch64-apple-darwin -p ostrich-ffi
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/debug/ostrich.h
 
 lib:
-	cargo build -p ostrich-ffi --release
+	RUSTFLAGS="-Z strip=symbols" cargo build -p ostrich-ffi --release
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/release/ostrich.h
 
 lib-dev:
