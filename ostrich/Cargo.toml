@@ -178,7 +178,9 @@ rustls = { version = "0.20",default-features = false,features = ["logging"], opt
 # API
 warp = { version = "0.3", default-features = false, optional = true }
 
-
+#hashmap
+indexmap = {git = "https://github.com/bluss/indexmap.git",features =["std"]}
+dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
 
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]

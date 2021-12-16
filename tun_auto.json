@@ -5,10 +5,10 @@
   },
   "dns": {
     "servers": [
-      "108.61.199.26:2053"
+      "1.1.1.1"
     ],
     "hosts": {
-        "walkonbit.site":[
+        "www.walkonbit.site":[
       "108.61.199.26"
     ]}
   },
@@ -25,9 +25,9 @@
     {
       "protocol": "trojan",
       "settings": {
-        "address": "walkonbit.site",
-        "password": "251f6edc",
-        "port": 9443,
+        "address": "www.walkonbit.site",
+        "password": "1457c15e",
+        "port": 443,
         "alpn": [
           "http/1.1"
         ],
