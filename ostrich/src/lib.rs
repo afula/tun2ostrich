@@ -1,3 +1,5 @@
+#![feature(once_cell)]
+
 #[cfg(feature = "api")]
 use crate::app::api::api_server::ApiServer;
 use anyhow::anyhow;

@@ -182,6 +182,7 @@ warp = { version = "0.3", default-features = false, optional = true }
 indexmap = {git = "https://github.com/bluss/indexmap.git",features =["std"]}
 dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
 futures-timer = "3"
+arc-swap = "1.5.0"
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
 tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }

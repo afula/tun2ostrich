@@ -17,7 +17,7 @@ impl NetStack {
         inbound_tag: String,
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,
-        fakedns: Arc<TokioMutex<FakeDns>>,
+        fakedns: FakeDns,
     ) -> Self {
         NetStack(NetStackImpl::new(
             inbound_tag,

@@ -2,6 +2,7 @@ use futures::future::Future;
 use futures::future::FutureExt;
 // use futures::io::{AsyncBufRead, BufReader};
 // use futures::io::{AsyncRead, AsyncWrite};
+use crate::option;
 use futures::ready;
 use futures_timer::Delay;
 use std::io;
@@ -9,7 +10,6 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 use tokio::io::{AsyncBufRead, AsyncRead, AsyncWrite, BufReader};
-use crate::option;
 
 pub struct CopyFuture<S, D> {
     src: BufReader<S>,
@@ -30,8 +30,8 @@ impl<S: AsyncRead, D: AsyncRead> CopyFuture<S, D> {
     }
     pub fn with_capacity(src: S, dst: D, timeout: Duration) -> Self {
         CopyFuture {
-            src: BufReader::with_capacity(*option::LINK_BUFFER_SIZE * 1024,src),
-            dst: BufReader::with_capacity(*option::LINK_BUFFER_SIZE * 1024,dst),
+            src: BufReader::with_capacity(*option::LINK_BUFFER_SIZE * 1024, src),
+            dst: BufReader::with_capacity(*option::LINK_BUFFER_SIZE * 1024, dst),
             active_timeout: Delay::new(timeout),
             configured_timeout: timeout,
         }

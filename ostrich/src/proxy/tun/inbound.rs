@@ -87,11 +87,13 @@ pub fn new(
     }
 
     Ok(Box::pin(async move {
-        let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
-
+        // let mut fakedns = Arc::new(FakeDns::new(fake_dns_mode));
+        let mut filters = Vec::new();
         for filter in fake_dns_filters.into_iter() {
-            fakedns.lock().await.add_filter(filter);
+            // fakedns.add_filter(filter);
+            filters.push(filter)
         }
+        let mut fakedns = FakeDns::new_with_filters(fake_dns_mode, filters);
 
         let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
 
