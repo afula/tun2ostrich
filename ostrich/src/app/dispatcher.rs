@@ -69,8 +69,8 @@ impl Dispatcher {
     }
 
     pub async fn dispatch_tcp<T>(&self, sess: &mut Session, lhs: T)
-    where
-        T: 'static + AsyncRead + AsyncWrite + Unpin + Send + Sync,
+        where
+            T: 'static + AsyncRead + AsyncWrite + Unpin + Send + Sync,
     {
         let mut lhs: Box<dyn ProxyStream> =
             if !sess.destination.is_domain() && sess.destination.port() == 443 {
@@ -173,7 +173,7 @@ impl Dispatcher {
                 }
             };
         match TcpOutboundHandler::handle(h.as_ref(), sess, stream).await {
-            Ok(mut rhs) => {
+            Ok(rhs) => {
                 let elapsed = tokio::time::Instant::now().duration_since(handshake_start);
 
                 if *crate::option::LOG_NO_COLOR {
@@ -182,11 +182,243 @@ impl Dispatcher {
                     log_request(sess, h.tag(), Some(h.color()), elapsed.as_millis());
                 }
 
-                use super::copy::CopyFuture;
-                let copy =
-                    CopyFuture::with_capacity(lhs, rhs, Duration::from_secs(*option::TCP_DOWNLINK_TIMEOUT));
-                let _ = copy.await;
-                // tokio::io::copy_bidirectional(&mut rhs,&mut lhs).await;
+                let (lr, mut lw) = tokio::io::split(lhs);
+                let (rr, mut rw) = tokio::io::split(rhs);
+
+                let mut lr = BufReader::with_capacity(*option::LINK_BUFFER_SIZE * 1024, lr);
+                let mut rr = BufReader::with_capacity(*option::LINK_BUFFER_SIZE * 1024, rr);
+
+                let l2r = Box::pin(tokio::io::copy_buf(&mut lr, &mut rw));
+                let r2l = Box::pin(tokio::io::copy_buf(&mut rr, &mut lw));
+
+                // TODO Propagate EOF signal.
+
+                // Drives both uplink and downlink to completion, i.e. read till EOF.
+                match future::select(l2r, r2l).await {
+                    // Uplink task returns first, with the result of the completed uplink
+                    // task and the uncompleted downlink task.
+                    Either::Left((up_res, new_r2l)) => {
+                        // Logs the uplink result, either successful with bytes transfered
+                        // or an error.
+                        match up_res {
+                            Ok(up_n) => {
+                                debug!(
+                                    "tcp uplink {} -> {} done, {} bytes transfered [{}]",
+                                    &sess.source,
+                                    &sess.destination,
+                                    up_n,
+                                    &h.tag(),
+                                );
+                            }
+                            Err(up_e) => {
+                                // FIXME Perhaps we should terminate the pipe immediately.
+                                debug!(
+                                    "tcp uplink {} -> {} error: {} [{}]",
+                                    &sess.source,
+                                    &sess.destination,
+                                    up_e,
+                                    &h.tag()
+                                );
+                            }
+                        }
+
+                        // Puts a timeout limit on the uncompleted downlink task, because uplink
+                        // has been completed, and we don't like half-closed connections, the other
+                        // half must complete before timeout.
+                        let timed_r2l =
+                            timeout(Duration::from_secs(*option::TCP_DOWNLINK_TIMEOUT), new_r2l);
+
+                        trace!(
+                            "applied {}s downlink timeout to {} <- {}",
+                            *option::TCP_DOWNLINK_TIMEOUT,
+                            &sess.source,
+                            &sess.destination
+                        );
+
+                        // Because uplink has been completed, no furture data from the inbound
+                        // connection, we would like to close the write side of the outbound
+                        // connection, so that notifies the close of the pipeline.
+                        //
+                        // TODO Perhaps we should not send FIN in order to compatible with some
+                        // of the improperly implemented server programs, e.g. a server closes
+                        // the write side after reading EOF on read side.
+                        // let rw_shutdown = rw.shutdown();
+
+                        // Drives both the above tasks to completion simultaneously and get the
+                        // results.
+                        // let (shutdown_res, timed_r2l_res) =
+                        //     future::join(rw_shutdown, timed_r2l).await;
+
+                        let timed_r2l_res = timed_r2l.await;
+
+                        // Logs the shutdown result.
+                        // if let Err(e) = shutdown_res {
+                        //     debug!(
+                        //         "tcp uplink {} -> {} error: {} [{}]",
+                        //         &sess.source,
+                        //         &sess.destination,
+                        //         e,
+                        //         &h.tag()
+                        //     );
+                        // }
+
+                        // Logs the downlink result.
+                        match timed_r2l_res {
+                            Ok(down_res) => match down_res {
+                                Ok(down_n) => {
+                                    debug!(
+                                        "tcp downlink {} <- {} done, {} bytes transfered [{}]",
+                                        &sess.source,
+                                        &sess.destination,
+                                        down_n,
+                                        &h.tag(),
+                                    );
+                                }
+                                Err(down_e) => {
+                                    debug!(
+                                        "tcp downlink {} <- {} error: {} [{}]",
+                                        &sess.source,
+                                        &sess.destination,
+                                        down_e,
+                                        &h.tag()
+                                    );
+                                }
+                            },
+                            Err(timeout_e) => {
+                                debug!(
+                                    "tcp downlink {} <- {} timeout: {} [{}]",
+                                    &sess.source,
+                                    &sess.destination,
+                                    timeout_e,
+                                    &h.tag()
+                                );
+                            }
+                        }
+
+                        // Finally shuts down the inbound connection.
+                        // if let Err(e) = lw.shutdown().await {
+                        //     debug!(
+                        //         "tcp downlink {} <- {} error: {} [{}]",
+                        //         &sess.source,
+                        //         &sess.destination,
+                        //         e,
+                        //         &h.tag()
+                        //     );
+                        // }
+                    }
+
+                    // In case downlink returns first, the process is similar to the other
+                    // side described above, with the roles of uplink and downlink interchanged.
+                    Either::Right((down_res, new_l2r)) => {
+                        match down_res {
+                            Ok(down_n) => {
+                                debug!(
+                                    "tcp downlink {} <- {} done, {} bytes transfered [{}]",
+                                    &sess.source,
+                                    &sess.destination,
+                                    down_n,
+                                    &h.tag(),
+                                );
+                            }
+                            Err(down_e) => {
+                                debug!(
+                                    "tcp downlink {} <- {} error: {} [{}]",
+                                    &sess.source,
+                                    &sess.destination,
+                                    down_e,
+                                    &h.tag()
+                                );
+                            }
+                        }
+
+                        let timed_l2r =
+                            timeout(Duration::from_secs(*option::TCP_UPLINK_TIMEOUT), new_l2r);
+
+                        trace!(
+                            "applied {}s uplink timeout to {} -> {}",
+                            *option::TCP_UPLINK_TIMEOUT,
+                            &sess.source,
+                            &sess.destination
+                        );
+
+                        // let (shutdown_res, timed_l2r_res) =
+                        //     future::join(lw.shutdown(), timed_l2r).await;
+
+                        let timed_l2r_res = timed_l2r.await;
+
+                        // if let Err(e) = shutdown_res {
+                        //     debug!(
+                        //         "tcp downlink {} <- {} error: {} [{}]",
+                        //         &sess.source,
+                        //         &sess.destination,
+                        //         e,
+                        //         &h.tag()
+                        //     );
+                        // }
+
+                        match timed_l2r_res {
+                            Ok(up_res) => match up_res {
+                                Ok(up_n) => {
+                                    debug!(
+                                        "tcp uplink {} -> {} done, {} bytes transfered [{}]",
+                                        &sess.source,
+                                        &sess.destination,
+                                        up_n,
+                                        &h.tag(),
+                                    );
+                                }
+                                Err(up_e) => {
+                                    debug!(
+                                        "tcp uplink {} -> {} error: {} [{}]",
+                                        &sess.source,
+                                        &sess.destination,
+                                        up_e,
+                                        &h.tag()
+                                    );
+                                }
+                            },
+                            Err(timeout_e) => {
+                                debug!(
+                                    "tcp uplink {} -> {} timeout: {} [{}]",
+                                    &sess.source,
+                                    &sess.destination,
+                                    timeout_e,
+                                    &h.tag()
+                                );
+                            }
+                        }
+
+                        // if let Err(e) = rw.shutdown().await {
+                        //     debug!(
+                        //         "tcp uplink {} -> {} error: {} [{}]",
+                        //         &sess.source,
+                        //         &sess.destination,
+                        //         e,
+                        //         &h.tag()
+                        //     );
+                        // }
+                    }
+                }
+
+                if let Err(e) = rw.shutdown().await {
+                    debug!(
+                        "tcp uplink {} -> {} error: {} [{}]",
+                        &sess.source,
+                        &sess.destination,
+                        e,
+                        &h.tag()
+                    );
+                }
+
+                if let Err(e) = lw.shutdown().await {
+                    debug!(
+                        "tcp downlink {} <- {} error: {} [{}]",
+                        &sess.source,
+                        &sess.destination,
+                        e,
+                        &h.tag()
+                    );
+                }
             }
             Err(e) => {
                 debug!(
