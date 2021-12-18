@@ -515,8 +515,6 @@ impl Router {
         if sess.destination.is_domain() && self.domain_resolve {
             let ips = {
                 self.dns_client
-                    .read()
-                    .await
                     .lookup(
                         sess.destination
                             .domain()

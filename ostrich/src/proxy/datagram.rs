@@ -78,8 +78,6 @@ impl OutboundDatagramSendHalf for SimpleOutboundDatagramSendHalf {
             SocksAddr::Domain(domain, port) => {
                 let ips = {
                     self.1
-                        .read()
-                        .await
                         .lookup(domain)
                         .map_err(|e| {
                             io::Error::new(

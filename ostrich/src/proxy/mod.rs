@@ -434,7 +434,7 @@ pub async fn new_tcp_stream(
             match select_ok(tasks.into_iter()).await {
                 Ok(v) => {
                     #[rustfmt::skip]
-                    dns_client.read().await.optimize_cache(address.to_owned(), v.0.1.ip()).await;
+                    dns_client.optimize_cache(address.to_owned(), v.0.1.ip()).await;
                     #[rustfmt::skip]
                     return Ok(v.0.0);
                 }

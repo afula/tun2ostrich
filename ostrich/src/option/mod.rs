@@ -32,7 +32,7 @@ lazy_static! {
 
     /// DNS cache size in the built-in DNS client.
     pub static ref DNS_CACHE_SIZE: usize = {
-        get_env_var_or("DNS_CACHE_SIZE", 64)
+        get_env_var_or("DNS_CACHE_SIZE", 4096)
     };
 }
 
@@ -50,7 +50,7 @@ lazy_static! {
 
     /// DNS cache size in the built-in DNS client.
     pub static ref DNS_CACHE_SIZE: usize = {
-        get_env_var_or("DNS_CACHE_SIZE", 512)
+        get_env_var_or("DNS_CACHE_SIZE", 8192)
     };
 }
 
@@ -156,13 +156,13 @@ lazy_static! {
     /// activities in this period. The timeouts are observed only when a check
     /// is happened.
     pub static ref UDP_SESSION_TIMEOUT: u64 = {
-        get_env_var_or("UDP_SESSION_TIMEOUT", 30)
+        get_env_var_or("UDP_SESSION_TIMEOUT", 60)
     };
 
     /// UDP session timeout check interval. The interval to check for UDP session
     /// timeouts.
     pub static ref UDP_SESSION_TIMEOUT_CHECK_INTERVAL: u64 = {
-        get_env_var_or("UDP_SESSION_TIMEOUT_CHECK_INTERVAL", 10)
+        get_env_var_or("UDP_SESSION_TIMEOUT_CHECK_INTERVAL", 30)
     };
 
     /// Maximum retries for a specific DNS query for the built-in DNS client.

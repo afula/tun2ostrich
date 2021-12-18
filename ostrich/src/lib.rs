@@ -262,9 +262,8 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     let mut tasks: Vec<Runner> = Vec::new();
     let mut runners = Vec::new();
 
-    let dns_client = Arc::new(RwLock::new(
-        DnsClient::new(&config.dns).map_err(Error::Config)?,
-    ));
+    let dns_client = Arc::new(
+        DnsClient::new(&config.dns).map_err(Error::Config)?);
     let outbound_manager = Arc::new(RwLock::new(
         OutboundManager::new(
             &config.outbounds, // dns_client.clone()

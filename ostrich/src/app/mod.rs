@@ -22,4 +22,4 @@ pub mod copy;
 ))]
 pub mod fake_dns;
 
-pub type SyncDnsClient = Arc<RwLock<dns_client::DnsClient>>;
+pub type SyncDnsClient = Arc<dns_client::DnsClient>;

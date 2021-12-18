@@ -1,7 +1,6 @@
-use indexmap::IndexMap;
+// use indexmap::IndexMap;
 use std::cell::Cell;
-use std::collections::HashMap;
-use std::lazy::Lazy;
+// use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
@@ -9,8 +8,8 @@ use crate::proxy::UdpConnector;
 use anyhow::{anyhow, Result};
 use arc_swap::ArcSwap;
 use byteorder::{BigEndian, ByteOrder};
-use lazy_static::lazy_static;
 use log::*;
+use lru::LruCache;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use trust_dns_proto::op::{
@@ -19,7 +18,7 @@ use trust_dns_proto::op::{
 use trust_dns_proto::rr::{
     dns_class::DNSClass, record_data::RData, record_type::RecordType, resource::Record,
 };
-
+use crate::option;
 pub enum FakeDnsMode {
     Include,
     Exclude,
@@ -39,16 +38,16 @@ pub enum FakeDnsMode {
 // });
 
 pub struct FakeDns {
-    ip_to_domain: IndexMap<u32, String>,
-    domain_to_ip: IndexMap<String, u32>,
-    cursor: u32,
-    min_cursor: u32,
-    max_cursor: u32,
+    // ip_to_domain: IndexMap<u32, String>,
+    // domain_to_ip: IndexMap<String, u32>,
+    // cursor: u32,
+    // min_cursor: u32,
+    // max_cursor: u32,
     ttl: u32,
     filters: Vec<String>,
     mode: FakeDnsMode,
-    cache: HashMap<String, Message>,
-    sender: Sender<Message>,
+    cache: LruCache<String, Message>,
+    // sender: Sender<Message>,
 }
 impl UdpConnector for FakeDns {}
 impl FakeDns {
@@ -70,22 +69,22 @@ impl FakeDns {
         }
     }*/
     pub fn new_with_filters(mode: FakeDnsMode, filters: Vec<String>) -> Self {
-        let min_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 0, 0));
+/*        let min_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 0, 0));
         let max_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 4, 255));
-        let mut timer = tokio::time::interval(std::time::Duration::from_secs(60 * 30));
-        let (sender, mut receiver) = tokio::sync::mpsc::channel(1024);
+        let mut timer = tokio::time::interval(std::time::Duration::from_secs(60 * 30));*/
+        // let (sender, mut receiver) = tokio::sync::mpsc::channel(1024);
 
         let fake_dns = FakeDns {
-            ip_to_domain: IndexMap::new(),
-            domain_to_ip: IndexMap::new(),
-            cursor: min_cursor,
-            min_cursor,
-            max_cursor,
+            // ip_to_domain: IndexMap::new(),
+            // domain_to_ip: IndexMap::new(),
+            // cursor: min_cursor,
+            // min_cursor,
+            // max_cursor,
             ttl: 1,
             filters,
             mode,
-            cache: HashMap::new(),
-            sender,
+            cache: LruCache::new(    *option::DNS_CACHE_SIZE,),
+            // sender,
         };
         /*        // let fake_dns_clone = fake_dns.clone();
         tokio::spawn(async move{
@@ -112,7 +111,7 @@ impl FakeDns {
         self.filters.push(filter);
     }
 
-    fn allocate_ip(&mut self, domain: &str) -> Ipv4Addr {
+/*    fn allocate_ip(&mut self, domain: &str) -> Ipv4Addr {
         if let Some(prev_domain) = self.ip_to_domain.insert(self.cursor, domain.to_owned()) {
             // Remove the entry in the reverse map to make sure we won't have
             // multiple domains point to a same IP.
@@ -125,21 +124,21 @@ impl FakeDns {
             self.cursor = self.min_cursor;
         }
         ip
-    }
+    }*/
 
-    pub fn query_domain(&mut self, ip: &IpAddr) -> Option<String> {
+/*    pub fn query_domain(&mut self, ip: &IpAddr) -> Option<String> {
         let ip = match ip {
             IpAddr::V4(ip) => ip,
             _ => return None,
         };
         self.ip_to_domain.get(&Self::ip_to_u32(ip)).cloned()
-    }
+    }*/
 
-    pub fn query_fake_ip(&mut self, domain: &str) -> Option<IpAddr> {
+/*    pub fn query_fake_ip(&mut self, domain: &str) -> Option<IpAddr> {
         self.domain_to_ip
             .get(domain)
             .map(|v| IpAddr::V4(Self::u32_to_ip(v.to_owned())))
-    }
+    }*/
 
     fn accept(&self, domain: &str) -> bool {
         match self.mode {
@@ -235,7 +234,7 @@ impl FakeDns {
                         );
                         let msg = Message::from_vec(resp)?;
                         debug!("dns parse message {:?}", &msg);
-                        self.cache.insert(domain, msg);
+                        self.cache.put(domain, msg);
                         Ok(resp.to_vec())
                     }
                     Err(e) => {
@@ -287,22 +286,22 @@ impl FakeDns {
         Ok(resp.to_vec()?)*/
     }
 
-    pub fn is_fake_ip(&self, ip: &IpAddr) -> bool {
+/*    pub fn is_fake_ip(&self, ip: &IpAddr) -> bool {
         let ip = match ip {
             IpAddr::V4(ip) => ip,
             _ => return false,
         };
         let ip = Self::ip_to_u32(ip);
         ip >= self.min_cursor && ip <= self.max_cursor
-    }
+    }*/
 
-    fn u32_to_ip(ip: u32) -> Ipv4Addr {
+/*    fn u32_to_ip(ip: u32) -> Ipv4Addr {
         Ipv4Addr::from(ip)
     }
 
     fn ip_to_u32(ip: &Ipv4Addr) -> u32 {
         BigEndian::read_u32(&ip.octets())
-    }
+    }*/
 }
 
 #[cfg(test)]
