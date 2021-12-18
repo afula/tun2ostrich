@@ -47,7 +47,7 @@ pub struct NetStackImpl {
     rx: Receiver<Vec<u8>>,
     dispatcher: Arc<Dispatcher>,
     nat_manager: Arc<NatManager>,
-    // fakedns: FakeDns,
+    fakedns: Arc<TokioMutex<FakeDns>>,
 }
 
 impl NetStackImpl {
@@ -55,7 +55,7 @@ impl NetStackImpl {
         inbound_tag: String,
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,
-        mut fakedns: FakeDns,
+        fakedns: Arc<TokioMutex<FakeDns>>,
     ) -> Box<Self> {
         LWIP_INIT.call_once(|| unsafe { lwip_init() });
 
@@ -74,7 +74,7 @@ impl NetStackImpl {
             rx,
             dispatcher,
             nat_manager,
-            // fakedns: fakedns,
+            fakedns,
         });
 
         unsafe {
@@ -95,13 +95,13 @@ impl NetStackImpl {
         let inbound_tag_1 = inbound_tag.clone();
         let lwip_locktcp = stack.lwip_lock.clone();
         let dispatcher = stack.dispatcher.clone();
-        // let fakedns = stack.fakedns.clone();
+        let fakedns = stack.fakedns.clone();
         tokio::spawn(async move {
             let mut listener = TcpListener::new(lwip_locktcp);
 
             while let Some(stream) = listener.next().await {
                 let dispatcher = dispatcher.clone();
-                // let fakedns = fakedns.clone();
+                let fakedns = fakedns.clone();
                 let inbound_tag_1 = inbound_tag_1.clone();
 
                 tokio::spawn(async move {
@@ -114,7 +114,7 @@ impl NetStackImpl {
                         ..Default::default()
                     };
 
-                    /*                    if fakedns.lock().await.is_fake_ip(&stream.remote_addr().ip()) {
+                    if fakedns.lock().await.is_fake_ip(&stream.remote_addr().ip()) {
                         if let Some(domain) = fakedns
                             .lock()
                             .await
@@ -132,7 +132,7 @@ impl NetStackImpl {
                                 return;
                             }
                         }
-                    }*/
+                    }
 
                     dispatcher
                         .dispatch_tcp(&mut sess, TcpStream::new(stream))
@@ -143,11 +143,11 @@ impl NetStackImpl {
 
         let lwip_lock = stack.lwip_lock.clone();
         let nat_manager = stack.nat_manager.clone();
-        // let fakedns = stack.fakedns.clone();
+        let fakedns = stack.fakedns.clone();
         tokio::spawn(async move {
             let mut listener = UdpListener::new();
             let nat_manager = nat_manager.clone();
-            // let fakedns2 = fakedns.clone();
+            let fakedns2 = fakedns.clone();
             let pcb = listener.pcb();
 
             // Sending packets to TUN should be very fast.
@@ -189,7 +189,7 @@ impl NetStackImpl {
                         SocksAddr::Domain(domain, port) => {
                             // TODO we're doing this for every packet! optimize needed
                             // trace!("downlink querying fake ip for domain {}", &domain);
-                            /*                            if let Some(ip) = fakedns2.lock().await.query_fake_ip(&domain) {
+                            if let Some(ip) = fakedns2.lock().await.query_fake_ip(&domain) {
                                 SocketAddr::new(ip, port)
                             } else {
                                 warn!(
@@ -197,12 +197,7 @@ impl NetStackImpl {
                                     &domain, &port
                                 );
                                 continue;
-                            }*/
-                            warn!(
-                                "unexpected domain src addr {}:{} without paired fake IP",
-                                &domain, &port
-                            );
-                            continue;
+                            }
                         }
                     };
                     send_udp(lwip_lock2.clone(), &src_addr, &dst_addr, pcb, &pkt.data[..]);
@@ -211,7 +206,7 @@ impl NetStackImpl {
                 error!("unexpected udp downlink ended");
             });
 
-            // let mut fakedns2 = fakedns.clone();
+            let fakedns2 = fakedns.clone();
 
             while let Some(pkt) = listener.next().await {
                 let src_addr = match pkt.src_addr {
@@ -242,7 +237,7 @@ impl NetStackImpl {
                 };
 
                 if dst_addr.port() == 53 {
-                    match fakedns.generate_fake_response(&pkt.data).await {
+                    match fakedns2.lock().await.generate_fake_response(&pkt.data) {
                         Ok(resp) => {
                             send_udp(lwip_lock.clone(), &dst_addr, &src_addr, pcb, resp.as_ref());
                             continue;
@@ -257,7 +252,7 @@ impl NetStackImpl {
                 // that said, the application connects a UDP socket with a domain address.
                 // It also means the back packets on this UDP session shall only come from a
                 // single source address.
-                /*                let socks_dst_addr = if fakedns2.lock().await.is_fake_ip(&dst_addr.ip()) {
+                let socks_dst_addr = if fakedns2.lock().await.is_fake_ip(&dst_addr.ip()) {
                     // TODO we're doing this for every packet! optimize needed
                     // trace!("uplink querying domain for fake ip {}", &dst_addr.ip(),);
                     if let Some(domain) = fakedns2.lock().await.query_domain(&dst_addr.ip()) {
@@ -269,8 +264,7 @@ impl NetStackImpl {
                     }
                 } else {
                     SocksAddr::Ip(dst_addr)
-                };*/
-                let socks_dst_addr = SocksAddr::Ip(dst_addr);
+                };
 
                 let dgram_src = DatagramSource::new(src_addr, None);
 
