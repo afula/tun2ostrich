@@ -1,4 +1,4 @@
-use dashmap::DashMap;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -6,12 +6,12 @@ use futures::future::{abortable, BoxFuture};
 use log::*;
 use tokio::sync::{
     mpsc::{self, Sender},
-    oneshot, Mutex as TokioMutex,
+    oneshot, Mutex, MutexGuard,
 };
 
 use crate::app::dispatcher::Dispatcher;
 use crate::option;
-use crate::session::{DatagramSource, Session, SocksAddr};
+use crate::session::{DatagramSource, Network, Session, SocksAddr};
 
 #[derive(Debug)]
 pub struct UdpPacket {
@@ -19,54 +19,61 @@ pub struct UdpPacket {
     pub src_addr: Option<SocksAddr>,
     pub dst_addr: Option<SocksAddr>,
 }
-struct SessionEntry {
-    packet_sender: Sender<UdpPacket>,
-    abort_sender: oneshot::Sender<bool>,
-    time_stamp: Instant,
+
+impl std::fmt::Display for UdpPacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let src = match self.src_addr {
+            None => "None".to_string(),
+            Some(ref addr) => addr.to_string(),
+        };
+        let dst = match self.dst_addr {
+            None => "None".to_string(),
+            Some(ref addr) => addr.to_string(),
+        };
+        write!(f, "{} <-> {}, {} bytes", src, dst, self.data.len())
+    }
 }
 
-// type SessionMap =
-//     Arc<TokioMutex<HashMap<DatagramSource, (Sender<UdpPacket>, oneshot::Sender<bool>, Instant)>>>;
-type SessionMap = Arc<DashMap<DatagramSource, SessionEntry>>;
+type SessionMap = HashMap<DatagramSource, (Sender<UdpPacket>, oneshot::Sender<bool>, Instant)>;
 
 pub struct NatManager {
-    sessions: SessionMap,
+    sessions: Arc<Mutex<SessionMap>>,
     dispatcher: Arc<Dispatcher>,
-    timeout_check_task: TokioMutex<Option<BoxFuture<'static, ()>>>,
+    timeout_check_task: Mutex<Option<BoxFuture<'static, ()>>>,
 }
 
 impl NatManager {
     pub fn new(dispatcher: Arc<Dispatcher>) -> Self {
-        let sessions: SessionMap = Arc::new(DashMap::new());
+        let sessions: Arc<Mutex<SessionMap>> = Arc::new(Mutex::new(HashMap::new()));
         let sessions2 = sessions.clone();
 
         // The task is lazy, will not run until any sessions added.
         let timeout_check_task: BoxFuture<'static, ()> = Box::pin(async move {
             loop {
-                let n_total = sessions2.len();
+                let mut sessions = sessions2.lock().await;
+                let n_total = sessions.len();
                 let now = Instant::now();
                 let mut to_be_remove = Vec::new();
-                for session in sessions2.iter() {
-                    if now.duration_since(session.time_stamp).as_secs()
-                        >= *option::UDP_SESSION_TIMEOUT
-                    {
-                        to_be_remove.push(session.key().to_owned());
+                for (key, val) in sessions.iter() {
+                    if now.duration_since(val.2).as_secs() >= *option::UDP_SESSION_TIMEOUT {
+                        to_be_remove.push(key.to_owned());
                     }
                 }
                 for key in to_be_remove.iter() {
-                    if let Some((_, sess)) = sessions2.remove(key) {
+                    if let Some(sess) = sessions.remove(key) {
                         // Sends a signal to abort downlink task, uplink task will
                         // end automatically when we drop the channel's tx side upon
                         // session removal.
-                        if let Err(e) = sess.abort_sender.send(true) {
+                        if let Err(e) = sess.1.send(true) {
                             debug!("failed to send abort signal on session {}: {}", key, e);
                         }
                         debug!("udp session {} ended", key);
                     }
                 }
                 drop(to_be_remove); // drop explicitly
-                let n_remaining = sessions2.len();
+                let n_remaining = sessions.len();
                 let n_removed = n_total - n_remaining;
+                drop(sessions); // release the lock
                 if n_removed > 0 {
                     trace!(
                         "removed {} nat sessions, remaining {} sessions",
@@ -84,34 +91,70 @@ impl NatManager {
         NatManager {
             sessions,
             dispatcher,
-            timeout_check_task: TokioMutex::new(Some(timeout_check_task)),
+            timeout_check_task: Mutex::new(Some(timeout_check_task)),
         }
     }
 
-    pub async fn contains_key(&self, key: &DatagramSource) -> bool {
-        self.sessions.contains_key(key)
-    }
-
-    pub async fn send(&self, key: &DatagramSource, pkt: UdpPacket) {
-        if let Some(mut sess) = self.sessions.get_mut(key) {
-            if let Err(err) = sess.packet_sender.try_send(pkt) {
+    fn _send<'a>(
+        &self,
+        guard: &mut MutexGuard<'a, SessionMap>,
+        key: &DatagramSource,
+        pkt: UdpPacket,
+    ) {
+        if let Some(sess) = guard.get_mut(key) {
+            if let Err(err) = sess.0.try_send(pkt) {
                 debug!("send uplink packet failed {}", err);
             }
-            sess.time_stamp = Instant::now(); // activity update
+            sess.2 = Instant::now(); // activity update
         } else {
             error!("no nat association found");
         }
     }
 
-    pub async fn size(&self) -> usize {
-        self.sessions.len()
+    pub async fn send<'a>(
+        &self,
+        dgram_src: &DatagramSource,
+        socks_dst: SocksAddr,
+        inbound_tag: &str,
+        pkt: UdpPacket,
+        client_ch_tx: &Sender<UdpPacket>,
+    ) {
+        let mut guard = self.sessions.lock().await;
+
+        if guard.contains_key(dgram_src) {
+            self._send(&mut guard, dgram_src, pkt);
+            return;
+        }
+
+        let sess = Session {
+            network: Network::Udp,
+            source: dgram_src.address,
+            destination: socks_dst.clone(),
+            inbound_tag: inbound_tag.to_string(),
+            ..Default::default()
+        };
+
+        self.add_session(&sess, dgram_src.clone(), client_ch_tx.clone(), &mut guard)
+            .await;
+
+        debug!(
+            "added udp session {} -> {} ({})",
+            &dgram_src,
+            &socks_dst,
+            guard.len(),
+        );
+
+        self._send(&mut guard, dgram_src, pkt);
+
+        drop(guard);
     }
 
-    pub async fn add_session(
+    pub async fn add_session<'a>(
         &self,
         sess: &Session,
         raddr: DatagramSource,
         client_ch_tx: Sender<UdpPacket>,
+        guard: &mut MutexGuard<'a, SessionMap>,
     ) {
         // Runs the lazy task for session cleanup job, this task will run only once.
         if let Some(task) = self.timeout_check_task.lock().await.take() {
@@ -121,14 +164,7 @@ impl NatManager {
         let (target_ch_tx, mut target_ch_rx) = mpsc::channel(64);
         let (downlink_abort_tx, downlink_abort_rx) = oneshot::channel();
 
-        self.sessions.insert(
-            raddr,
-            SessionEntry {
-                packet_sender: target_ch_tx,
-                abort_sender: downlink_abort_tx,
-                time_stamp: Instant::now(),
-            },
-        );
+        guard.insert(raddr, (target_ch_tx, downlink_abort_tx, Instant::now()));
 
         let dispatcher = self.dispatcher.clone();
         let sessions = self.sessions.clone();
@@ -141,8 +177,9 @@ impl NatManager {
             // new socket to communicate with the target.
             let socket = match dispatcher.dispatch_udp(&sess).await {
                 Ok(s) => s,
-                Err(_) => {
-                    sessions.remove(&raddr);
+                Err(e) => {
+                    debug!("dispatch {} failed: {}", &raddr, e);
+                    sessions.lock().await.remove(&raddr);
                     return;
                 }
             };
@@ -158,12 +195,12 @@ impl NatManager {
                     match target_sock_recv.recv_from(&mut buf).await {
                         Err(err) => {
                             debug!("udp downlink error: {}", err);
-                            sessions.remove(&raddr);
+                            sessions.lock().await.remove(&raddr);
                             break;
                         }
                         Ok((0, _)) => {
                             debug!("receive zero-len udp packet");
-                            sessions.remove(&raddr);
+                            sessions.lock().await.remove(&raddr);
                             break;
                         }
                         Ok((n, addr)) => {
@@ -177,22 +214,23 @@ impl NatManager {
                                     "send downlink packet failed {} -> {}: {}",
                                     &addr, &raddr, err
                                 );
-                                sessions.remove(&raddr);
+                                sessions.lock().await.remove(&raddr);
                                 break;
                             }
 
                             // activity update
                             {
-                                if let Some(mut sess) = sessions.get_mut(&raddr) {
+                                let mut sessions = sessions.lock().await;
+                                if let Some(sess) = sessions.get_mut(&raddr) {
                                     if addr.port() == 53 {
                                         // If the destination port is 53, we assume it's a
                                         // DNS query and set a negative timeout so it will
                                         // be removed on next check.
-                                        sess.time_stamp.checked_sub(Duration::from_secs(
+                                        sess.2.checked_sub(Duration::from_secs(
                                             *option::UDP_SESSION_TIMEOUT,
                                         ));
                                     } else {
-                                        sess.time_stamp = Instant::now();
+                                        sess.2 = Instant::now();
                                     }
                                 }
                             }
