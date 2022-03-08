@@ -8,8 +8,8 @@
       "1.1.1.1"
     ],
     "hosts": {
-        "www.walkonbit.site":[
-      "70.34.242.14"
+        "walkonbit.site":[
+      "45.77.197.43"
     ]}
   },
   "inbounds": [
@@ -24,8 +24,8 @@
     {
       "protocol": "trojan",
       "settings": {
-        "address": "www.walkonbit.site",
-        "password": "aef7d280",
+        "address": "walkonbit.site",
+        "password": "6ea4ec4a",
         "port": 443,
         "alpn": [
           "http/1.1"
@@ -58,7 +58,7 @@
           "89.233.43.71",
           "84.200.69.80",
           "84.200.70.40",
-          "108.61.199.26"
+          "45.77.197.43"
         ],
         "target": "direct_out"
       }

@@ -24,7 +24,10 @@ pub mod mobile;
 pub mod option;
 pub mod proxy;
 pub mod session;
-#[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
+#[cfg(all(
+    feature = "inbound-tun",
+    any(target_os = "macos", target_os = "linux", target_os = "windows")
+))]
 mod sys;
 pub mod util;
 
@@ -262,8 +265,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     let mut tasks: Vec<Runner> = Vec::new();
     let mut runners = Vec::new();
 
-    let dns_client = Arc::new(
-        DnsClient::new(&config.dns).map_err(Error::Config)?);
+    let dns_client = Arc::new(DnsClient::new(&config.dns).map_err(Error::Config)?);
     let outbound_manager = Arc::new(RwLock::new(
         OutboundManager::new(
             &config.outbounds, // dns_client.clone()
@@ -293,7 +295,13 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     } else {
         sys::NetInfo::default()
     };
-
+    #[cfg(all(any(target_os = "windows")))]
+    // let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
+    // let net_info =   sys::get_net_info();
+    let net_info = sys::NetInfo::default();
+    // } else {
+    // sys::NetInfo::default()
+    // };
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     {
         if let sys::NetInfo {
@@ -309,6 +317,21 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             std::env::set_var("OUTBOUND_INTERFACE", binds);
         }
     }
+    // #[cfg(all(any(target_os = "windows")))]
+    // {
+    //     if let sys::NetInfo {
+    //         default_interface: Some(iface),
+    //         ..
+    //     } = &net_info
+    //     {
+    //         let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+    //             format!("{},{}", v, iface)
+    //         } else {
+    //             iface.clone()
+    //         };
+    //         std::env::set_var("OUTBOUND_INTERFACE", binds);
+    //     }
+    // }
 
     #[cfg(all(
         feature = "inbound-tun",
@@ -323,8 +346,14 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         runners.push(r);
     }
 
-    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
+    #[cfg(all(
+        feature = "inbound-tun",
+        any(target_os = "macos", target_os = "linux", target_os = "windows")
+    ))]
     sys::post_tun_creation_setup(&net_info);
+    // #[cfg(target_os = "windows")]{
+    // sys::post_tun_creation_setup(&net_info);
+    // }
 
     let runtime_manager = RuntimeManager::new(
         /*        #[cfg(feature = "auto-reload")]
@@ -397,8 +426,14 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
 
     rt.block_on(futures::future::select_all(tasks));
 
-    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
+    #[cfg(all(
+        feature = "inbound-tun",
+        any(target_os = "macos", target_os = "linux", target_os = "windows")
+    ))]
     sys::post_tun_completion_setup(&net_info);
+
+    // #[cfg(all(any(target_os = "windows")))]
+    // sys::post_tun_completion_setup(&net_info);
 
     rt.shutdown_background();
 

@@ -20,7 +20,6 @@ use trust_dns_proto::{
 
 use crate::{option, proxy::UdpConnector};
 
-
 #[derive(Clone, Debug)]
 struct CacheEntry {
     pub ips: Vec<IpAddr>,
@@ -28,25 +27,21 @@ struct CacheEntry {
     pub deadline: Instant,
 }
 
-
-
 use lazy_static::lazy_static;
 
-
 lazy_static! {
-static ref ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>> = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-    *option::DNS_CACHE_SIZE,
-)));
-static ref ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>> = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-    *option::DNS_CACHE_SIZE,
-)));
+    static ref ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>> = Arc::new(
+        TokioMutex::new(LruCache::<String, CacheEntry>::new(*option::DNS_CACHE_SIZE,))
+    );
+    static ref ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>> = Arc::new(
+        TokioMutex::new(LruCache::<String, CacheEntry>::new(*option::DNS_CACHE_SIZE,))
+    );
 }
-
 
 pub struct DnsClient {
     servers: Vec<SocketAddr>,
     hosts: IndexMap<String, Vec<IpAddr>>,
-/*    ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
+    /*    ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
     ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,*/
 }
 
