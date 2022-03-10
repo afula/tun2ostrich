@@ -134,10 +134,14 @@ trust-dns-client = {version = "0.21.0-alpha.4", features = ["dns-over-rustls"]}
 lru = "0.7.3"
 
 # Logging
-log = { version = "0.4", features = ["std"] }
-fern = { version = "0.6", features = ["colored"] }
+# log = { version = "0.4", features = ["std"] }
+# fern = { version = "0.6", features = ["colored"] }
 chrono = "0.4"
 colored = "2.0"
+log = "0.4.14"
+log-panics = "2.0.0"
+log4rs = "1.0.0"
+env_logger = "0.5.10"
 
 # TLS/rustls/QUIC
 tokio-rustls = { version = "0.23", default-features = false,features = ["logging","early-data"],optional = true }
@@ -184,8 +188,10 @@ dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
 futures-timer = "3"
 arc-swap = "1.5.0"
 # TUN
-[target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
-tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
+[target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
+tun = { path = "../rust-tun", features = ["async"], optional = true }
+# tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
+
 
 [target.'cfg(any(target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
 pnet_datalink = { version = "0.29.0", package = "pnet_datalink" }

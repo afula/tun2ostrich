@@ -42,21 +42,21 @@ fn main() {
     // tun2socks -device tun://TunMax -proxy {}
     // cmd::get_default_ipv4_gateway();
 
-    let handler1 = thread::spawn(|| {
-        let p = Command::new("misc/tun2socks")
-            .arg("-device")
-            .arg("tun://utun233")
-            .arg("-proxy")
-            .arg("socks5://127.0.0.1:1086")
-            // flag.StringVar(&key.LogLevel, "loglevel", "info", "Log level [debug|info|warning|error|silent]")
-            .arg("-loglevel")
-            .arg("warning")
-            .status()
-            .expect("failed to execute process");
-        println!("process finished with: {}", p);
-    });
+    // let handler1 = thread::spawn(|| {
+    //     let p = Command::new("misc/tun2socks")
+    //         .arg("-device")
+    //         .arg("tun://utun233")
+    //         .arg("-proxy")
+    //         .arg("socks5://127.0.0.1:1086")
+    //         // flag.StringVar(&key.LogLevel, "loglevel", "info", "Log level [debug|info|warning|error|silent]")
+    //         .arg("-loglevel")
+    //         .arg("warning")
+    //         .status()
+    //         .expect("failed to execute process");
+    //     println!("process finished with: {}", p);
+    // });
 
-    thread::sleep(std::time::Duration::from_millis(3000));
+    // thread::sleep(std::time::Duration::from_millis(3000));
 
     let handler0 = thread::spawn(|| {
         if let Err(e) = ostrich::util::run_with_options(args.config) {
@@ -107,5 +107,5 @@ fn main() {
     }
 
     handler0.join().unwrap();
-    handler1.join().unwrap();
+    // handler1.join().unwrap();
 }

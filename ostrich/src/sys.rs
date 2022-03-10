@@ -109,7 +109,6 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
                 .unwrap(),
         )
         .unwrap();
-        panic!("oooo");
         info!("#7 DEFAULT_TUN_NAME:DEFAULT_TUN_IPV4_ADDR:DEFAULT_TUN_IPV4_GW:DEFAULT_TUN_IPV4_MASK {:?}:{:?}:{:?}:{:?}",&*option::DEFAULT_TUN_NAME,&*option::DEFAULT_TUN_IPV4_ADDR,&*option::DEFAULT_TUN_IPV4_GW,&*option::DEFAULT_TUN_IPV4_MASK);
         // common::cmd::delete_default_ipv4_route(None).unwrap();
 
