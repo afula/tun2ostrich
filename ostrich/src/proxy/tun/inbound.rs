@@ -1,12 +1,16 @@
 use std::sync::Arc;
 
+use super::windows;
 use anyhow::{anyhow, Result};
 use futures::{sink::SinkExt, stream::StreamExt};
 use log::*;
 use protobuf::Message;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
-use tun::{self, Device, TunPacket};
+use tun::{
+    self,
+    // Device, TunPacket
+};
 
 use crate::{
     app::dispatcher::Dispatcher,
@@ -80,7 +84,7 @@ pub fn new(
         (FakeDnsMode::Exclude, fake_dns_exclude)
     };
 
-    let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
+    // let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
 
     if settings.auto {
         assert!(settings.fd == -1, "tun-auto is not compatible with tun-fd");
@@ -95,20 +99,38 @@ pub fn new(
 
         let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
 
-        let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
-        let framed = tun.into_framed();
-        let (mut tun_sink, mut tun_stream) = framed.split();
+        // let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
+        // let framed = tun.into_framed();
+        // let (mut tun_sink, mut tun_stream) = framed.split();
         let (mut stack_reader, mut stack_writer) = io::split(stack);
 
+        use super::TunDevice;
+        use std::net::Ipv4Addr;
+        const mtu: usize = 1500;
+        let ip = Ipv4Addr::new(172,7,0,2);
+        let netmask = Ipv4Addr::new(255, 255, 255, 0);
+        let tun_addr = windows::TunIpAddr { ip, netmask };
+
+        let tun_device =
+            windows::create_device(mtu, &[tun_addr]).expect("Failed create tun adapter");
+        // let (tun_tx, tun_rx) = device.split();
+        let tun_device = Arc::new(tun_device);
+        let tun_device_tx = tun_device.clone();
+        // let (to_tun, from_handler) = mpsc::unbounded_channel::<Box<[u8]>>();
+        // let (to_tcp_handler, from_tun2) = mpsc::channel::<(Box<[u8]>, NodeId)>(CHANNEL_SIZE);
+
         let s2t = Box::pin(async move {
-            let mut buf = vec![0; mtu as usize];
+            let mut buf = vec![0; mtu];
+          
             loop {
                 match stack_reader.read(&mut buf).await {
                     Ok(0) => {
                         debug!("read stack eof");
                         return;
                     }
-                    Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
+                    // tun_tx.send_packet(&packet).context("Write packet to tun error")?;
+                    // Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
+                    Ok(n) => match tun_device_tx.send_packet(&buf[..n]) {
                         Ok(_) => (),
                         Err(e) => {
                             warn!("send pkt to tun failed: {}", e);
@@ -124,20 +146,44 @@ pub fn new(
         });
 
         let t2s = Box::pin(async move {
-            while let Some(packet) = tun_stream.next().await {
-                match packet {
-                    Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("write pkt to stack failed: {}", e);
-                            return;
+            // let data = match tun_rx.recv_packet(&mut buff).context("Read packet from tun error")? {
+            //     0 => continue,
+            //     len => &buff[..len]
+            // };
+
+            // while let Some(packet) = tun_stream.next().await {
+            let mut buff = [0u8; mtu];
+            loop {
+                match tun_device
+                    .recv_packet(&mut buff)
+                    .expect("Read packet from tun error")
+                {
+                    0 => continue,
+                    len => {
+                        // &buff[..len]
+                        match stack_writer.write(&buff[..len]).await {
+                            Ok(_) => (),
+                            Err(e) => {
+                                warn!("write pkt to stack failed: {}", e);
+                                return;
+                            }
                         }
-                    },
-                    Err(err) => {
-                        warn!("read tun failed {:?}", err);
-                        return;
                     }
-                }
+                };
+
+                // match packet {
+                //     Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
+                //         Ok(_) => (),
+                //         Err(e) => {
+                //             warn!("write pkt to stack failed: {}", e);
+                //             return;
+                //         }
+                //     },
+                //     Err(err) => {
+                //         warn!("read tun failed {:?}", err);
+                //         return;
+                //     }
+                // }
             }
         });
 

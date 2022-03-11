@@ -134,11 +134,11 @@ trust-dns-client = {version = "0.21.0-alpha.4", features = ["dns-over-rustls"]}
 lru = "0.7.3"
 
 # Logging
-# log = { version = "0.4", features = ["std"] }
-# fern = { version = "0.6", features = ["colored"] }
+log = { version = "0.4", features = ["std"] }
+fern = { version = "0.6", features = ["colored"] }
 chrono = "0.4"
 colored = "2.0"
-log = "0.4.14"
+# log = "0.4.14"
 log-panics = "2.0.0"
 log4rs = "1.0.0"
 env_logger = "0.5.10"
@@ -191,6 +191,7 @@ arc-swap = "1.5.0"
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
 tun = { path = "../rust-tun", features = ["async"], optional = true }
 # tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
+simple_wintun = { git = "https://github.com/xutianyi1999/SimpleWintun.git" }
 
 
 [target.'cfg(any(target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
