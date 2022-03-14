@@ -84,12 +84,7 @@ pub fn setup_logger(config: &config::Log) -> Result<()> {
     Ok(())
 }
 
-
-
-
-
-
-/* 
+/*
 
 use log::LevelFilter;
 use log4rs::{

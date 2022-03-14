@@ -32,7 +32,7 @@ lazy_static! {
 
     /// DNS cache size in the built-in DNS client.
     pub static ref DNS_CACHE_SIZE: usize = {
-        get_env_var_or("DNS_CACHE_SIZE", 4096)
+        get_env_var_or("DNS_CACHE_SIZE", 65536)
     };
 }
 
@@ -50,7 +50,7 @@ lazy_static! {
 
     /// DNS cache size in the built-in DNS client.
     pub static ref DNS_CACHE_SIZE: usize = {
-        get_env_var_or("DNS_CACHE_SIZE", 8192)
+        get_env_var_or("DNS_CACHE_SIZE", 65536 )
     };
 }
 
@@ -69,12 +69,12 @@ lazy_static! {
 
     /// Uplink timeout after downlink EOF.
     pub static ref TCP_UPLINK_TIMEOUT: u64 = {
-        get_env_var_or("TCP_UPLINK_TIMEOUT", 2)
+        get_env_var_or("TCP_UPLINK_TIMEOUT", 30)
     };
 
     /// Downlink timeout after uplink EOF.
     pub static ref TCP_DOWNLINK_TIMEOUT: u64 = {
-        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 60)
+        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 30)
     };
 
     /// Buffer size for uplink and downlink connections, in KB.
@@ -156,13 +156,13 @@ lazy_static! {
     /// activities in this period. The timeouts are observed only when a check
     /// is happened.
     pub static ref UDP_SESSION_TIMEOUT: u64 = {
-        get_env_var_or("UDP_SESSION_TIMEOUT", 60)
+        get_env_var_or("UDP_SESSION_TIMEOUT", 30)
     };
 
     /// UDP session timeout check interval. The interval to check for UDP session
     /// timeouts.
     pub static ref UDP_SESSION_TIMEOUT_CHECK_INTERVAL: u64 = {
-        get_env_var_or("UDP_SESSION_TIMEOUT_CHECK_INTERVAL", 30)
+        get_env_var_or("UDP_SESSION_TIMEOUT_CHECK_INTERVAL", 10)
     };
 
     /// Maximum retries for a specific DNS query for the built-in DNS client.

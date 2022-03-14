@@ -16,14 +16,14 @@ thiserror = "1"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos", target_os = "ios", target_os = "android", target_os = "windows"))'.dependencies]
 tokio = { version = "1", features = ["net", "macros"], optional = true }
-tokio-util = { version = "0.7.0", features = ["codec"], optional = true }
+tokio-util = { version = "0.6", features = ["codec"], optional = true }
 bytes = { version = "1", optional = true }
 byteorder = { version = "1", optional = true }
 # This is only for the `ready` macro.
 futures-core = { version = "0.3", optional = true }
 
 [target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
-ioctl = { version = "0.8.0", package = "ioctl-sys" }
+ioctl = { version = "0.6", package = "ioctl-sys" }
 
 # MARKER BEGIN
 [target.'cfg(target_os = "windows")'.dependencies]
