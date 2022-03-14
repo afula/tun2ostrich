@@ -6,7 +6,10 @@ use log::*;
 use protobuf::Message;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
-use tun::{self, Device, TunPacket};
+// use tun::{
+//     self,
+//     // Device, TunPacket
+// };
 
 use crate::{
     app::dispatcher::Dispatcher,
@@ -80,7 +83,7 @@ pub fn new(
         (FakeDnsMode::Exclude, fake_dns_exclude)
     };
 
-    let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
+    // let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
 
     if settings.auto {
         assert!(settings.fd == -1, "tun-auto is not compatible with tun-fd");
@@ -95,54 +98,150 @@ pub fn new(
 
         let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
 
-        let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
-        let framed = tun.into_framed();
-        let (mut tun_sink, mut tun_stream) = framed.split();
+        // let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
+        // let framed = tun.into_framed();
+        // let (mut tun_sink, mut tun_stream) = framed.split();
         let (mut stack_reader, mut stack_writer) = io::split(stack);
+        #[cfg(not(target_os = "ios"))]{
+            
+        }
 
-        let s2t = Box::pin(async move {
-            let mut buf = vec![0; mtu as usize];
-            loop {
-                match stack_reader.read(&mut buf).await {
-                    Ok(0) => {
-                        debug!("read stack eof");
-                        return;
-                    }
-                    Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("send pkt to tun failed: {}", e);
+        #[cfg(target_os = "windows")]
+        {
+            use crate::common::cmd;
+            use std::process::Command;
+            use std::thread;
+            use crate::proxy::tun::win::{windows::Wintun, TunIpAddr};
+            use std::net::Ipv4Addr;
+    
+            let mtu = MTU as usize;
+            let tun_addr = Ipv4Addr::new(172, 0, 0, 2);
+            let netmask = Ipv4Addr::new(255, 255, 255, 0);
+            let tun_addr = TunIpAddr {
+                ip: tun_addr,
+                netmask,
+            };
+            // let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
+            let gateway = cmd::get_default_ipv4_gateway().unwrap();
+            println!("gateway: {:?}", gateway);
+
+            let tun_device = Wintun::create(mtu, &[tun_addr]).unwrap();
+            // let (tun_tx, tun_rx) = device.split();
+            let tun_device_rx = tun_device.session.clone();
+            let tun_device_tx = tun_device.session.clone();
+            // let (to_tun, from_handler) = mpsc::unbounded_channel::<Box<[u8]>>();
+            // let (to_tcp_handler, from_tun2) = mpsc::channel::<(Box<[u8]>, NodeId)>(CHANNEL_SIZE);
+    
+            // netsh interface ip set address TunMax static 240.255.0.2 255.255.255.0 11.0.68.1 3
+            thread::sleep(std::time::Duration::from_millis(7));
+
+            let out = Command::new("netsh")
+                .arg("interface")
+                .arg("ip")
+                .arg("set")
+                .arg("address")
+                .arg("utun233")
+                .arg("static")
+                .arg("172.7.0.2")
+                .arg("255.255.255.0")
+                .arg("172.7.0.1")
+                .arg("3")
+                .status()
+                .expect("failed to execute command");
+            println!("process finished with: {}", out);
+            let out = Command::new("route")
+                .arg("add")
+                .arg("1.1.1.1")
+                .arg(gateway.clone())
+                .arg("metric")
+                .arg("5")
+                .status()
+                .expect("failed to execute command");
+            println!("process finished with: {}", out);
+
+            let out = Command::new("route")
+                .arg("add")
+                .arg("45.77.197.43")
+                .arg(gateway)
+                .arg("metric")
+                .arg("5")
+                .status()
+                .expect("failed to execute command");
+            println!("process finished with: {}", out);
+
+            let s2t = tokio::task::spawn(async move {
+                let mut buf = vec![0; mtu as usize];
+                loop {
+                    match stack_reader.read(&mut buf).await {
+                        Ok(0) => {
+                            debug!("read stack eof");
                             return;
                         }
-                    },
-                    Err(err) => {
-                        warn!("read stack failed {:?}", err);
-                        return;
-                    }
-                }
-            }
-        });
-
-        let t2s = Box::pin(async move {
-            while let Some(packet) = tun_stream.next().await {
-                match packet {
-                    Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("write pkt to stack failed: {}", e);
+    
+                        Ok(n) => match tun_device_tx.allocate_send_packet(n as u16) {
+                            Ok(mut packet) => {
+                                packet.bytes_mut().copy_from_slice(&buf[..n]);
+                                tun_device_tx.send_packet(packet);
+                            }
+                            Err(err) => {
+                                log::error!("allocate send packet failed:{:?}", err);
+                            }
+                        },
+                        // Ok(n) => match tun_device_tx.send_packet(&buf[..n]) {
+                        //     Ok(_) => (),
+                        //     Err(e) => {
+                        //         warn!("send pkt to tun failed: {}", e);
+                        //         return;
+                        //     }
+                        // },
+                        Err(err) => {
+                            warn!("read stack failed {:?}", err);
                             return;
                         }
-                    },
-                    Err(err) => {
-                        warn!("read tun failed {:?}", err);
-                        return;
                     }
                 }
-            }
-        });
+            });
+    
+            let t2s = tokio::task::spawn(async move {
+                let mut packet = [0u8; MTU];
+    
+                loop {
+                    match tun_device_rx.receive_blocking() {
+                        Ok(mut packet) => {
+                            packet.bytes().len();
+                            match stack_writer.write(packet.bytes()).await {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    warn!("write pkt to stack failed: {}", e);
+                                    return;
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            error!("Got error while reading: {:?}", err);
+                            break;
+                        }
+                    }
+                }
+    
+                // while let Ok(size) = tun_device.recv_packet(&mut packet) {
+                //     if size == 0 {
+                //         continue;
+                //     }
+                //     match stack_writer.write(&packet[..size]).await {
+                //         Ok(_) => (),
+                //         Err(e) => {
+                //             warn!("write pkt to stack failed: {}", e);
+                //             return;
+                //         }
+                //     }
+                // }
+            });
+    
+            info!("tun inbound started");
+            futures::future::select(t2s, s2t).await;
+            info!("tun inbound exited");
+        }
 
-        info!("tun inbound started");
-        futures::future::select(t2s, s2t).await;
-        info!("tun inbound exited");
     }))
 }

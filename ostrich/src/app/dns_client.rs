@@ -1,4 +1,4 @@
-use indexmap::IndexMap;
+use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -27,22 +27,11 @@ struct CacheEntry {
     pub deadline: Instant,
 }
 
-use lazy_static::lazy_static;
-
-lazy_static! {
-    static ref ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>> = Arc::new(
-        TokioMutex::new(LruCache::<String, CacheEntry>::new(*option::DNS_CACHE_SIZE,))
-    );
-    static ref ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>> = Arc::new(
-        TokioMutex::new(LruCache::<String, CacheEntry>::new(*option::DNS_CACHE_SIZE,))
-    );
-}
-
 pub struct DnsClient {
     servers: Vec<SocketAddr>,
-    hosts: IndexMap<String, Vec<IpAddr>>,
-    /*    ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
-    ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,*/
+    hosts: HashMap<String, Vec<IpAddr>>,
+    ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
+    ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
 }
 
 impl DnsClient {
@@ -57,12 +46,12 @@ impl DnsClient {
         Ok(servers)
     }
 
-    fn load_hosts(dns: &crate::config::Dns) -> IndexMap<String, Vec<IpAddr>> {
-        let mut hosts = IndexMap::new();
+    fn load_hosts(dns: &crate::config::Dns) -> HashMap<String, Vec<IpAddr>> {
+        let mut hosts = HashMap::new();
         for (name, ips) in dns.hosts.iter() {
             hosts.insert(name.to_owned(), ips.values.to_vec());
         }
-        let mut parsed_hosts = IndexMap::new();
+        let mut parsed_hosts = HashMap::new();
         for (name, static_ips) in hosts.iter() {
             let mut ips = Vec::new();
             for ip in static_ips {
@@ -83,18 +72,18 @@ impl DnsClient {
         };
         let servers = Self::load_servers(dns)?;
         let hosts = Self::load_hosts(dns);
-        // let ipv4_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-        //     *option::DNS_CACHE_SIZE,
-        // )));
-        // let ipv6_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-        //     *option::DNS_CACHE_SIZE,
-        // )));
+        let ipv4_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
+            *option::DNS_CACHE_SIZE,
+        )));
+        let ipv6_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
+            *option::DNS_CACHE_SIZE,
+        )));
 
         Ok(DnsClient {
             servers,
             hosts,
-            // ipv4_cache,
-            // ipv6_cache,
+            ipv4_cache,
+            ipv6_cache,
         })
     }
 
@@ -118,7 +107,7 @@ impl DnsClient {
         }
 
         // If the connected IP is not in the first place, we should optimize it.
-        let mut new_entry = if let Some(entry) = ipv4_cache.lock().await.get(&address) {
+        let mut new_entry = if let Some(entry) = self.ipv4_cache.lock().await.get(&address) {
             if !entry.ips.starts_with(&[connected_ip]) && entry.ips.contains(&connected_ip) {
                 entry.clone()
             } else {
@@ -133,7 +122,7 @@ impl DnsClient {
             trace!("updates DNS cache item from\n{:#?}", &new_entry);
             new_entry.ips.rotate_left(idx);
             trace!("to\n{:#?}", &new_entry);
-            ipv4_cache.lock().await.put(address, new_entry);
+            self.ipv4_cache.lock().await.put(address, new_entry);
             trace!("updated cache");
         }
     }
@@ -145,7 +134,7 @@ impl DnsClient {
         }
 
         // If the connected IP is not in the first place, we should optimize it.
-        let mut new_entry = if let Some(entry) = ipv6_cache.lock().await.get(&address) {
+        let mut new_entry = if let Some(entry) = self.ipv6_cache.lock().await.get(&address) {
             if !entry.ips.starts_with(&[connected_ip]) && entry.ips.contains(&connected_ip) {
                 entry.clone()
             } else {
@@ -160,7 +149,7 @@ impl DnsClient {
             trace!("updates DNS cache item from\n{:#?}", &new_entry);
             new_entry.ips.rotate_left(idx);
             trace!("to\n{:#?}", &new_entry);
-            ipv6_cache.lock().await.put(address, new_entry);
+            self.ipv6_cache.lock().await.put(address, new_entry);
             trace!("updated cache");
         }
     }
@@ -292,8 +281,8 @@ impl DnsClient {
             return;
         }
         match entry.ips[0] {
-            IpAddr::V4(..) => ipv4_cache.lock().await.put(host.to_owned(), entry),
-            IpAddr::V6(..) => ipv6_cache.lock().await.put(host.to_owned(), entry),
+            IpAddr::V4(..) => self.ipv4_cache.lock().await.put(host.to_owned(), entry),
+            IpAddr::V6(..) => self.ipv6_cache.lock().await.put(host.to_owned(), entry),
         };
     }
 
@@ -303,7 +292,7 @@ impl DnsClient {
         // TODO reduce boilerplates
         match (*crate::option::ENABLE_IPV6, *crate::option::PREFER_IPV6) {
             (true, true) => {
-                if let Some(entry) = ipv6_cache.lock().await.get(host) {
+                if let Some(entry) = self.ipv6_cache.lock().await.get(host) {
                     if entry
                         .deadline
                         .checked_duration_since(Instant::now())
@@ -314,7 +303,7 @@ impl DnsClient {
                     let mut ips = entry.ips.to_vec();
                     cached_ips.append(&mut ips);
                 }
-                if let Some(entry) = ipv4_cache.lock().await.get(host) {
+                if let Some(entry) = self.ipv4_cache.lock().await.get(host) {
                     if entry
                         .deadline
                         .checked_duration_since(Instant::now())
@@ -327,7 +316,7 @@ impl DnsClient {
                 }
             }
             (true, false) => {
-                if let Some(entry) = ipv4_cache.lock().await.get(host) {
+                if let Some(entry) = self.ipv4_cache.lock().await.get(host) {
                     if entry
                         .deadline
                         .checked_duration_since(Instant::now())
@@ -338,7 +327,7 @@ impl DnsClient {
                     let mut ips = entry.ips.to_vec();
                     cached_ips.append(&mut ips);
                 }
-                if let Some(entry) = ipv6_cache.lock().await.get(host) {
+                if let Some(entry) = self.ipv6_cache.lock().await.get(host) {
                     if entry
                         .deadline
                         .checked_duration_since(Instant::now())
@@ -351,7 +340,7 @@ impl DnsClient {
                 }
             }
             _ => {
-                if let Some(entry) = ipv4_cache.lock().await.get(host) {
+                if let Some(entry) = self.ipv4_cache.lock().await.get(host) {
                     if entry
                         .deadline
                         .checked_duration_since(Instant::now())

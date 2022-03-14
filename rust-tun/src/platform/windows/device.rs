@@ -37,8 +37,8 @@ pub struct Device {
 impl Device {
     /// Create a new `Device` for the given `Configuration`.
     pub fn new(config: &Configuration) -> Result<Self> {
-        let wintun = unsafe { wintun::load_from_path("misc/wintun.dll") }
-            .expect("Failed to load wintun dll");
+        let wintun =
+            unsafe { wintun::load_from_path("wintun.dll") }.expect("Failed to load wintun dll");
         let n = config.name.clone().unwrap_or("wintun".to_string());
         let name = n.clone();
         let adapter = match wintun::Adapter::open(&wintun, name.as_str()) {
