@@ -6,10 +6,10 @@ use log::*;
 use protobuf::Message;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
-// use tun::{
-//     self,
-//     // Device, TunPacket
-// };
+use tun::{
+    self,
+    Device, TunPacket
+};
 
 use crate::{
     app::dispatcher::Dispatcher,
@@ -82,12 +82,20 @@ pub fn new(
     } else {
         (FakeDnsMode::Exclude, fake_dns_exclude)
     };
-
-    // let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e))?;
-
     if settings.auto {
         assert!(settings.fd == -1, "tun-auto is not compatible with tun-fd");
     }
+
+    #[cfg(all(
+    feature = "inbound-tun",
+    any(
+    target_os = "ios",
+    target_os = "android",
+    target_os = "macos",
+    target_os = "linux",
+    )
+    ))]{
+        let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e)).expect("cant create tun device");
 
     Ok(Box::pin(async move {
         let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
@@ -98,16 +106,73 @@ pub fn new(
 
         let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
 
-        // let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
-        // let framed = tun.into_framed();
-        // let (mut tun_sink, mut tun_stream) = framed.split();
+        let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
+        let framed = tun.into_framed();
+        let (mut tun_sink, mut tun_stream) = framed.split();
         let (mut stack_reader, mut stack_writer) = io::split(stack);
-        #[cfg(not(target_os = "ios"))]{
-            
+
+        let s2t = Box::pin(async move {
+            let mut buf = vec![0; mtu as usize];
+            loop {
+                match stack_reader.read(&mut buf).await {
+                    Ok(0) => {
+                        debug!("read stack eof");
+                        return;
+                    }
+                    Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
+                        Ok(_) => (),
+                        Err(e) => {
+                            warn!("send pkt to tun failed: {}", e);
+                            return;
+                        }
+                    },
+                    Err(err) => {
+                        warn!("read stack failed {:?}", err);
+                        return;
+                    }
+                }
+            }
+        });
+
+        let t2s = Box::pin(async move {
+            while let Some(packet) = tun_stream.next().await {
+                match packet {
+                    Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
+                        Ok(_) => (),
+                        Err(e) => {
+                            warn!("write pkt to stack failed: {}", e);
+                            return;
+                        }
+                    },
+                    Err(err) => {
+                        warn!("read tun failed {:?}", err);
+                        return;
+                    }
+                }
+            }
+        });
+
+                info!("tun inbound started");
+                futures::future::select(t2s, s2t).await;
+                info!("tun inbound exited");
+    }))}
+
+    #[cfg(all(
+    feature = "inbound-tun",
+    any(
+    target_os = "windows"
+    )
+    ))]
+        {
+    Ok(Box::pin(async move {
+        let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
+
+        for filter in fake_dns_filters.into_iter() {
+            fakedns.lock().await.add_filter(filter);
         }
 
-        #[cfg(target_os = "windows")]
-        {
+        let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
+
             use crate::common::cmd;
             use std::process::Command;
             use std::thread;
@@ -241,7 +306,7 @@ pub fn new(
             info!("tun inbound started");
             futures::future::select(t2s, s2t).await;
             info!("tun inbound exited");
-        }
 
-    }))
+
+    }))}
 }

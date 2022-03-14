@@ -110,20 +110,23 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
         )
         .unwrap();
         info!("#7 DEFAULT_TUN_NAME:DEFAULT_TUN_IPV4_ADDR:DEFAULT_TUN_IPV4_GW:DEFAULT_TUN_IPV4_MASK {:?}:{:?}:{:?}:{:?}",&*option::DEFAULT_TUN_NAME,&*option::DEFAULT_TUN_IPV4_ADDR,&*option::DEFAULT_TUN_IPV4_GW,&*option::DEFAULT_TUN_IPV4_MASK);
-        // common::cmd::delete_default_ipv4_route(None).unwrap();
 
-        // common::cmd::add_default_ipv4_route(
-        //     option::DEFAULT_TUN_IPV4_GW.parse::<Ipv4Addr>().unwrap(),
-        //     iface.clone(),
-        //     true,
-        // )
-        // .unwrap();
-        // common::cmd::add_default_ipv4_route(
-        //     ipv4_gw.parse::<Ipv4Addr>().unwrap(),
-        //     iface.clone(),
-        //     false,
-        // )
-        // .unwrap();
+        #[cfg(not(target_os = "windows"))] {
+            common::cmd::delete_default_ipv4_route(None).unwrap();
+            common::cmd::add_default_ipv4_route(
+                option::DEFAULT_TUN_IPV4_GW.parse::<Ipv4Addr>().unwrap(),
+                iface.clone(),
+                true,
+            )
+            .unwrap();
+            common::cmd::add_default_ipv4_route(
+                ipv4_gw.parse::<Ipv4Addr>().unwrap(),
+                iface.clone(),
+                false,
+            )
+            .unwrap();
+        }
+
 
         #[cfg(target_os = "linux")]
         {
@@ -193,25 +196,17 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
     } = &net_info
     {
         use std::net::{Ipv4Addr, Ipv6Addr};
-        // common::cmd::delete_default_ipv4_route(None).unwrap();
-        // common::cmd::delete_default_ipv4_route(Some(iface.clone())).unwrap();
+        #[cfg(not(target_os = "windows"))] {
+            common::cmd::delete_default_ipv4_route(None).unwrap();
+            common::cmd::delete_default_ipv4_route(Some(iface.clone())).unwrap();
 
-        // common::cmd::add_default_ipv4_route(
-        //     ipv4_gw.parse::<Ipv4Addr>().unwrap(),
-        //     iface.clone(),
-        //     true,
-        // )
-        // .unwrap();
-        // 0.0.0.0          0.0.0.0        172.7.0.1
-        // #[cfg(target_os = "windows")]{
-        //     let out = std::process::Command::new("route")
-        //     .arg("delete")
-        //     .arg("0.0.0.0")
-        //     .arg("172.7.0.1")
-        //     .status()
-        //     .expect("failed to execute command");
-        // println!("process finished with: {}", out);
-        // }
+            common::cmd::add_default_ipv4_route(
+                ipv4_gw.parse::<Ipv4Addr>().unwrap(),
+                iface.clone(),
+                true,
+            )
+            .unwrap();
+        }
 
         #[cfg(target_os = "linux")]
         {
