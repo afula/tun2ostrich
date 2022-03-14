@@ -347,14 +347,53 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         runners.push(r);
     }
 
-    #[cfg(all(
-        feature = "inbound-tun",
-        any(target_os = "macos", target_os = "linux", target_os = "windows")
-    ))]
+    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     sys::post_tun_creation_setup(&net_info);
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
     // }
+    #[cfg(all(
+        feature = "inbound-tun",
+        any(target_os = "macos", target_os = "linux",)
+    ))]
+    {
+        use futures::stream::StreamExt;
+        use signal_hook::consts::signal::*;
+        use signal_hook_tokio::Signals;
+        // use signal_hook::iterator::Signals;
+
+        async fn handle_signals(mut signals: Signals) {
+            while let Some(signal) = signals.next().await {
+                match signal {
+                    // SIGHUP => {
+                    //     log::trace!("added runtime {}", &INSTANCE_ID);
+                    // }
+                    SIGTERM
+                    // | SIGINT | SIGQUIT
+                    => {
+                        log::trace!("signal received {}", &SIGTERM);
+                        return;
+                        // sys::post_tun_completion_setup(net_info);
+                        // Shutdown the system;
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        }
+
+        let signals = Signals::new(&[SIGTERM])?;
+        let signals_handle = signals.handle();
+
+        let shutdown_tx = shutdown_tx.clone();
+        let signals_task = tokio::spawn(async move {
+            handle_signals(signals).await;
+            signals_handle.close();
+            let tx = shutdown_tx.clone();
+            if let Err(e) = tx.send(()).await {
+                log::warn!("sending shutdown signal failed: {}", e);
+            }
+        });
+    }
 
     let runtime_manager = RuntimeManager::new(
         /*        #[cfg(feature = "auto-reload")]
@@ -427,10 +466,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
 
     rt.block_on(futures::future::select_all(tasks));
 
-    #[cfg(all(
-        feature = "inbound-tun",
-        any(target_os = "macos", target_os = "linux", target_os = "windows")
-    ))]
+    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     sys::post_tun_completion_setup(&net_info);
 
     // #[cfg(all(any(target_os = "windows")))]

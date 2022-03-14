@@ -6,10 +6,7 @@ use log::*;
 use protobuf::Message;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
-use tun::{
-    self,
-    Device, TunPacket
-};
+use tun::{self, Device, TunPacket};
 
 use crate::{
     app::dispatcher::Dispatcher,
@@ -87,98 +84,97 @@ pub fn new(
     }
 
     #[cfg(all(
-    feature = "inbound-tun",
-    any(
-    target_os = "ios",
-    target_os = "android",
-    target_os = "macos",
-    target_os = "linux",
-    )
-    ))]{
-        let tun = tun::create_as_async(&cfg).map_err(|e| anyhow!("create tun failed: {}", e)).expect("cant create tun device");
-
-    Ok(Box::pin(async move {
-        let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
-
-        for filter in fake_dns_filters.into_iter() {
-            fakedns.lock().await.add_filter(filter);
-        }
-
-        let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
-
-        let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
-        let framed = tun.into_framed();
-        let (mut tun_sink, mut tun_stream) = framed.split();
-        let (mut stack_reader, mut stack_writer) = io::split(stack);
-
-        let s2t = Box::pin(async move {
-            let mut buf = vec![0; mtu as usize];
-            loop {
-                match stack_reader.read(&mut buf).await {
-                    Ok(0) => {
-                        debug!("read stack eof");
-                        return;
-                    }
-                    Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("send pkt to tun failed: {}", e);
-                            return;
-                        }
-                    },
-                    Err(err) => {
-                        warn!("read stack failed {:?}", err);
-                        return;
-                    }
-                }
-            }
-        });
-
-        let t2s = Box::pin(async move {
-            while let Some(packet) = tun_stream.next().await {
-                match packet {
-                    Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("write pkt to stack failed: {}", e);
-                            return;
-                        }
-                    },
-                    Err(err) => {
-                        warn!("read tun failed {:?}", err);
-                        return;
-                    }
-                }
-            }
-        });
-
-                info!("tun inbound started");
-                futures::future::select(t2s, s2t).await;
-                info!("tun inbound exited");
-    }))}
-
-    #[cfg(all(
-    feature = "inbound-tun",
-    any(
-    target_os = "windows"
-    )
+        feature = "inbound-tun",
+        any(
+            target_os = "ios",
+            target_os = "android",
+            target_os = "macos",
+            target_os = "linux",
+        )
     ))]
-        {
-    Ok(Box::pin(async move {
-        let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
+    {
+        let tun = tun::create_as_async(&cfg)
+            .map_err(|e| anyhow!("create tun failed: {}", e))
+            .expect("cant create tun device");
 
-        for filter in fake_dns_filters.into_iter() {
-            fakedns.lock().await.add_filter(filter);
-        }
+        Ok(Box::pin(async move {
+            let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
 
-        let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
+            for filter in fake_dns_filters.into_iter() {
+                fakedns.lock().await.add_filter(filter);
+            }
+
+            let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
+
+            let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
+            let framed = tun.into_framed();
+            let (mut tun_sink, mut tun_stream) = framed.split();
+            let (mut stack_reader, mut stack_writer) = io::split(stack);
+
+            let s2t = Box::pin(async move {
+                let mut buf = vec![0; mtu as usize];
+                loop {
+                    match stack_reader.read(&mut buf).await {
+                        Ok(0) => {
+                            debug!("read stack eof");
+                            return;
+                        }
+                        Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
+                            Ok(_) => (),
+                            Err(e) => {
+                                warn!("send pkt to tun failed: {}", e);
+                                return;
+                            }
+                        },
+                        Err(err) => {
+                            warn!("read stack failed {:?}", err);
+                            return;
+                        }
+                    }
+                }
+            });
+
+            let t2s = Box::pin(async move {
+                while let Some(packet) = tun_stream.next().await {
+                    match packet {
+                        Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
+                            Ok(_) => (),
+                            Err(e) => {
+                                warn!("write pkt to stack failed: {}", e);
+                                return;
+                            }
+                        },
+                        Err(err) => {
+                            warn!("read tun failed {:?}", err);
+                            return;
+                        }
+                    }
+                }
+            });
+
+            info!("tun inbound started");
+            futures::future::select(t2s, s2t).await;
+            info!("tun inbound exited");
+        }))
+    }
+
+    #[cfg(all(feature = "inbound-tun", any(target_os = "windows")))]
+    {
+        Ok(Box::pin(async move {
+            let fakedns = Arc::new(TokioMutex::new(FakeDns::new(fake_dns_mode)));
+
+            for filter in fake_dns_filters.into_iter() {
+                fakedns.lock().await.add_filter(filter);
+            }
+
+            let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
 
             use crate::common::cmd;
-            use std::process::Command;
-            use std::thread;
             use crate::proxy::tun::win::{windows::Wintun, TunIpAddr};
             use std::net::Ipv4Addr;
-    
+            use std::process::Command;
+            use std::thread;
+
             let mtu = MTU as usize;
             let tun_addr = Ipv4Addr::new(172, 0, 0, 2);
             let netmask = Ipv4Addr::new(255, 255, 255, 0);
@@ -196,7 +192,7 @@ pub fn new(
             let tun_device_tx = tun_device.session.clone();
             // let (to_tun, from_handler) = mpsc::unbounded_channel::<Box<[u8]>>();
             // let (to_tcp_handler, from_tun2) = mpsc::channel::<(Box<[u8]>, NodeId)>(CHANNEL_SIZE);
-    
+
             // netsh interface ip set address TunMax static 240.255.0.2 255.255.255.0 11.0.68.1 3
             thread::sleep(std::time::Duration::from_millis(7));
 
@@ -242,7 +238,7 @@ pub fn new(
                             debug!("read stack eof");
                             return;
                         }
-    
+
                         Ok(n) => match tun_device_tx.allocate_send_packet(n as u16) {
                             Ok(mut packet) => {
                                 packet.bytes_mut().copy_from_slice(&buf[..n]);
@@ -266,10 +262,10 @@ pub fn new(
                     }
                 }
             });
-    
+
             let t2s = tokio::task::spawn(async move {
                 let mut packet = [0u8; MTU];
-    
+
                 loop {
                     match tun_device_rx.receive_blocking() {
                         Ok(mut packet) => {
@@ -288,7 +284,7 @@ pub fn new(
                         }
                     }
                 }
-    
+
                 // while let Ok(size) = tun_device.recv_packet(&mut packet) {
                 //     if size == 0 {
                 //         continue;
@@ -302,11 +298,10 @@ pub fn new(
                 //     }
                 // }
             });
-    
+
             info!("tun inbound started");
             futures::future::select(t2s, s2t).await;
             info!("tun inbound exited");
-
-
-    }))}
+        }))
+    }
 }
