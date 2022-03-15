@@ -107,7 +107,6 @@ socket2 = "0.4"
 directories = "4.0.1"
 async-ffi = "0.4.0"
 libloading = "0.7"
-
 # config-json
 serde_json = { version = "1.0", features = ["raw_value"], optional = true }
 serde_derive = { version = "1.0", optional = true }
@@ -194,7 +193,7 @@ signal-hook = "0.3.13"
 signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
 
 [target.'cfg(target_os = "windows")'.dependencies]
-#tun = { path = "../rust-tun", features = ["async"], optional = true }
+win_tun = { path = "../win_tun", features = ["async"], optional = true }
 wintun = "0.2"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]

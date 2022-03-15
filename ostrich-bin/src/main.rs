@@ -1,6 +1,5 @@
-use std::process::exit;
-
 use argh::FromArgs;
+use std::process::exit;
 
 #[derive(FromArgs)]
 /// A lightweight and fast proxy utility

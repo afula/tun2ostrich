@@ -6,6 +6,15 @@ use log::*;
 use protobuf::Message;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex as TokioMutex;
+#[cfg(all(
+    feature = "inbound-tun",
+    any(
+        target_os = "ios",
+        target_os = "android",
+        target_os = "macos",
+        target_os = "linux",
+    )
+))]
 use tun::{self, Device, TunPacket};
 
 use crate::{
@@ -26,45 +35,6 @@ pub fn new(
     nat_manager: Arc<NatManager>,
 ) -> Result<Runner> {
     let settings = TunInboundSettings::parse_from_bytes(&inbound.settings)?;
-
-    let mut cfg = tun::Configuration::default();
-    if settings.fd >= 0 {
-        cfg.raw_fd(settings.fd);
-    } else if settings.auto {
-        cfg.name(&*option::DEFAULT_TUN_NAME)
-            .address(&*option::DEFAULT_TUN_IPV4_ADDR)
-            .destination(&*option::DEFAULT_TUN_IPV4_GW)
-            .mtu(1500);
-
-        #[cfg(not(any(
-            target_arch = "mips",
-            target_arch = "mips64",
-            target_arch = "mipsel",
-            target_arch = "mipsel64",
-        )))]
-        {
-            cfg.netmask(&*option::DEFAULT_TUN_IPV4_MASK);
-        }
-
-        cfg.up();
-    } else {
-        cfg.name(settings.name)
-            .address(settings.address)
-            .destination(settings.gateway)
-            .mtu(settings.mtu);
-
-        #[cfg(not(any(
-            target_arch = "mips",
-            target_arch = "mips64",
-            target_arch = "mipsel",
-            target_arch = "mipsel64",
-        )))]
-        {
-            cfg.netmask(settings.netmask);
-        }
-
-        cfg.up();
-    }
 
     // FIXME it's a bad design to have 2 lists in config while we need only one
     let fake_dns_exclude = settings.fake_dns_exclude;
@@ -93,6 +63,44 @@ pub fn new(
         )
     ))]
     {
+        let mut cfg = tun::Configuration::default();
+        if settings.fd >= 0 {
+            cfg.raw_fd(settings.fd);
+        } else if settings.auto {
+            cfg.name(&*option::DEFAULT_TUN_NAME)
+                .address(&*option::DEFAULT_TUN_IPV4_ADDR)
+                .destination(&*option::DEFAULT_TUN_IPV4_GW)
+                .mtu(1500);
+
+            #[cfg(not(any(
+                target_arch = "mips",
+                target_arch = "mips64",
+                target_arch = "mipsel",
+                target_arch = "mipsel64",
+            )))]
+            {
+                cfg.netmask(&*option::DEFAULT_TUN_IPV4_MASK);
+            }
+
+            cfg.up();
+        } else {
+            cfg.name(settings.name)
+                .address(settings.address)
+                .destination(settings.gateway)
+                .mtu(settings.mtu);
+
+            #[cfg(not(any(
+                target_arch = "mips",
+                target_arch = "mips64",
+                target_arch = "mipsel",
+                target_arch = "mipsel64",
+            )))]
+            {
+                cfg.netmask(settings.netmask);
+            }
+
+            cfg.up();
+        }
         let tun = tun::create_as_async(&cfg)
             .map_err(|e| anyhow!("create tun failed: {}", e))
             .expect("cant create tun device");
@@ -168,6 +176,10 @@ pub fn new(
             }
 
             let stack = NetStack::new(inbound.tag.clone(), dispatcher, nat_manager, fakedns);
+            // let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
+            // let framed = tun.into_framed();
+            // let (mut tun_sink, mut tun_stream) = framed.split();
+            let (mut stack_reader, mut stack_writer) = io::split(stack);
 
             use crate::common::cmd;
             use crate::proxy::tun::win::{windows::Wintun, TunIpAddr};
