@@ -418,7 +418,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         let shutdown_tx = shutdown_tx.clone();
         let signals_task = tokio::spawn(async move {
             handle_signals(signals,&net_info,shutdown_tx).await;
-            // signals_handle.close();
+            signals_handle.close();
         });
     }
 
