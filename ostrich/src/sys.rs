@@ -1,6 +1,6 @@
 use super::common;
 use super::option;
-
+#[derive(Clone)]
 pub struct NetInfo {
     pub default_ipv4_gateway: Option<String>,
     pub default_ipv6_gateway: Option<String>,
