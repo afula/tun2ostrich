@@ -363,6 +363,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         use futures::stream::StreamExt;
         use signal_hook::consts::signal::*;
         use signal_hook_tokio::Signals;
+        use std::thread;
         // use signal_hook::iterator::Signals;
 
         async fn handle_signals(mut signals: Signals,net_info: &NetInfo,shutdown_tx: mpsc::Sender<()> ) {
@@ -370,6 +371,8 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                 match signal {
                     SIGALRM => {
                         log::trace!("signal received {}", &SIGALRM);
+                        sys::post_tun_completion_setup(&net_info);
+                        thread::sleep(std::time::Duration::from_secs(1));
                         sys::post_tun_creation_setup(net_info);
                         // if let NetInfo {
                         //     default_ipv4_gateway: Some(ipv4_gw),
