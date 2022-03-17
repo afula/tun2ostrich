@@ -384,6 +384,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                     // | SIGINT | SIGQUIT
                     => {
                         log::trace!("signal received {}", &SIGTERM);
+                        // sys::post_tun_completion_setup(new_net_info);
                         if let Err(e) = shutdown_tx.send(()).await {
                             log::warn!("sending shutdown signal failed: {}", e);
                         }
