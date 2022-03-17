@@ -82,7 +82,7 @@ pub fn get_net_info() -> NetInfo {
 
 pub fn post_tun_creation_setup(net_info: &NetInfo) {
     if let NetInfo {
-        default_ipv4_gateway: Some(ipv4_gw),
+        default_ipv4_gateway: Some(_ipv4_gw),
         default_ipv6_gateway: ipv6_gw,
         default_ipv4_address: _ipv4_addr,
         default_ipv6_address: ipv6_addr,
@@ -107,16 +107,16 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
 
         common::cmd::add_default_ipv4_route(
             option::DEFAULT_TUN_IPV4_GW.parse::<Ipv4Addr>().unwrap(),
-            iface.clone(),
+            &*option::DEFAULT_TUN_NAME,
             true,
         )
         .unwrap();
-        common::cmd::add_default_ipv4_route(
+/*        common::cmd::add_default_ipv4_route(
             ipv4_gw.parse::<Ipv4Addr>().unwrap(),
             iface.clone(),
             false,
         )
-        .unwrap();
+        .unwrap();*/
 
         /*        #[cfg(target_os = "linux")]
                 {
@@ -191,13 +191,13 @@ pub fn post_tun_reload_setup(net_info: &NetInfo) {
 
         common::cmd::add_default_ipv4_route(
             option::DEFAULT_TUN_IPV4_GW.parse::<Ipv4Addr>().unwrap(),
-            iface.clone(),
+            &iface.clone(),
             true,
         )
         .unwrap();
         common::cmd::add_default_ipv4_route(
             ipv4_gw.parse::<Ipv4Addr>().unwrap(),
-            iface.clone(),
+            &iface.clone(),
             false,
         )
         .unwrap();
@@ -259,7 +259,7 @@ pub fn post_tun_reload_setup(net_info: &NetInfo) {
 }
 pub fn post_tun_completion_setup(net_info: &NetInfo) {
     if let NetInfo {
-        default_ipv4_gateway: Some(ipv4_gw),
+        default_ipv4_gateway: Some(_ipv4_gw),
         default_ipv6_gateway: ipv6_gw,
         default_ipv4_address: _ipv4_addr,
         default_ipv6_address: ipv6_addr,
@@ -268,16 +268,16 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
         default_interface: Some(iface),
     } = &net_info
     {
-        use std::net::{Ipv4Addr, Ipv6Addr};
+        use std::net::{Ipv6Addr};
         // common::cmd::delete_default_ipv4_route(None).unwrap();
         // common::cmd::delete_default_ipv4_route(Some(iface.clone())).unwrap();
 
-        common::cmd::add_default_ipv4_route(
-            ipv4_gw.parse::<Ipv4Addr>().unwrap(),
-            iface.clone(),
-            true,
-        )
-        .unwrap();
+        // common::cmd::add_default_ipv4_route(
+        //     ipv4_gw.parse::<Ipv4Addr>().unwrap(),
+        //     iface.clone(),
+        //     true,
+        // )
+        // .unwrap();
 
         /*        #[cfg(target_os = "linux")]
         {

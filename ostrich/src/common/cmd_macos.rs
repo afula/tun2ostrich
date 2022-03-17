@@ -99,7 +99,7 @@ pub fn add_interface_ipv6_address(name: &str, addr: Ipv6Addr, prefixlen: i32) ->
     Ok(())
 }
 
-pub fn add_default_ipv4_route(gateway: Ipv4Addr, interface: String, primary: bool) -> Result<()> {
+pub fn add_default_ipv4_route(gateway: Ipv4Addr, interface: &String, primary: bool) -> Result<()> {
     if primary {
         Command::new("route")
             .arg("add")
