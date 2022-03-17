@@ -204,11 +204,11 @@ impl DnsClient {
                                 let mut ips = Vec::new();
                                 for ans in resp.answers() {
                                     // TODO checks?
-                                    match ans.rdata() {
-                                        RData::A(ip) => {
+                                    match ans.data() {
+                                        Some(RData::A(ip)) => {
                                             ips.push(IpAddr::V4(ip.to_owned()));
                                         }
-                                        RData::AAAA(ip) => {
+                                        Some(RData::AAAA(ip)) => {
                                             ips.push(IpAddr::V6(ip.to_owned()));
                                         }
                                         _ => (),

@@ -84,7 +84,7 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
     if let NetInfo {
         default_ipv4_gateway: Some(ipv4_gw),
         default_ipv6_gateway: ipv6_gw,
-        default_ipv4_address: ipv4_addr,
+        default_ipv4_address: _ipv4_addr,
         default_ipv6_address: ipv6_addr,
         ipv4_forwarding,
         ipv6_forwarding,
@@ -178,7 +178,7 @@ pub fn post_tun_reload_setup(net_info: &NetInfo) {
     if let NetInfo {
         default_ipv4_gateway: Some(ipv4_gw),
         default_ipv6_gateway: ipv6_gw,
-        default_ipv4_address: ipv4_addr,
+        default_ipv4_address: _ipv4_addr,
         default_ipv6_address: ipv6_addr,
         ipv4_forwarding,
         ipv6_forwarding,
@@ -261,7 +261,7 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
     if let NetInfo {
         default_ipv4_gateway: Some(ipv4_gw),
         default_ipv6_gateway: ipv6_gw,
-        default_ipv4_address: ipv4_addr,
+        default_ipv4_address: _ipv4_addr,
         default_ipv6_address: ipv6_addr,
         ipv4_forwarding,
         ipv6_forwarding,

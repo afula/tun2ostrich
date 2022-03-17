@@ -1,6 +1,4 @@
-use std::io::Result;
 use std::net::Ipv4Addr;
-use std::sync::Arc;
 
 #[cfg(target_os = "windows")]
 pub mod windows;

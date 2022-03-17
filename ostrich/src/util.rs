@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::sync::RwLock;
 
 use crate::{
     app::{dns_client::DnsClient, outbound::manager::OutboundManager},

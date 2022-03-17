@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use tokio::sync::RwLock;
 
 pub mod dispatcher;
 pub mod dns_client;

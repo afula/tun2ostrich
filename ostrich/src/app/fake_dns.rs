@@ -167,7 +167,7 @@ impl FakeDns {
                 .set_rr_type(RecordType::A)
                 .set_ttl(self.ttl)
                 .set_dns_class(DNSClass::IN)
-                .set_rdata(RData::A(ip));
+                .set_data(Some(RData::A(ip)));
             resp.add_answer(ans);
         }
 

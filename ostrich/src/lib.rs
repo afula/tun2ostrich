@@ -11,7 +11,6 @@ use app::{
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use std::io;
-use std::net::Ipv4Addr;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Once;
@@ -368,7 +367,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
 
         async fn handle_signals(
             mut signals: Signals,
-            old_net_info: &NetInfo,
+            _old_net_info: &NetInfo,
             new_net_info: &NetInfo,
             shutdown_tx: mpsc::Sender<()>,
         ) {
@@ -406,7 +405,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             sys::NetInfo::default()
         };
 
-        let signals_task = tokio::spawn(async move {
+        tokio::spawn(async move {
             handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
             signals_handle.close();
         });

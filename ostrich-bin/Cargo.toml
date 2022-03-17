@@ -29,4 +29,4 @@ default-openssl = [
 ostrich = { path = "../ostrich", default-features = false, optional = true }
 tokio = { version = "1", features = ["rt"] }
 argh = "0.1"
-async-process = "1.2.0"
+#async-process = "1.2.0"
