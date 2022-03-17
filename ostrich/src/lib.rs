@@ -2,6 +2,7 @@
 
 #[cfg(feature = "api")]
 use crate::app::api::api_server::ApiServer;
+use crate::sys::NetInfo;
 use anyhow::anyhow;
 use app::{
     dispatcher::Dispatcher, dns_client::DnsClient, inbound::manager::InboundManager,
@@ -17,7 +18,6 @@ use std::sync::Once;
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::sync::RwLock;
-use crate::sys::NetInfo;
 
 pub mod app;
 pub mod common;
@@ -366,38 +366,19 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         use std::thread;
         // use signal_hook::iterator::Signals;
 
-        async fn handle_signals(mut signals: Signals,net_info: &NetInfo,shutdown_tx: mpsc::Sender<()> ) {
+        async fn handle_signals(
+            mut signals: Signals,
+            old_net_info: &NetInfo,
+            new_net_info: &NetInfo,
+            shutdown_tx: mpsc::Sender<()>,
+        ) {
             while let Some(signal) = signals.next().await {
                 match signal {
                     SIGALRM => {
                         log::trace!("signal received {}", &SIGALRM);
-                        sys::post_tun_completion_setup(&net_info);
+                        // sys::post_tun_completion_setup(old_net_info);
                         thread::sleep(std::time::Duration::from_secs(1));
-                        sys::post_tun_creation_setup(net_info);
-                        // if let NetInfo {
-                        //     default_ipv4_gateway: Some(ipv4_gw),
-                        //     default_ipv6_gateway: ipv6_gw,
-                        //     default_ipv4_address: ipv4_addr,
-                        //     default_ipv6_address: ipv6_addr,
-                        //     ipv4_forwarding,
-                        //     ipv6_forwarding,
-                        //     default_interface: Some(iface),
-                        // } = net_info{
-                        //     common::cmd::add_default_ipv4_route(
-                        //         option::DEFAULT_TUN_IPV4_GW.parse::<Ipv4Addr>().unwrap(),
-                        //         iface.clone(),
-                        //         true,
-                        //     )
-                        //         .unwrap();
-                        //     common::cmd::add_default_ipv4_route(
-                        //         ipv4_gw.parse::<Ipv4Addr>().unwrap(),
-                        //         iface.clone(),
-                        //         false,
-                        //     )
-                        //         .unwrap();
-                        //     log::trace!("default route has ben reset");
-                        // }
-
+                        sys::post_tun_reload_setup(new_net_info);
                     }
                     SIGTERM
                     // | SIGINT | SIGQUIT
@@ -407,20 +388,25 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                             log::warn!("sending shutdown signal failed: {}", e);
                         }
                         return;
-                        // sys::post_tun_completion_setup(net_info);
-                        // Shutdown the system;
                     }
                     _ => unreachable!(),
                 }
             }
         }
 
-        let signals = Signals::new(&[SIGTERM,SIGALRM])?;
+        let signals = Signals::new(&[SIGTERM, SIGALRM])?;
         let signals_handle = signals.handle();
         let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
+
+        let new_net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
+            sys::get_net_info()
+        } else {
+            sys::NetInfo::default()
+        };
+
         let signals_task = tokio::spawn(async move {
-            handle_signals(signals,&net_info,shutdown_tx).await;
+            handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
             signals_handle.close();
         });
     }
