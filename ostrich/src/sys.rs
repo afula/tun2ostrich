@@ -266,7 +266,7 @@ pub fn post_tun_reload_setup(net_info: &NetInfo) {
 }
 pub fn post_tun_completion_setup(net_info: &NetInfo) {
     if let NetInfo {
-        default_ipv4_gateway: Some(_ipv4_gw),
+        default_ipv4_gateway: Some(ipv4_gw),
         default_ipv6_gateway: ipv6_gw,
         default_ipv4_address: _ipv4_addr,
         default_ipv6_address: ipv6_addr,
@@ -293,7 +293,7 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
 
                 common::cmd::add_default_ipv4_route(
                     ipv4_gw.parse::<Ipv4Addr>().unwrap(),
-                    iface.clone(),
+                    iface,
                     true,
                 )
                 .unwrap();
