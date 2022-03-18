@@ -288,7 +288,7 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
 
         #[cfg(target_os = "macos")]
             {
-
+                use std::net::{Ipv4Addr};
                 common::cmd::delete_default_ipv4_route(None).unwrap();
 
                 common::cmd::add_default_ipv4_route(
