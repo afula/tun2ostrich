@@ -12,6 +12,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use std::io;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::sync::Once;
 use thiserror::Error;
@@ -291,6 +292,8 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         .map_err(Error::Config)?;
     runners.append(&mut inbound_net_runners);
 
+    let network_changed: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
         sys::get_net_info()
@@ -365,7 +368,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         use std::thread;
         // use signal_hook::iterator::Signals;
 
-        async fn handle_signals(
+/*        async fn handle_signals(
             mut signals: Signals,
             _old_net_info: &NetInfo,
             new_net_info: &NetInfo,
@@ -376,8 +379,9 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                     SIGALRM => {
                         log::trace!("signal received {}", &SIGALRM);
                         // sys::post_tun_completion_setup(old_net_info);
-                        thread::sleep(std::time::Duration::from_secs(1));
-                        sys::post_tun_reload_setup(new_net_info);
+                        // thread::sleep(std::time::Duration::from_secs(1));
+                        // sys::post_tun_reload_setup(new_net_info);
+
                     }
                     SIGTERM
                     // | SIGINT | SIGQUIT
@@ -392,12 +396,13 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                     _ => unreachable!(),
                 }
             }
-        }
+        }*/
 
-        let signals = Signals::new(&[SIGTERM, SIGALRM])?;
+        let mut signals = Signals::new(&[SIGTERM, SIGALRM])?;
         let signals_handle = signals.handle();
         let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
+        let network_changed = network_changed.clone();
 
         let new_net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
             sys::get_net_info()
@@ -406,7 +411,30 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         };
 
         tokio::spawn(async move {
-            handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
+            // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
+            while let Some(signal) = signals.next().await {
+                match signal {
+                    SIGALRM => {
+                        log::trace!("signal received {}", &SIGALRM);
+                        // sys::post_tun_completion_setup(old_net_info);
+                        // thread::sleep(std::time::Duration::from_secs(1));
+                        // sys::post_tun_reload_setup(new_net_info);
+                        network_changed.store(true, Ordering::Relaxed);
+
+                    }
+                    SIGTERM
+                    // | SIGINT | SIGQUIT
+                    => {
+                        log::trace!("signal received {}", &SIGTERM);
+                        // sys::post_tun_completion_setup(new_net_info);
+                        if let Err(e) = shutdown_tx.send(()).await {
+                            log::warn!("sending shutdown signal failed: {}", e);
+                        }
+                        return;
+                    }
+                    _ => unreachable!(),
+                }
+            }
             signals_handle.close();
         });
     }
@@ -483,7 +511,13 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     rt.block_on(futures::future::select_all(tasks));
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
-    sys::post_tun_completion_setup(&net_info);
+        {
+            if !network_changed.load(Ordering::Relaxed){
+                log::trace!("runtime {} quit as untouched os route", &INSTANCE_ID);
+                sys::post_tun_completion_setup(&net_info);
+            }
+
+        }
 
     // #[cfg(all(any(target_os = "windows")))]
     // sys::post_tun_completion_setup(&net_info);
