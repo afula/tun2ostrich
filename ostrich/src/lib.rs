@@ -303,7 +303,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     #[cfg(all(any(target_os = "windows")))]
     // let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
     // let net_info =   sys::get_net_info();
-    let net_info = sys::NetInfo::default();
+    let net_info = sys_raw::NetInfo::default();
     // } else {
     // sys::NetInfo::default()
     // };
@@ -353,7 +353,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     }
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
-    sys::post_tun_creation_setup(&net_info);
+        sys::post_tun_creation_setup(&net_info);
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
     // }
@@ -400,15 +400,15 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
 
         let mut signals = Signals::new(&[SIGTERM, SIGALRM])?;
         let signals_handle = signals.handle();
-        let net_info = net_info.clone();
+        // let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
         let network_changed = network_changed.clone();
 
-        let new_net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
-            sys::get_net_info()
-        } else {
-            sys::NetInfo::default()
-        };
+        // let new_net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
+        //     sys::get_net_info()
+        // } else {
+        //     sys::NetInfo::default()
+        // };
 
         tokio::spawn(async move {
             // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
