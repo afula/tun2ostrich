@@ -420,6 +420,9 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                         // thread::sleep(std::time::Duration::from_secs(1));
                         // sys::post_tun_reload_setup(new_net_info);
                         network_changed.store(true, Ordering::Relaxed);
+                        if let Err(e) = shutdown_tx.send(()).await {
+                            log::warn!("sending shutdown signal failed: {}", e);
+                        }
 
                     }
                     SIGTERM

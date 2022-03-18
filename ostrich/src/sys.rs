@@ -103,6 +103,13 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
                 .unwrap(),
         )
         .unwrap();
+                #[cfg(target_os = "macos")]
+        {
+
+                common::cmd::delete_default_ipv4_route(None).unwrap();
+
+        }
+
         // common::cmd::delete_default_ipv4_route(None).unwrap();
 
         common::cmd::add_default_ipv4_route(
@@ -278,6 +285,21 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
         //     true,
         // )
         // .unwrap();
+
+        #[cfg(target_os = "macos")]
+            {
+
+                common::cmd::delete_default_ipv4_route(None).unwrap();
+
+                common::cmd::add_default_ipv4_route(
+                    ipv4_gw.parse::<Ipv4Addr>().unwrap(),
+                    iface.clone(),
+                    true,
+                )
+                .unwrap();
+
+            }
+
 
         /*        #[cfg(target_os = "linux")]
         {
