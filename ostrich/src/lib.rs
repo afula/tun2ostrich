@@ -398,7 +398,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             }
         }*/
 
-        let mut signals = Signals::new(&[SIGTERM, SIGALRM])?;
+        let mut signals = Signals::new(&[SIGTERM, SIGCONT])?;
         let signals_handle = signals.handle();
         // let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
@@ -414,8 +414,8 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
             while let Some(signal) = signals.next().await {
                 match signal {
-                    SIGALRM => {
-                        log::trace!("signal received {}", &SIGALRM);
+                    SIGCONT => {
+                        log::trace!("signal received {}", &SIGCONT);
                         // sys::post_tun_completion_setup(old_net_info);
                         // thread::sleep(std::time::Duration::from_secs(1));
                         // sys::post_tun_reload_setup(new_net_info);
