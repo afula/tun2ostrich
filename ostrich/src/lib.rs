@@ -398,7 +398,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             }
         }*/
 
-        let mut signals = Signals::new(&[SIGTERM, SIGPIPE])?;
+        let mut signals = Signals::new(&[SIGTERM, SIGPIPE,SIGALRM])?;
         let signals_handle = signals.handle();
         // let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
@@ -423,7 +423,15 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                         if let Err(e) = shutdown_tx.send(()).await {
                             log::warn!("sending shutdown signal failed: {}", e);
                         }
-
+                        return;
+                    }
+                    SIGALRM =>{
+                        log::trace!("signal received {}", &SIGALRM);
+                        // sys::post_tun_completion_setup(new_net_info);
+                        if let Err(e) = shutdown_tx.send(()).await {
+                            log::warn!("sending shutdown signal failed: {}", e);
+                        }
+                        return;
                     }
                     SIGTERM
                     // | SIGINT | SIGQUIT
