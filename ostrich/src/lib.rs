@@ -428,6 +428,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
                     SIGALRM =>{
                         log::trace!("signal received {}", &SIGALRM);
                         // sys::post_tun_completion_setup(new_net_info);
+                        network_changed.store(true, Ordering::Relaxed);
                         if let Err(e) = shutdown_tx.send(()).await {
                             log::warn!("sending shutdown signal failed: {}", e);
                         }
