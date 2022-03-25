@@ -303,7 +303,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     #[cfg(all(any(target_os = "windows")))]
     // let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
     // let net_info =   sys::get_net_info();
-    let net_info = sys_raw::NetInfo::default();
+    //let net_info = sys_raw::NetInfo::default();
     // } else {
     // sys::NetInfo::default()
     // };
