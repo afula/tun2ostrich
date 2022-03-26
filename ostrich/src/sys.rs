@@ -102,7 +102,7 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
                 .parse::<Ipv4Addr>()
                 .unwrap(),
         )
-            .unwrap();
+        .unwrap();
         common::cmd::delete_default_ipv4_route(None).unwrap();
 
         common::cmd::add_default_ipv4_route(
@@ -110,20 +110,20 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
             iface.clone(),
             true,
         )
-            .unwrap();
+        .unwrap();
         common::cmd::add_default_ipv4_route(
             ipv4_gw.parse::<Ipv4Addr>().unwrap(),
             iface.clone(),
             false,
         )
-            .unwrap();
+        .unwrap();
 
         #[cfg(target_os = "linux")]
-            {
-                if let Some(a) = ipv4_addr {
-                    common::cmd::add_default_ipv4_rule(a.parse::<Ipv4Addr>().unwrap()).unwrap();
-                }
+        {
+            if let Some(a) = ipv4_addr {
+                common::cmd::add_default_ipv4_rule(a.parse::<Ipv4Addr>().unwrap()).unwrap();
             }
+        }
 
         if *option::GATEWAY_MODE && !ipv4_forwarding {
             common::cmd::set_ipv4_forwarding(true).unwrap();
@@ -135,7 +135,7 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
                 option::DEFAULT_TUN_IPV6_ADDR.parse::<Ipv6Addr>().unwrap(),
                 *option::DEFAULT_TUN_IPV6_PREFIXLEN,
             )
-                .unwrap();
+            .unwrap();
 
             if let Some(ipv6_gw) = ipv6_gw {
                 common::cmd::delete_default_ipv6_route(None).unwrap();
@@ -144,21 +144,21 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
                     iface.clone(),
                     true,
                 )
-                    .unwrap();
+                .unwrap();
                 common::cmd::add_default_ipv6_route(
                     ipv6_gw.parse::<Ipv6Addr>().unwrap(),
                     iface.clone(),
                     false,
                 )
-                    .unwrap();
+                .unwrap();
             }
 
             #[cfg(target_os = "linux")]
-                {
-                    if let Some(a) = ipv6_addr {
-                        common::cmd::add_default_ipv6_rule(a.parse::<Ipv6Addr>().unwrap()).unwrap();
-                    }
+            {
+                if let Some(a) = ipv6_addr {
+                    common::cmd::add_default_ipv6_rule(a.parse::<Ipv6Addr>().unwrap()).unwrap();
                 }
+            }
 
             if *option::GATEWAY_MODE && !ipv6_forwarding {
                 common::cmd::set_ipv6_forwarding(true).unwrap();
@@ -166,11 +166,11 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
         }
 
         #[cfg(target_os = "linux")]
-            {
-                if *option::GATEWAY_MODE {
-                    common::cmd::add_iptable_forward(&*option::DEFAULT_TUN_NAME).unwrap();
-                }
+        {
+            if *option::GATEWAY_MODE {
+                common::cmd::add_iptable_forward(&*option::DEFAULT_TUN_NAME).unwrap();
             }
+        }
     }
 }
 
@@ -194,14 +194,14 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
             iface.clone(),
             true,
         )
-            .unwrap();
+        .unwrap();
 
         #[cfg(target_os = "linux")]
-            {
-                if let Some(a) = ipv4_addr {
-                    common::cmd::delete_default_ipv4_rule(a.parse::<Ipv4Addr>().unwrap()).unwrap();
-                }
+        {
+            if let Some(a) = ipv4_addr {
+                common::cmd::delete_default_ipv4_rule(a.parse::<Ipv4Addr>().unwrap()).unwrap();
             }
+        }
 
         if *option::GATEWAY_MODE && !ipv4_forwarding {
             common::cmd::set_ipv4_forwarding(false).unwrap();
@@ -216,15 +216,15 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
                     iface.clone(),
                     true,
                 )
-                    .unwrap();
+                .unwrap();
             }
 
             #[cfg(target_os = "linux")]
-                {
-                    if let Some(a) = ipv6_addr {
-                        common::cmd::delete_default_ipv6_rule(a.parse::<Ipv6Addr>().unwrap()).unwrap();
-                    }
+            {
+                if let Some(a) = ipv6_addr {
+                    common::cmd::delete_default_ipv6_rule(a.parse::<Ipv6Addr>().unwrap()).unwrap();
                 }
+            }
 
             if *option::GATEWAY_MODE && !ipv6_forwarding {
                 common::cmd::set_ipv6_forwarding(false).unwrap();
@@ -232,10 +232,10 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
         }
 
         #[cfg(target_os = "linux")]
-            {
-                if *option::GATEWAY_MODE {
-                    common::cmd::delete_iptable_forward(&*option::DEFAULT_TUN_NAME).unwrap();
-                }
+        {
+            if *option::GATEWAY_MODE {
+                common::cmd::delete_iptable_forward(&*option::DEFAULT_TUN_NAME).unwrap();
             }
+        }
     }
 }

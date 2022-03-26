@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-
 pub mod dispatcher;
 pub mod dns_client;
 pub mod inbound;

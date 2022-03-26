@@ -1,12 +1,21 @@
 [package]
 name = "ostrich-bin"
 version = "0.3.1"
-authors = ["eycorsican <eric.y.corsican@gmail.com>"]
 edition = "2018"
 
 [[bin]]
-name = "ostrich"
-path = "src/main.rs"
+name = "ostrich_worker"
+path = "src/worker.rs"
+
+[[bin]]
+name = "ostrich_manager"
+path = "src/manager.rs"
+
+
+#[[bin]]
+#name = "ostrich"
+#path = "src/worker.rs"
+
 
 [features]
 default = [
@@ -26,7 +35,9 @@ default-openssl = [
 
 
 [dependencies]
-ostrich = { path = "../ostrich", default-features = false, optional = true }
+ostrich = { path = "../ostrich", default-features = true }
 tokio = { version = "1", features = ["rt"] }
 argh = "0.1"
+rlimit = "0.6.2"
 #async-process = "1.2.0"
+#async-std = "1.11.0"

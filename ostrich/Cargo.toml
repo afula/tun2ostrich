@@ -11,7 +11,8 @@ path = "src/lib.rs"
 
 [features]
 default = [
-    "default-ring"
+    "default-ring",
+    "ctrlc"
 ]
 
 default-ring = [

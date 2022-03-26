@@ -1269,6 +1269,7 @@ version = "0.3.1"
 dependencies = [
  "argh",
  "ostrich",
+ "rlimit",
  "tokio",
 ]
 
@@ -1658,6 +1659,15 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi",
+]
+
+[[package]]
+name = "rlimit"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc0bf25554376fd362f54332b8410a625c71f15445bca32ffdfdf4ec9ac91726"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

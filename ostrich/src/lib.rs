@@ -11,8 +11,8 @@ use app::{
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use std::io;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Once;
 use thiserror::Error;
@@ -300,7 +300,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     } else {
         sys::NetInfo::default()
     };
-    #[cfg(all(any(target_os = "windows")))]
+    //#[cfg(all(any(target_os = "windows")))]
     // let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
     // let net_info =   sys::get_net_info();
     //let net_info = sys_raw::NetInfo::default();
@@ -319,6 +319,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             } else {
                 iface.clone()
             };
+            println!("OUTBOUND_INTERFACE: {:?}", binds);
             std::env::set_var("OUTBOUND_INTERFACE", binds);
         }
     }
@@ -353,7 +354,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     }
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
-        sys::post_tun_creation_setup(&net_info);
+    sys::post_tun_creation_setup(&net_info);
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
     // }
@@ -368,7 +369,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         use std::thread;
         // use signal_hook::iterator::Signals;
 
-/*        async fn handle_signals(
+        /*        async fn handle_signals(
             mut signals: Signals,
             _old_net_info: &NetInfo,
             new_net_info: &NetInfo,
@@ -398,7 +399,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             }
         }*/
 
-        let mut signals = Signals::new(&[SIGTERM, SIGPIPE,SIGALRM])?;
+        let mut signals = Signals::new(&[SIGTERM, SIGPIPE, SIGALRM])?;
         let signals_handle = signals.handle();
         // let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
@@ -523,13 +524,12 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     rt.block_on(futures::future::select_all(tasks));
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
-        {
-            if !network_changed.load(Ordering::Relaxed){
-                log::trace!("runtime {} quit as untouched os route", &INSTANCE_ID);
-                sys::post_tun_completion_setup(&net_info);
-            }
-
+    {
+        if !network_changed.load(Ordering::Relaxed) {
+            log::trace!("runtime {} quit as untouched os route", &INSTANCE_ID);
+            sys::post_tun_completion_setup(&net_info);
         }
+    }
 
     // #[cfg(all(any(target_os = "windows")))]
     // sys::post_tun_completion_setup(&net_info);

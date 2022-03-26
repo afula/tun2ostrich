@@ -1,6 +1,6 @@
 {
   "log": {
-    "level": "trace",
+    "level": "error",
     "output": "console"
   },
   "dns": {
