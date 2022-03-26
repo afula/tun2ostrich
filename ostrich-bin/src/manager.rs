@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         loop {
             sleep(Duration::from_secs(1)).await;
-            println!("timer is running");
+            // println!("timer is running");
             let interface =
                 cmd::get_default_interface().expect("cant get default network interface");
             if interface != "utun233" {
