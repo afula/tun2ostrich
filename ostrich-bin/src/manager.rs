@@ -8,11 +8,13 @@ use tokio::time::sleep;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the runtime
-    let rt = runtime::Builder::new_current_thread().enable_time().build()?;
+    let rt = runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?;
     // use_max_file_limit();
     println!("#0");
     rt.block_on(async {
-        let handle = std::thread::spawn(||{
+        let handle = std::thread::spawn(|| {
             println!("#1");
             let p = Command::new("./ostrich_worker")
                 .arg("-c")
@@ -22,39 +24,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if !p.success() {
                 println!("init worker failed")
             }
-        }
-        );
+        });
         loop {
-            sleep(Duration::from_secs(1)).await;
-            // println!("timer is running");
-            let interface =
-                cmd::get_default_interface().expect("cant get default network interface");
-            if interface != "utun233" {
-                println!("network changed");
-                let p = Command::new("killall")
-                    .arg("-13")
-                    .arg("ostrich_worker")
-                    .status()
-                    .expect("cant send network signal");
-                if !p.success() {
-                    println!("send network signal failed")
+            sleep(Duration::from_secs(2)).await;
+            if let Ok(interface) = cmd::get_default_interface_v2() {
+                println!("default network interface: {:?}",&interface);
+                if interface != "utun233" {
+                    println!("network changed");
+                    let p = Command::new("killall")
+                        .arg("-13")
+                        .arg("ostrich_worker")
+                        .status()
+                        .expect("cant send network signal");
+                    if !p.success() {
+                        println!("send network signal failed")
+                    }
+                    println!("send network changed signal");
+                    let p = Command::new("./ostrich_worker")
+                        .arg("-c")
+                        .arg("tun_auto_win.json")
+                        .status()
+                        .expect("cant start ostrich_manager");
+                    if !p.success() {
+                        println!("init worker failed")
+                    }
+                    println!("reload");
                 }
-                println!("send network changed signal");
-                let p = Command::new("./ostrich_worker")
-                    .arg("-c")
-                    .arg("tun_auto_win.json")
-                    .status()
-                    .expect("cant start ostrich_manager");
-                if !p.success() {
-                    println!("init worker failed")
-                }
-                println!("reload");
             }
         }
         handle.join().unwrap();
     })
 }
-
 
 /// Set our current maximum-file limit to a large value, if we can.
 ///
@@ -76,6 +76,6 @@ pub fn use_max_file_limit() {
 
     match rlimit::utils::increase_nofile_limit(DFLT_MAX_N_FILES) {
         Ok(n) => println!("Increased process file limit to {}", n),
-        Err(e) => println!("Error while increasing file limit: {}", e)
+        Err(e) => println!("Error while increasing file limit: {}", e),
     }
 }

@@ -68,6 +68,29 @@ pub fn get_default_interface() -> Result<String> {
     let res = cols[1].to_string();
     Ok(res)
 }
+pub fn get_default_interface_v2() -> Result<String> {
+    let out = Command::new("route")
+        .arg("-n")
+        .arg("get")
+        .arg("1")
+        .output()?;
+        // .expect("failed to execute command");
+    // assert!(out.status.success());
+    let out = String::from_utf8_lossy(&out.stdout).to_string();
+    println!("get_default_interface_v2: {:?}",out);
+    let cols: Vec<&str> = out
+        .lines()
+        .find(|l| l.contains("interface"))
+        // map_err(|e| anyhow::anyhow!("interface sparse error: {:?}",e))?
+        .ok_or(anyhow::anyhow!("interface sparse error"))?
+        // .unwrap()
+        .split_whitespace()
+        .map(str::trim)
+        .collect();
+    // assert!(cols.len() == 2);
+    let res = cols[1].to_string();
+    Ok(res)
+}
 
 pub fn add_interface_ipv4_address(
     name: &str,
