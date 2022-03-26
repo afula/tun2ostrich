@@ -39,6 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if !p.success() {
                     println!("send network signal failed")
                 }
+                println!("send network changed signal");
                 let p = Command::new("./ostrich_worker")
                     .arg("-c")
                     .arg("tun_auto_win.json")
@@ -47,6 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if !p.success() {
                     println!("init worker failed")
                 }
+                println!("reload");
             }
         }
         handle.join().unwrap();
