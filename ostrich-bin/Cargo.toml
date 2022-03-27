@@ -39,5 +39,8 @@ ostrich = { path = "../ostrich", default-features = true }
 tokio = { version = "1", features = ["rt"] }
 argh = "0.1"
 rlimit = "0.6.2"
+signal-hook = "0.3.13"
+signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
+futures = "0.3.21"
 #async-process = "1.2.0"
 #async-std = "1.11.0"

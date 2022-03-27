@@ -2,9 +2,14 @@ use argh::FromArgs;
 use ostrich::common::cmd;
 use std::process::exit;
 use std::process::Command;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tokio::runtime;
 use tokio::time::sleep;
+use futures::stream::StreamExt;
+use signal_hook::consts::signal::*;
+use signal_hook_tokio::Signals;
+use std::thread;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the runtime
@@ -22,6 +27,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if !p.success() {
                 println!("init worker failed")
             }
+        });
+
+        let mut signals = Signals::new(&[SIGTERM])?;
+        let signals_handle = signals.handle();
+
+        tokio::spawn(async move {
+            // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
+            while let Some(signal) = signals.next().await {
+                match signal {
+                    SIGTERM
+                    // | SIGINT | SIGQUIT
+                    => {
+                        println!("signal received {}", &SIGTERM);
+                        // sys::post_tun_completion_setup(new_net_info);
+                        let p = Command::new("killall")
+                            .arg("ostrich_worker")
+                            .status()
+                            .expect("cant send network signal");
+                        if !p.success() {
+                            println!("send network signal failed")
+                        }
+                        return;
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            signals_handle.close();
         });
         loop {
             sleep(Duration::from_secs(2)).await;

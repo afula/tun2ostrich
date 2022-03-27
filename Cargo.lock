@@ -1268,8 +1268,11 @@ name = "ostrich-bin"
 version = "0.3.1"
 dependencies = [
  "argh",
+ "futures",
  "ostrich",
  "rlimit",
+ "signal-hook",
+ "signal-hook-tokio",
  "tokio",
 ]
 
