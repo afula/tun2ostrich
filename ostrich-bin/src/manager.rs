@@ -15,6 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the runtime
     let rt = runtime::Builder::new_current_thread()
         .enable_time()
+        .enable_io()
         .build()?;
     // use_max_file_limit();
     rt.block_on(async {
