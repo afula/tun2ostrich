@@ -40,14 +40,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("send network signal failed")
                     }
                     println!("send network changed signal");
-                    let p = Command::new("./ostrich_worker")
-                        .arg("-c")
-                        .arg("tun_auto_win.json")
-                        .status()
-                        .expect("cant start ostrich_manager");
-                    if !p.success() {
-                        println!("init worker failed")
-                    }
+                    let handle = std::thread::spawn(|| {
+                        println!("#1");
+                        let p = Command::new("./ostrich_worker")
+                            .arg("-c")
+                            .arg("tun_auto_win.json")
+                            .status()
+                            .expect("cant start ostrich_manager");
+                        if !p.success() {
+                            println!("init worker failed")
+                        }
+                    });
                     println!("reload");
                 }
             }
