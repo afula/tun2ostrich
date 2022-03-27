@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
     // use_max_file_limit();
     rt.block_on(async {
-        let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
+        // let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
         let handle0 = std::thread::spawn(|| {
             let p = Command::new("./ostrich_worker")
                 .arg("-c")
@@ -82,6 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if !p.success() {
                             println!("send network signal failed")
                         }
+
                         return;
                     }
                     _ => unreachable!(),
@@ -91,7 +92,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
         handle0.join().unwrap();
-        handle1.join().unwrap();
         // Ok(())
     });
     Ok(())
