@@ -1,16 +1,12 @@
-use argh::FromArgs;
+use futures::stream::StreamExt;
 use ostrich::common::cmd;
-use std::process::exit;
+use signal_hook::consts::signal::*;
+use signal_hook_tokio::Signals;
 use std::process::Command;
-use std::sync::atomic::Ordering;
+use std::process::{Stdio};
 use std::time::Duration;
 use tokio::runtime;
 use tokio::time::sleep;
-use futures::stream::StreamExt;
-use signal_hook::consts::signal::*;
-use signal_hook_tokio::Signals;
-use std::thread;
-use tokio::sync::mpsc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the runtime
@@ -21,10 +17,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // use_max_file_limit();
     rt.block_on(async {
         // let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
-        let handle0 = std::thread::spawn(|| {
+        std::thread::spawn(|| {
             let p = Command::new("./ostrich_worker")
                 .arg("-c")
                 .arg("latest.json")
+                .stderr(Stdio::null())
+                .stdout(Stdio::null())
+                .stdin(Stdio::null())
                 .status()
                 .expect("cant start ostrich_manager");
             if !p.success() {
@@ -32,44 +31,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         });
 
-        let mut signals = Signals::new(&[SIGTERM]).unwrap();
-        let signals_handle = signals.handle();
-        let handle1=
-            tokio::spawn(async move{
-                loop {
-                    sleep(Duration::from_secs(2)).await;
-                    if let Ok(interface) = cmd::get_default_interface_v2() {
-                        println!("default network interface: {:?}", &interface);
-                        if interface != "utun233" {
-                            println!("network changed");
-                            let p = Command::new("killall")
-                                .arg("-13")
-                                .arg("ostrich_worker")
-                                .status()
-                                .expect("cant send network signal");
-                            if !p.success() {
-                                println!("send network signal failed")
-                            }
-                            println!("send network changed signal");
-                            let handle = std::thread::spawn(|| {
-                                println!("#1");
-                                let p = Command::new("./ostrich_worker")
-                                    .arg("-c")
-                                    .arg("latest.json")
-                                    .status()
-                                    .expect("cant start ostrich_manager");
-                                if !p.success() {
-                                    println!("init worker failed")
-                                }
-                            });
-                            println!("reload");
+        tokio::spawn(async move {
+            loop {
+                sleep(Duration::from_secs(3)).await;
+                if let Ok(interface) = cmd::get_default_interface_v2() {
+                    println!("default network interface: {:?}", &interface);
+                    if interface != "utun233" {
+                        println!("network changed");
+                        let p = Command::new("killall")
+                            .arg("-13")
+                            .arg("ostrich_worker")
+                            .stderr(Stdio::null())
+                            .stdout(Stdio::null())
+                            .stdin(Stdio::null())
+                            .status()
+                            .expect("cant send network signal");
+                        if !p.success() {
+                            println!("send network signal failed")
                         }
+                        println!("send network changed signal");
+                        std::thread::spawn(|| {
+                            let p = Command::new("./ostrich_worker")
+                                .arg("-c")
+                                .arg("latest.json")
+                                .stderr(Stdio::null())
+                                .stdout(Stdio::null())
+                                .stdin(Stdio::null())
+                                .status()
+                                .expect("cant start ostrich_manager");
+                            if !p.success() {
+                                println!("init worker failed")
+                            }
+                        });
+                        println!("reload");
                     }
                 }
-            });
-            // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
-            while let Some(signal) = signals.next().await {
-                match signal {
+            }
+        });
+        let mut signals = Signals::new(&[SIGTERM]).unwrap();
+        let signals_handle = signals.handle();
+        while let Some(signal) = signals.next().await {
+            match signal {
                     SIGTERM
                     // | SIGINT | SIGQUIT
                     => {
@@ -77,46 +79,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         // sys::post_tun_completion_setup(new_net_info);
                         let p = Command::new("killall")
                             .arg("ostrich_worker")
+                            .stderr(Stdio::null())
+                            .stdout(Stdio::null())
+                            .stdin(Stdio::null())
                             .status()
                             .expect("cant send network signal");
                         if !p.success() {
                             println!("send network signal failed")
                         }
 
-                        return;
+                        break;
                     }
                     _ => unreachable!(),
                 }
-            }
-            signals_handle.close();
-
-
-        handle0.join().unwrap();
-        // Ok(())
+        }
+        signals_handle.close();
+        println!("manager exits gracefully");
     });
     Ok(())
-}
-
-/// Set our current maximum-file limit to a large value, if we can.
-///
-/// Since we're going to be used as a proxy, we're likely to need a
-/// _lot_ of simultaneous sockets.
-///
-/// # Limitations
-///
-/// Maybe this should take a value from the configuration instead.
-///
-/// This doesn't actually do anything on windows.
-pub fn use_max_file_limit() {
-    /// Default maximum value to set for our maximum-file limit.
-    ///
-    /// If the system supports more than this, we won't ask for it.
-    /// This should be plenty for proxy usage, though relays and onion
-    /// services (once supported) may need more.
-    const DFLT_MAX_N_FILES: u64 = 16384;
-
-    match rlimit::utils::increase_nofile_limit(DFLT_MAX_N_FILES) {
-        Ok(n) => println!("Increased process file limit to {}", n),
-        Err(e) => println!("Error while increasing file limit: {}", e),
-    }
 }
