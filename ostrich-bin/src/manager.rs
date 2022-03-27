@@ -32,30 +32,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let mut signals = Signals::new(&[SIGTERM])?;
         let signals_handle = signals.handle();
-
-        tokio::spawn(async move {
-            // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
-            while let Some(signal) = signals.next().await {
-                match signal {
-                    SIGTERM
-                    // | SIGINT | SIGQUIT
-                    => {
-                        println!("signal received {}", &SIGTERM);
-                        // sys::post_tun_completion_setup(new_net_info);
-                        let p = Command::new("killall")
-                            .arg("ostrich_worker")
-                            .status()
-                            .expect("cant send network signal");
-                        if !p.success() {
-                            println!("send network signal failed")
+        std::thread::spawn(|| {
+            tokio::spawn(async move {
+                // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
+                while let Some(signal) = signals.next().await {
+                    match signal {
+                        SIGTERM
+                        // | SIGINT | SIGQUIT
+                        => {
+                            println!("signal received {}", &SIGTERM);
+                            // sys::post_tun_completion_setup(new_net_info);
+                            let p = Command::new("killall")
+                                .arg("ostrich_worker")
+                                .status()
+                                .expect("cant send network signal");
+                            if !p.success() {
+                                println!("send network signal failed")
+                            }
+                            return;
                         }
-                        return;
+                        _ => unreachable!(),
                     }
-                    _ => unreachable!(),
                 }
-            }
-            signals_handle.close();
+                signals_handle.close();
+            });
         });
+
         loop {
             sleep(Duration::from_secs(2)).await;
             if let Ok(interface) = cmd::get_default_interface_v2() {
