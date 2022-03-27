@@ -10,6 +10,7 @@ use futures::stream::StreamExt;
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
 use std::thread;
+use tokio::sync::mpsc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the runtime
@@ -19,6 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
     // use_max_file_limit();
     rt.block_on(async {
+        let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
         let handle0 = std::thread::spawn(|| {
             let p = Command::new("./ostrich_worker")
                 .arg("-c")
@@ -33,7 +35,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut signals = Signals::new(&[SIGTERM]).unwrap();
         let signals_handle = signals.handle();
         let handle1=
-        std::thread::spawn(|| {
             tokio::spawn(async move{
                 loop {
                     sleep(Duration::from_secs(2)).await;
@@ -65,9 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-            })
-
-        });
+            });
             // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
             while let Some(signal) = signals.next().await {
                 match signal {
