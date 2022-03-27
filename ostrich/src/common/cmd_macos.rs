@@ -74,10 +74,10 @@ pub fn get_default_interface_v2() -> Result<String> {
         .arg("get")
         .arg("1")
         .output()?;
-        // .expect("failed to execute command");
+    // .expect("failed to execute command");
     // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
-    println!("get_default_interface_v2: {:?}",out);
+    println!("get_default_interface_v2: {:?}", out);
     let cols: Vec<&str> = out
         .lines()
         .find(|l| l.contains("interface"))

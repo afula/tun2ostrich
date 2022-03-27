@@ -122,7 +122,7 @@ pub fn get_default_interface_v2() -> Result<String> {
         .output()?;
     // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
-    println!("get_default_interface_v2: {:?}",out);
+    println!("get_default_interface_v2: {:?}", out);
 
     let cols: Vec<&str> = out
         .lines()

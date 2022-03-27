@@ -12,13 +12,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .enable_time()
         .build()?;
     // use_max_file_limit();
-    println!("#0");
     rt.block_on(async {
         let handle = std::thread::spawn(|| {
-            println!("#1");
             let p = Command::new("./ostrich_worker")
                 .arg("-c")
-                .arg("tun_auto_win.json")
+                .arg("latest.json")
                 .status()
                 .expect("cant start ostrich_manager");
             if !p.success() {
@@ -28,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         loop {
             sleep(Duration::from_secs(2)).await;
             if let Ok(interface) = cmd::get_default_interface_v2() {
-                println!("default network interface: {:?}",&interface);
+                println!("default network interface: {:?}", &interface);
                 if interface != "utun233" {
                     println!("network changed");
                     let p = Command::new("killall")
@@ -44,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("#1");
                         let p = Command::new("./ostrich_worker")
                             .arg("-c")
-                            .arg("tun_auto_win.json")
+                            .arg("latest.json")
                             .status()
                             .expect("cant start ostrich_manager");
                         if !p.success() {
