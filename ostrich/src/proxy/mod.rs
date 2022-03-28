@@ -78,6 +78,23 @@ pub use datagram::{
     SimpleInboundDatagram, SimpleInboundDatagramRecvHalf, SimpleInboundDatagramSendHalf,
     SimpleOutboundDatagram, SimpleOutboundDatagramRecvHalf, SimpleOutboundDatagramSendHalf,
 };
+
+#[cfg(target_os = "windows")]
+use winapi::{
+    ctypes::{c_char, c_int},
+    shared::{
+        minwindef::{BOOL, DWORD, FALSE, LPDWORD, LPVOID},
+        netioapi::if_nametoindex,
+        ntdef::PCSTR,
+        ws2def::{IPPROTO_IP, IPPROTO_IPV6, IPPROTO_TCP},
+        ws2ipdef::IPV6_UNICAST_IF,
+    },
+    um::{
+        mswsock::SIO_UDP_CONNRESET,
+        winsock2::{setsockopt, WSAGetLastError, WSAIoctl, SOCKET, SOCKET_ERROR},
+    },
+};
+
 pub use stream::BufHeadProxyStream;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
