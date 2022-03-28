@@ -323,20 +323,11 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             std::env::set_var("OUTBOUND_INTERFACE", binds);
         }
     }
-    // #[cfg(all(any(target_os = "windows")))]
+    // #[cfg(all(feature = "inbound-tun", target_os = "windows"))]
     // {
-    //     if let sys::NetInfo {
-    //         default_interface: Some(iface),
-    //         ..
-    //     } = &net_info
-    //     {
-    //         let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
-    //             format!("{},{}", v, iface)
-    //         } else {
-    //             iface.clone()
-    //         };
-    //         std::env::set_var("OUTBOUND_INTERFACE", binds);
-    //     }
+    //     let interface = common::cmd::get_default_interface().unwrap();
+    //     std::env::set_var("OUTBOUND_INTERFACE", interface);
+        
     // }
 
     #[cfg(all(
