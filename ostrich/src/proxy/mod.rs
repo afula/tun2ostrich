@@ -80,6 +80,8 @@ pub use datagram::{
 };
 
 #[cfg(target_os = "windows")]
+use std::{mem,io::ErrorKind};
+#[cfg(target_os = "windows")]
 use winapi::{
     ctypes::{c_char, c_int},
     shared::{
@@ -259,32 +261,39 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
                     trace!("socket bind {}", iface);
                     return Ok(());
                 }
-                #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+                // #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+                // {
+                //     return Err(io::Error::new(
+                //         io::ErrorKind::Other,
+                //         "binding to interface is not supported on this platform",
+                //     ));
+                // }
+                #[cfg(target_os = "windows")]
                 {
-                    return Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        "binding to interface is not supported on this platform",
-                    ));
-                }
-                #[cfg(target_os = "windows")]{
+                    // ws2ipdef.h
+                    // https://github.com/retep998/winapi-rs/pull/1007
+                    const IP_UNICAST_IF: DWORD = 31;
                     let handle = socket.as_raw_socket() as SOCKET;
 
                     unsafe {
                         // Windows if_nametoindex requires a C-string for interface name
-                        let ifname = CString::new(iface).expect("iface");
+                        let ifname = CString::new(iface.as_str()).expect("iface");
 
                         // https://docs.microsoft.com/en-us/previous-versions/windows/hardware/drivers/ff553788(v=vs.85)
                         let if_index = if_nametoindex(ifname.as_ptr() as PCSTR);
                         if if_index == 0 {
                             // If the if_nametoindex function fails and returns zero, it is not possible to determine an error code.
                             error!("if_nametoindex {} fails", iface);
-                            return Err(io::Error::new(ErrorKind::InvalidInput, "invalid interface name"));
+                            return Err(io::Error::new(
+                                ErrorKind::InvalidInput,
+                                "invalid interface name",
+                            ));
                         }
 
                         // https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options
                         let if_index = if_index as DWORD;
 
-                        let ret = match addr {
+                        let ret = match indicator {
                             SocketAddr::V4(..) => setsockopt(
                                 handle,
                                 IPPROTO_IP as c_int,
@@ -306,6 +315,7 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
                             error!("set IP_UNICAST_IF / IPV6_UNICAST_IF error: {}", err);
                             return Err(err);
                         }
+                        trace!("socket bind {}", iface);
                     }
                 }
             }
