@@ -3,7 +3,7 @@ use ostrich::common::cmd;
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
 use std::process::Command;
-use std::process::{Stdio};
+use std::process::Stdio;
 use std::time::Duration;
 use tokio::runtime;
 use tokio::time::sleep;

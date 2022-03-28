@@ -249,6 +249,48 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
                         "binding to interface is not supported on this platform",
                     ));
                 }
+                #[cfg(target_os = "windows")]{
+                    let handle = socket.as_raw_socket() as SOCKET;
+
+                    unsafe {
+                        // Windows if_nametoindex requires a C-string for interface name
+                        let ifname = CString::new(iface).expect("iface");
+
+                        // https://docs.microsoft.com/en-us/previous-versions/windows/hardware/drivers/ff553788(v=vs.85)
+                        let if_index = if_nametoindex(ifname.as_ptr() as PCSTR);
+                        if if_index == 0 {
+                            // If the if_nametoindex function fails and returns zero, it is not possible to determine an error code.
+                            error!("if_nametoindex {} fails", iface);
+                            return Err(io::Error::new(ErrorKind::InvalidInput, "invalid interface name"));
+                        }
+
+                        // https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options
+                        let if_index = if_index as DWORD;
+
+                        let ret = match addr {
+                            SocketAddr::V4(..) => setsockopt(
+                                handle,
+                                IPPROTO_IP as c_int,
+                                IP_UNICAST_IF as c_int,
+                                &if_index as *const _ as *const c_char,
+                                mem::size_of_val(&if_index) as c_int,
+                            ),
+                            SocketAddr::V6(..) => setsockopt(
+                                handle,
+                                IPPROTO_IPV6 as c_int,
+                                IPV6_UNICAST_IF as c_int,
+                                &if_index as *const _ as *const c_char,
+                                mem::size_of_val(&if_index) as c_int,
+                            ),
+                        };
+
+                        if ret == SOCKET_ERROR {
+                            let err = io::Error::from_raw_os_error(WSAGetLastError());
+                            error!("set IP_UNICAST_IF / IPV6_UNICAST_IF error: {}", err);
+                            return Err(err);
+                        }
+                    }
+                }
             }
             OutboundBind::Ip(addr) => {
                 if (addr.is_ipv4() && indicator.is_ipv4())
