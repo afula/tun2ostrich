@@ -17,6 +17,7 @@ use tokio::sync::Mutex as TokioMutex;
 ))]
 use tun::{self, Device, TunPacket};
 
+use crate::proxy::tun::netstack::tun_build;
 use crate::{
     app::dispatcher::Dispatcher,
     app::fake_dns::{FakeDns, FakeDnsMode},
@@ -24,8 +25,6 @@ use crate::{
     config::{Inbound, TunInboundSettings},
     option, Runner,
 };
-
-use super::netstack::NetStack;
 
 const MTU: usize = 1500;
 
@@ -101,7 +100,15 @@ pub fn new(
 
             cfg.up();
         }
-        let tun = tun::create_as_async(&cfg)
+        tun_build(
+            inbound.tag.clone(),
+            cfg,
+            dispatcher,
+            nat_manager,
+            fake_dns_mode,
+            fake_dns_filters,
+        )
+        /*      let tun = tun::create_as_async(&cfg)
             .map_err(|e| anyhow!("create tun failed: {}", e))
             .expect("cant create tun device");
 
@@ -163,7 +170,7 @@ pub fn new(
             info!("tun inbound started");
             futures::future::select(t2s, s2t).await;
             info!("tun inbound exited");
-        }))
+        }))*/
     }
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "windows")))]

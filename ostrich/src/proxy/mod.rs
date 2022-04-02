@@ -17,7 +17,7 @@ use tokio::time::timeout;
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 #[cfg(windows)]
-use std::os::windows::io::{AsRawSocket,RawSocket};
+use std::os::windows::io::{AsRawSocket, RawSocket};
 #[cfg(target_os = "android")]
 use {
     std::os::unix::io::RawFd, tokio::io::AsyncReadExt, tokio::io::AsyncWriteExt,
@@ -171,7 +171,7 @@ impl WinBindSocket for socket2::Socket {
         self.bind(&bind_addr.to_owned().into())
     }
     // fn as_raw_socket(&self) -> RawSocket{
-    //     self.as_raw_socket() 
+    //     self.as_raw_socket()
     // }
 }
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -310,7 +310,10 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
     }))
 }
 #[cfg(target_os = "windows")]
-async fn bind_socket<T: AsRawSocket + WinBindSocket>(socket: &T, indicator: &SocketAddr) -> io::Result<()> {
+async fn bind_socket<T: AsRawSocket + WinBindSocket>(
+    socket: &T,
+    indicator: &SocketAddr,
+) -> io::Result<()> {
     match indicator.ip() {
         IpAddr::V4(v4) if v4.is_loopback() => {
             socket.bind(&SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 0).into())?;
@@ -333,7 +336,7 @@ async fn bind_socket<T: AsRawSocket + WinBindSocket>(socket: &T, indicator: &Soc
                 const IP_UNICAST_IF: DWORD = 31;
                 let handle = socket.as_raw_socket() as SOCKET;
 
-                unsafe {  
+                unsafe {
                     // Windows if_nametoindex requires a C-string for interface name
                     let ifname = CString::new(iface.as_str()).expect("iface");
 

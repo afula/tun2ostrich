@@ -1,4 +1,5 @@
 #![feature(once_cell)]
+#![feature(ip)]
 
 #[cfg(feature = "api")]
 use crate::app::api::api_server::ApiServer;
@@ -327,7 +328,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     // {
     //     let interface = common::cmd::get_default_interface().unwrap();
     //     std::env::set_var("OUTBOUND_INTERFACE", interface);
-        
+
     // }
 
     #[cfg(all(
@@ -390,7 +391,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             }
         }*/
 
-        let mut signals = Signals::new(&[SIGTERM, SIGPIPE, SIGALRM])?;
+        let mut signals = Signals::new(&[SIGTERM, SIGALRM])?;
         let signals_handle = signals.handle();
         // let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
@@ -406,17 +407,17 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
             while let Some(signal) = signals.next().await {
                 match signal {
-                    SIGPIPE => {
-                        log::trace!("signal received {}", &SIGPIPE);
-                        // sys::post_tun_completion_setup(old_net_info);
-                        // thread::sleep(std::time::Duration::from_secs(1));
-                        // sys::post_tun_reload_setup(new_net_info);
-                        network_changed.store(true, Ordering::Relaxed);
-                        if let Err(e) = shutdown_tx.send(()).await {
-                            log::warn!("sending shutdown signal failed: {}", e);
-                        }
-                        return;
-                    }
+                    // SIGPIPE => {
+                    //     log::trace!("signal received {}", &SIGPIPE);
+                    //     // sys::post_tun_completion_setup(old_net_info);
+                    //     // thread::sleep(std::time::Duration::from_secs(1));
+                    //     // sys::post_tun_reload_setup(new_net_info);
+                    //     network_changed.store(true, Ordering::Relaxed);
+                    //     if let Err(e) = shutdown_tx.send(()).await {
+                    //         log::warn!("sending shutdown signal failed: {}", e);
+                    //     }
+                    //     return;
+                    // }
                     SIGALRM =>{
                         log::trace!("signal received {}", &SIGALRM);
                         // sys::post_tun_completion_setup(new_net_info);

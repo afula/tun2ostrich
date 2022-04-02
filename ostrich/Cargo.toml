@@ -3,7 +3,7 @@ name = "ostrich"
 version = "0.1.2"
 authors = ["eycorsican <eric.y.corsican@gmail.com>"]
 edition = "2018"
-build = "build.rs"
+#build = "build.rs"
 
 [lib]
 name = "ostrich"
@@ -187,9 +187,18 @@ indexmap = {git = "https://github.com/bluss/indexmap.git",features =["std"]}
 dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
 futures-timer = "3"
 arc-swap = "1.5.0"
+
+cfg-if = "1"
+
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
-tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
+tun = { version = "0.5.3", optional = true, features = ["async"] }
+etherparse = { version = "0.10"}
+spin = { version = "0.9" }
+byte_string = "1.0"
+ipnet = "2.3"
+smoltcp = { version = "0.8", default-features = false, features = ["std", "log", "medium-ip", "proto-ipv4", "proto-ipv6", "socket-icmp", "socket-udp", "socket-tcp"] }
+#tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
 signal-hook = "0.3.13"
 signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
 
