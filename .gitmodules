@@ -1,3 +1,4 @@
 [submodule "lwip"]
-	path = ostrich/src/proxy/tun/netstack/lwip
-	url = https://github.com/eycorsican/lwip-leaf.git
+		path = ostrich/src/proxy/tun/netstack/lwip
+			url = https://github.com/eycorsican/lwip-leaf.git
+

@@ -7,8 +7,8 @@ use lazy_static::lazy_static;
 // Gets an environment variable by a key and parses as type `T` or returns
 // the provided default value.
 fn get_env_var_or<T>(key: &str, default: T) -> T
-where
-    T: FromStr,
+    where
+        T: FromStr,
 {
     if let Ok(v) = env::var(key) {
         if let Ok(v) = v.parse::<T>() {
@@ -32,7 +32,7 @@ lazy_static! {
 
     /// DNS cache size in the built-in DNS client.
     pub static ref DNS_CACHE_SIZE: usize = {
-        get_env_var_or("DNS_CACHE_SIZE", 65536)
+        get_env_var_or("DNS_CACHE_SIZE", 64)
     };
 }
 
@@ -50,7 +50,7 @@ lazy_static! {
 
     /// DNS cache size in the built-in DNS client.
     pub static ref DNS_CACHE_SIZE: usize = {
-        get_env_var_or("DNS_CACHE_SIZE", 65536 )
+        get_env_var_or("DNS_CACHE_SIZE", 512)
     };
 }
 
@@ -69,12 +69,12 @@ lazy_static! {
 
     /// Uplink timeout after downlink EOF.
     pub static ref TCP_UPLINK_TIMEOUT: u64 = {
-        get_env_var_or("TCP_UPLINK_TIMEOUT", 30)
+        get_env_var_or("TCP_UPLINK_TIMEOUT", 10)
     };
 
     /// Downlink timeout after uplink EOF.
     pub static ref TCP_DOWNLINK_TIMEOUT: u64 = {
-        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 30)
+        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 10)
     };
 
     /// Buffer size for uplink and downlink connections, in KB.

@@ -2,7 +2,6 @@
 
 #[cfg(feature = "api")]
 use crate::app::api::api_server::ApiServer;
-use crate::sys::NetInfo;
 use anyhow::anyhow;
 use app::{
     dispatcher::Dispatcher, dns_client::DnsClient, inbound::manager::InboundManager,
@@ -18,7 +17,11 @@ use std::sync::Once;
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::sync::RwLock;
-
+#[cfg(all(
+feature = "inbound-tun",
+any(target_os = "macos", target_os = "linux", target_os = "windows")
+))]
+use crate::sys::NetInfo;
 pub mod app;
 pub mod common;
 pub mod config;
@@ -406,17 +409,17 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
             while let Some(signal) = signals.next().await {
                 match signal {
-                    SIGPIPE => {
-                        log::trace!("signal received {}", &SIGPIPE);
-                        // sys::post_tun_completion_setup(old_net_info);
-                        // thread::sleep(std::time::Duration::from_secs(1));
-                        // sys::post_tun_reload_setup(new_net_info);
-                        network_changed.store(true, Ordering::Relaxed);
-                        if let Err(e) = shutdown_tx.send(()).await {
-                            log::warn!("sending shutdown signal failed: {}", e);
-                        }
-                        return;
-                    }
+                    // SIGPIPE => {
+                    //     log::trace!("signal received {}", &SIGPIPE);
+                    //     // sys::post_tun_completion_setup(old_net_info);
+                    //     // thread::sleep(std::time::Duration::from_secs(1));
+                    //     // sys::post_tun_reload_setup(new_net_info);
+                    //     network_changed.store(true, Ordering::Relaxed);
+                    //     if let Err(e) = shutdown_tx.send(()).await {
+                    //         log::warn!("sending shutdown signal failed: {}", e);
+                    //     }
+                    //     return;
+                    // }
                     SIGALRM =>{
                         log::trace!("signal received {}", &SIGALRM);
                         // sys::post_tun_completion_setup(new_net_info);
