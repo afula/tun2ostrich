@@ -178,13 +178,13 @@ impl WinBindSocket for socket2::Socket {
     //     self.as_raw_socket()
     // }
 }
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// #[cfg(any(target_os = "macos", target_os = "linux"))]
 impl BindSocket for TcpSocket {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()> {
         self.bind(bind_addr.to_owned())
     }
 }
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+// #[cfg(any(target_os = "macos", target_os = "linux"))]
 impl BindSocket for socket2::Socket {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()> {
         self.bind(&bind_addr.to_owned().into())
