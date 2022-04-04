@@ -42,12 +42,11 @@ fn compile_lwip() {
         // .file("src/proxy/tun/netstack/lwip/core/ipv6/mld6.c")
         .file("src/proxy/tun/netstack/lwip/core/ipv6/nd6.c")
         .file("src/proxy/tun/netstack/lwip/custom/sys_arch.c")
-        .file("src/lwiperr.c") // MARKER BEGIN - END Fixing the Windows builds
         .include("src/proxy/tun/netstack/lwip/custom")
         .include("src/proxy/tun/netstack/lwip/include")
         .warnings(false)
         .flag_if_supported("-Wno-everything")
-        .compile("liblwip"); // MARKER BEGIN - END Remove lib suffix
+        .compile("liblwip.a");
 }
 
 fn generate_lwip_bindings() {
@@ -135,15 +134,13 @@ fn generate_mobile_bindings() {
 fn main() {
     if env::var("CARGO_FEATURE_INBOUND_TUN").is_ok() {
         let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
-        if os == "ios" || os == "android" || os == "linux" || os == "macos" || os == "windows" {
-            // MARKER BEGIN - END
+        if os == "ios" || os == "android" || os == "linux" || os == "macos" {
             compile_lwip();
         }
 
         if env::var("BINDINGS_GEN").is_ok()
-            && (os == "ios" || os == "android" || os == "linux" || os == "macos" || os == "windows")
+            && (os == "ios" || os == "android" || os == "linux" || os == "macos")
         {
-            // MARKER BEGIN - END
             generate_lwip_bindings();
         }
     }
