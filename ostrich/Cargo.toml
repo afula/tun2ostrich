@@ -58,6 +58,7 @@ all-endpoints = [
     "outbound-failover",
     "outbound-tryall",
     "outbound-retry",
+    "dns-over-tls"
     # "outbound-select",
 #    "auto-reload",
 ]
