@@ -87,7 +87,7 @@ outbound-retry = []
 dns-over-tls = []
 # Inbounds
 inbound-socks = []
-inbound-tun = ["tun"]
+inbound-tun = ["tun","netstack-lwip"]
 
 api = ["warp"]
 ctrlc = ["tokio/signal"]
@@ -191,6 +191,7 @@ arc-swap = "1.5.0"
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
 tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
+netstack-lwip = { git = "https://github.com/eycorsican/netstack-lwip.git", optional = true }
 signal-hook = "0.3.13"
 signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
 

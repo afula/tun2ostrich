@@ -1176,6 +1176,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "netstack-lwip"
+version = "0.1.0"
+source = "git+https://github.com/eycorsican/netstack-lwip.git#9575f8d31f945528e716dac793a71a225cdf5c4f"
+dependencies = [
+ "anyhow",
+ "bindgen",
+ "bytes",
+ "cc",
+ "futures",
+ "log",
+ "tokio",
+]
+
+[[package]]
 name = "nibble_vec"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1337,6 +1351,7 @@ dependencies = [
  "maxminddb",
  "memchr",
  "memmap",
+ "netstack-lwip",
  "openssl",
  "openssl-probe",
  "pnet_datalink",
