@@ -191,6 +191,7 @@ pub fn make_config(config: &TrojanOutboundSettings) -> Arc<rustls::ClientConfig>
         .iter()
         .map(|proto| proto.as_bytes().to_vec())
         .collect();
+    tls_config.enable_early_data = true;
     // tls_config.max_fragment_size = args.flag_max_frag_size;
 
     // apply_dangerous_options(config, &mut tls_config);
