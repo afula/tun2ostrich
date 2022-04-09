@@ -17,11 +17,6 @@ use std::sync::Once;
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::sync::RwLock;
-#[cfg(all(
-feature = "inbound-tun",
-any(target_os = "macos", target_os = "linux", target_os = "windows")
-))]
-use crate::sys::NetInfo;
 pub mod app;
 pub mod common;
 pub mod config;
@@ -360,7 +355,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         use futures::stream::StreamExt;
         use signal_hook::consts::signal::*;
         use signal_hook_tokio::Signals;
-        use std::thread;
+        // use std::thread;
         // use signal_hook::iterator::Signals;
 
         /*        async fn handle_signals(
