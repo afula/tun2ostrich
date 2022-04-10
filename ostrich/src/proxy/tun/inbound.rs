@@ -5,11 +5,10 @@ use anyhow::{anyhow, Result};
 use futures::{sink::SinkExt, stream::StreamExt};
 use log::*;
 use protobuf::Message;
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::channel as tokio_channel;
 use tokio::sync::mpsc::{Receiver as TokioReceiver, Sender as TokioSender};
 use tokio::sync::Mutex as TokioMutex;
-use tun::{self, Device, TunPacket};
+use tun::{self, TunPacket};
 
 use crate::{
     app::dispatcher::Dispatcher,
@@ -23,8 +22,6 @@ use crate::{
 };
 
 use super::netstack;
-
-const MTU: usize = 1500;
 
 pub fn new(
     inbound: Inbound,
@@ -103,56 +100,33 @@ pub fn new(
         let stack = netstack::NetStack::new(lwip_mutex.clone());
         let inbound_tag = inbound.tag.clone();
 
-        let mtu = tun.get_ref().mtu().unwrap_or(MTU as i32);
         let framed = tun.into_framed();
         let (mut tun_sink, mut tun_stream) = framed.split();
-        let (mut stack_reader, mut stack_writer) = io::split(stack);
+        let (mut stack_sink, mut stack_stream) = stack.split();
 
         let mut futs: Vec<Runner> = Vec::new();
 
+        // Reads packet from stack and sends to TUN.
         let s2t = Box::pin(async move {
-            let mut buf = vec![0; mtu as usize];
-            loop {
-                match stack_reader.read(&mut buf).await {
-                    Ok(0) => {
-                        debug!("read stack eof");
-                        return;
-                    }
-                    Ok(n) => match tun_sink.send(TunPacket::new((&buf[..n]).to_vec())).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("send pkt to tun failed: {}", e);
-                            return;
-                        }
-                    },
-                    Err(err) => {
-                        warn!("read stack failed {:?}", err);
-                        return;
-                    }
+            while let Some(pkt) = stack_stream.next().await {
+                if let Ok(pkt) = pkt {
+                    tun_sink.send(TunPacket::new(pkt)).await.unwrap();
                 }
             }
         });
         futs.push(s2t);
 
+        // Reads packet from TUN and sends to stack.
         let t2s = Box::pin(async move {
-            while let Some(packet) = tun_stream.next().await {
-                match packet {
-                    Ok(packet) => match stack_writer.write(packet.get_bytes()).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            warn!("write pkt to stack failed: {}", e);
-                            return;
-                        }
-                    },
-                    Err(err) => {
-                        warn!("read tun failed {:?}", err);
-                        return;
-                    }
+            while let Some(pkt) = tun_stream.next().await {
+                if let Ok(pkt) = pkt {
+                    stack_sink.send(pkt.get_bytes().to_vec()).await.unwrap();
                 }
             }
         });
         futs.push(t2s);
 
+        // Extracts TCP connections from stack and sends them to the dispatcher.
         let fakedns_cloned = fakedns.clone();
         let lwip_mutex_cloned = lwip_mutex.clone();
         let inbound_tag_cloned = inbound_tag.clone();
@@ -202,12 +176,12 @@ pub fn new(
         });
         futs.push(tcp_incoming);
 
-        let nat_manager = nat_manager.clone();
-        let fakedns = fakedns.clone();
+        // Extracts UDP packets from stack and sends them to the NAT manager, which would
+        // maintain UDP sessions and send them to the dispatcher.
         let udp_incoming = Box::pin(async move {
             let mut listener = netstack::UdpListener::new();
             let nat_manager = nat_manager.clone();
-            let fakedns2 = fakedns.clone();
+            let fakedns_cloned = fakedns.clone();
             let pcb = listener.pcb();
 
             // Sending packets to TUN should be very fast.
@@ -220,27 +194,8 @@ pub fn new(
             let lwip_mutex_cloned = lwip_mutex.clone();
             tokio::spawn(async move {
                 while let Some(pkt) = client_ch_rx.recv().await {
-                    let socks_src_addr = match pkt.src_addr {
-                        Some(a) => a,
-                        None => {
-                            warn!("unexpected none src addr");
-                            continue;
-                        }
-                    };
-                    let dst_addr = match pkt.dst_addr {
-                        Some(a) => match a {
-                            SocksAddr::Ip(a) => a,
-                            _ => {
-                                warn!("unexpected domain addr");
-                                continue;
-                            }
-                        },
-                        None => {
-                            warn!("unexpected dst addr");
-                            continue;
-                        }
-                    };
-                    let src_addr = match socks_src_addr {
+                    let dst_addr = pkt.dst_addr.must_ip();
+                    let src_addr = match pkt.src_addr {
                         SocksAddr::Ip(a) => a,
 
                         // If the socket gives us a domain source address,
@@ -249,7 +204,7 @@ pub fn new(
                         SocksAddr::Domain(domain, port) => {
                             // TODO we're doing this for every packet! optimize needed
                             // trace!("downlink querying fake ip for domain {}", &domain);
-                            if let Some(ip) = fakedns2.lock().await.query_fake_ip(&domain) {
+                            if let Some(ip) = fakedns_cloned.lock().await.query_fake_ip(&domain) {
                                 SocketAddr::new(ip, port)
                             } else {
                                 warn!(
@@ -268,15 +223,11 @@ pub fn new(
                         &pkt.data[..],
                     );
                 }
-
-                error!("unexpected udp downlink ended");
             });
-
-            let fakedns2 = fakedns.clone();
 
             while let Some(pkt) = listener.next().await {
                 if pkt.2.port() == 53 {
-                    match fakedns2.lock().await.generate_fake_response(&pkt.0) {
+                    match fakedns.lock().await.generate_fake_response(&pkt.0) {
                         Ok(resp) => {
                             netstack::send_udp(
                                 lwip_mutex.clone(),
@@ -297,10 +248,10 @@ pub fn new(
                 // that said, the application connects a UDP socket with a domain address.
                 // It also means the back packets on this UDP session shall only come from a
                 // single source address.
-                let socks_dst_addr = if fakedns2.lock().await.is_fake_ip(&pkt.2.ip()) {
+                let socks_dst_addr = if fakedns.lock().await.is_fake_ip(&pkt.2.ip()) {
                     // TODO we're doing this for every packet! optimize needed
                     // trace!("uplink querying domain for fake ip {}", &dst_addr.ip(),);
-                    if let Some(domain) = fakedns2.lock().await.query_domain(&pkt.2.ip()) {
+                    if let Some(domain) = fakedns.lock().await.query_domain(&pkt.2.ip()) {
                         SocksAddr::Domain(domain, pkt.2.port())
                     } else {
                         // Skip this packet. Requests targeting fake IPs are
@@ -315,8 +266,8 @@ pub fn new(
 
                 let pkt = UdpPacket {
                     data: pkt.0,
-                    src_addr: Some(SocksAddr::Ip(dgram_src.address)),
-                    dst_addr: Some(socks_dst_addr.clone()),
+                    src_addr: SocksAddr::Ip(dgram_src.address),
+                    dst_addr: socks_dst_addr.clone(),
                 };
 
                 nat_manager
