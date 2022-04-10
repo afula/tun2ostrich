@@ -3,7 +3,7 @@ name = "ostrich"
 version = "0.1.2"
 authors = ["eycorsican <eric.y.corsican@gmail.com>"]
 edition = "2018"
-build = "build.rs"
+#build = "build.rs"
 
 [lib]
 name = "ostrich"
