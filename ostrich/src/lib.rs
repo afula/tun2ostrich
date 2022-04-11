@@ -335,7 +335,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             target_os = "android",
             target_os = "macos",
             target_os = "linux",
-            target_os = "windows"
+            // target_os = "windows"
         )
     ))]
     if let Ok(r) = inbound_manager.get_tun_runner() {

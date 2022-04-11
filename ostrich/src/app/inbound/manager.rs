@@ -23,7 +23,7 @@ use super::network_listener::NetworkInboundListener;
         target_os = "android",
         target_os = "macos",
         target_os = "linux",
-        target_os = "windows"
+        // target_os = "windows"
     )
 ))]
 use super::tun_listener::TunInboundListener;
@@ -37,7 +37,7 @@ pub struct InboundManager {
             target_os = "android",
             target_os = "macos",
             target_os = "linux",
-            target_os = "windows"
+            // target_os = "windows"
         )
     ))]
     tun_listener: Option<TunInboundListener>,
@@ -145,7 +145,7 @@ impl InboundManager {
                 target_os = "android",
                 target_os = "macos",
                 target_os = "linux",
-                target_os = "windows"
+                // target_os = "windows"
             )
         ))]
         let mut tun_listener: Option<TunInboundListener> = None;
@@ -162,7 +162,7 @@ impl InboundManager {
                         target_os = "android",
                         target_os = "macos",
                         target_os = "linux",
-                        target_os = "windows"
+                        // target_os = "windows"
                     )
                 ))]
                 "tun" => {
@@ -202,7 +202,7 @@ impl InboundManager {
                     target_os = "android",
                     target_os = "macos",
                     target_os = "linux",
-                    target_os = "windows"
+                    // target_os = "windows"
                 )
             ))]
             tun_listener,
@@ -225,7 +225,7 @@ impl InboundManager {
             target_os = "android",
             target_os = "macos",
             target_os = "linux",
-            target_os = "windows"
+            // target_os = "windows"
         )
     ))]
     pub fn get_tun_runner(&self) -> Result<Runner> {
@@ -242,7 +242,7 @@ impl InboundManager {
             target_os = "android",
             target_os = "macos",
             target_os = "linux",
-            target_os = "windows"
+            // target_os = "windows"
         )
     ))]
     pub fn has_tun_listener(&self) -> bool {
