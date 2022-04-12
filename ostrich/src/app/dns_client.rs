@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -29,7 +30,7 @@ struct CacheEntry {
 
 pub struct DnsClient {
     servers: Vec<SocketAddr>,
-    hosts: HashMap<String, Vec<IpAddr>>,
+    hosts: IndexMap<String, Vec<IpAddr>>,
     ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
     ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
 }
@@ -46,12 +47,12 @@ impl DnsClient {
         Ok(servers)
     }
 
-    fn load_hosts(dns: &crate::config::Dns) -> HashMap<String, Vec<IpAddr>> {
-        let mut hosts = HashMap::new();
+    fn load_hosts(dns: &crate::config::Dns) -> IndexMap<String, Vec<IpAddr>> {
+        let mut hosts = IndexMap::new();
         for (name, ips) in dns.hosts.iter() {
             hosts.insert(name.to_owned(), ips.values.to_vec());
         }
-        let mut parsed_hosts = HashMap::new();
+        let mut parsed_hosts = IndexMap::new();
         for (name, static_ips) in hosts.iter() {
             let mut ips = Vec::new();
             for ip in static_ips {

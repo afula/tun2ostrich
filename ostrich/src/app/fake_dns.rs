@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::net::{IpAddr, Ipv4Addr};
 
 use anyhow::{anyhow, Result};
@@ -46,8 +47,8 @@ impl FakeDns {
 }
 
 pub(self) struct FakeDnsImpl {
-    ip_to_domain: HashMap<u32, String>,
-    domain_to_ip: HashMap<String, u32>,
+    ip_to_domain: IndexMap<u32, String>,
+    domain_to_ip: IndexMap<String, u32>,
     cursor: u32,
     min_cursor: u32,
     max_cursor: u32,
@@ -61,8 +62,8 @@ impl FakeDnsImpl {
         let min_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 0, 0));
         let max_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 4, 255));
         Self {
-            ip_to_domain: HashMap::new(),
-            domain_to_ip: HashMap::new(),
+            ip_to_domain: IndexMap::new(),
+            domain_to_ip: IndexMap::new(),
             cursor: min_cursor,
             min_cursor,
             max_cursor,
