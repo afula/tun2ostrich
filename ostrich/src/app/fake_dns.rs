@@ -5,6 +5,7 @@ use std::net::{IpAddr, Ipv4Addr};
 use anyhow::{anyhow, Result};
 use byteorder::{BigEndian, ByteOrder};
 use log::*;
+use tokio::sync::RwLock;
 use trust_dns_proto::op::{
     header::MessageType, op_code::OpCode, response_code::ResponseCode, Message,
 };
@@ -17,7 +18,35 @@ pub enum FakeDnsMode {
     Exclude,
 }
 
-pub struct FakeDns {
+pub struct FakeDns(RwLock<FakeDnsImpl>);
+
+impl FakeDns {
+    pub fn new(mode: FakeDnsMode) -> Self {
+        Self(RwLock::new(FakeDnsImpl::new(mode)))
+    }
+
+    pub async fn add_filter(&self, filter: String) {
+        self.0.write().await.add_filter(filter)
+    }
+
+    pub async fn query_domain(&self, ip: &IpAddr) -> Option<String> {
+        self.0.read().await.query_domain(ip)
+    }
+
+    pub async fn query_fake_ip(&self, domain: &str) -> Option<IpAddr> {
+        self.0.read().await.query_fake_ip(domain)
+    }
+
+    pub async fn generate_fake_response(&self, request: &[u8]) -> Result<Vec<u8>> {
+        self.0.write().await.generate_fake_response(request)
+    }
+
+    pub async fn is_fake_ip(&self, ip: &IpAddr) -> bool {
+        self.0.read().await.is_fake_ip(ip)
+    }
+}
+
+pub(self) struct FakeDnsImpl {
     ip_to_domain: IndexMap<u32, String>,
     domain_to_ip: IndexMap<String, u32>,
     cursor: u32,
@@ -28,12 +57,11 @@ pub struct FakeDns {
     mode: FakeDnsMode,
 }
 
-impl FakeDns {
-    pub fn new(mode: FakeDnsMode) -> Self {
+impl FakeDnsImpl {
+    pub(self) fn new(mode: FakeDnsMode) -> Self {
         let min_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 0, 0));
         let max_cursor = Self::ip_to_u32(&Ipv4Addr::new(198, 18, 4, 255));
-
-        FakeDns {
+        Self {
             ip_to_domain: IndexMap::new(),
             domain_to_ip: IndexMap::new(),
             cursor: min_cursor,
@@ -45,26 +73,11 @@ impl FakeDns {
         }
     }
 
-    pub fn add_filter(&mut self, filter: String) {
+    pub(self) fn add_filter(&mut self, filter: String) {
         self.filters.push(filter);
     }
 
-    fn allocate_ip(&mut self, domain: &str) -> Ipv4Addr {
-        if let Some(prev_domain) = self.ip_to_domain.insert(self.cursor, domain.to_owned()) {
-            // Remove the entry in the reverse map to make sure we won't have
-            // multiple domains point to a same IP.
-            self.domain_to_ip.remove(&prev_domain);
-        }
-        self.domain_to_ip.insert(domain.to_owned(), self.cursor);
-        let ip = Self::u32_to_ip(self.cursor);
-        self.cursor += 1;
-        if self.cursor > self.max_cursor {
-            self.cursor = self.min_cursor;
-        }
-        ip
-    }
-
-    pub fn query_domain(&mut self, ip: &IpAddr) -> Option<String> {
+    pub(self) fn query_domain(&self, ip: &IpAddr) -> Option<String> {
         let ip = match ip {
             IpAddr::V4(ip) => ip,
             _ => return None,
@@ -72,34 +85,13 @@ impl FakeDns {
         self.ip_to_domain.get(&Self::ip_to_u32(ip)).cloned()
     }
 
-    pub fn query_fake_ip(&mut self, domain: &str) -> Option<IpAddr> {
+    pub(self) fn query_fake_ip(&self, domain: &str) -> Option<IpAddr> {
         self.domain_to_ip
             .get(domain)
             .map(|v| IpAddr::V4(Self::u32_to_ip(v.to_owned())))
     }
 
-    fn accept(&self, domain: &str) -> bool {
-        match self.mode {
-            FakeDnsMode::Exclude => {
-                for d in &self.filters {
-                    if domain.contains(d) || d == "*" {
-                        return false;
-                    }
-                }
-                true
-            }
-            FakeDnsMode::Include => {
-                for d in &self.filters {
-                    if domain.contains(d) || d == "*" {
-                        return true;
-                    }
-                }
-                false
-            }
-        }
-    }
-
-    pub fn generate_fake_response(&mut self, request: &[u8]) -> Result<Vec<u8>> {
+    pub(self) fn generate_fake_response(&mut self, request: &[u8]) -> Result<Vec<u8>> {
         let req = Message::from_vec(request)?;
 
         if req.queries().is_empty() {
@@ -167,20 +159,56 @@ impl FakeDns {
                 .set_rr_type(RecordType::A)
                 .set_ttl(self.ttl)
                 .set_dns_class(DNSClass::IN)
-                .set_data(Some(RData::A(ip)));
+                .set_rdata(RData::A(ip));
             resp.add_answer(ans);
         }
 
         Ok(resp.to_vec()?)
     }
 
-    pub fn is_fake_ip(&self, ip: &IpAddr) -> bool {
+    pub(self) fn is_fake_ip(&self, ip: &IpAddr) -> bool {
         let ip = match ip {
             IpAddr::V4(ip) => ip,
             _ => return false,
         };
         let ip = Self::ip_to_u32(ip);
         ip >= self.min_cursor && ip <= self.max_cursor
+    }
+
+    fn allocate_ip(&mut self, domain: &str) -> Ipv4Addr {
+        if let Some(prev_domain) = self.ip_to_domain.insert(self.cursor, domain.to_owned()) {
+            // Remove the entry in the reverse map to make sure we won't have
+            // multiple domains point to a same IP.
+            self.domain_to_ip.remove(&prev_domain);
+        }
+        self.domain_to_ip.insert(domain.to_owned(), self.cursor);
+        let ip = Self::u32_to_ip(self.cursor);
+        self.cursor += 1;
+        if self.cursor > self.max_cursor {
+            self.cursor = self.min_cursor;
+        }
+        ip
+    }
+
+    fn accept(&self, domain: &str) -> bool {
+        match self.mode {
+            FakeDnsMode::Exclude => {
+                for d in &self.filters {
+                    if domain.contains(d) || d == "*" {
+                        return false;
+                    }
+                }
+                true
+            }
+            FakeDnsMode::Include => {
+                for d in &self.filters {
+                    if domain.contains(d) || d == "*" {
+                        return true;
+                    }
+                }
+                false
+            }
+        }
     }
 
     fn u32_to_ip(ip: u32) -> Ipv4Addr {
