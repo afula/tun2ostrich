@@ -45,9 +45,9 @@ pub fn setup_logger(config: &config::Log) -> Result<()> {
             }
         })
         .level(log::LevelFilter::Warn)
-        .level_for("rust-tun", loglevel)
+        .level_for("tun", loglevel)
         .level_for("netstack-lwip", loglevel)
-        .level_for("leaf", loglevel);
+        .level_for("ostrich", loglevel);
 
     match config.output {
         config::Log_Output::CONSOLE => {

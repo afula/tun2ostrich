@@ -7,7 +7,6 @@ use std::{
 
 use byteorder::{BigEndian, ByteOrder};
 use bytes::BufMut;
-use log::*;
 use tokio::io::{AsyncRead, AsyncReadExt};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -146,8 +145,7 @@ impl SocksAddr {
         match self {
             SocksAddr::Ip(a) => a,
             _ => {
-                error!("assert SocksAddr as SocketAddr failed");
-                panic!("");
+                panic!("assert SocksAddr as SocketAddr failed");
             }
         }
     }
@@ -203,11 +201,7 @@ impl SocksAddr {
     }
 
     /// Writes `self` into `buf`.
-    pub fn write_buf<T: BufMut>(
-        &self,
-        buf: &mut T,
-        addr_type: SocksAddrWireType,
-    ) -> io::Result<()> {
+    pub fn write_buf<T: BufMut>(&self, buf: &mut T, addr_type: SocksAddrWireType) {
         match self {
             Self::Ip(addr) => match addr {
                 SocketAddr::V4(addr) => match addr_type {
@@ -250,7 +244,6 @@ impl SocksAddr {
                 }
             },
         }
-        Ok(())
     }
 
     pub async fn read_from<T: AsyncRead + Unpin>(
