@@ -7,8 +7,8 @@ use lazy_static::lazy_static;
 // Gets an environment variable by a key and parses as type `T` or returns
 // the provided default value.
 fn get_env_var_or<T>(key: &str, default: T) -> T
-    where
-        T: FromStr,
+where
+    T: FromStr,
 {
     if let Ok(v) = env::var(key) {
         if let Ok(v) = v.parse::<T>() {

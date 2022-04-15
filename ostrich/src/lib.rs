@@ -9,6 +9,7 @@ use app::{
 };
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
+use protobuf::Enum;
 use std::io;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -17,6 +18,8 @@ use std::sync::Once;
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::sync::RwLock;
+use tokio::time::{interval_at, Instant};
+
 pub mod app;
 pub mod common;
 pub mod config;
@@ -325,7 +328,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     // {
     //     let interface = common::cmd::get_default_interface().unwrap();
     //     std::env::set_var("OUTBOUND_INTERFACE", interface);
-        
+
     // }
 
     #[cfg(all(
@@ -401,40 +404,96 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         // };
 
         tokio::spawn(async move {
-            // handle_signals(signals, &net_info, &new_net_info, shutdown_tx).await;
-            while let Some(signal) = signals.next().await {
-                match signal {
-                    // SIGPIPE => {
-                    //     log::trace!("signal received {}", &SIGPIPE);
-                    //     // sys::post_tun_completion_setup(old_net_info);
-                    //     // thread::sleep(std::time::Duration::from_secs(1));
-                    //     // sys::post_tun_reload_setup(new_net_info);
-                    //     network_changed.store(true, Ordering::Relaxed);
-                    //     if let Err(e) = shutdown_tx.send(()).await {
-                    //         log::warn!("sending shutdown signal failed: {}", e);
-                    //     }
-                    //     return;
-                    // }
-                    SIGALRM =>{
-                        log::trace!("signal received {}", &SIGALRM);
-                        // sys::post_tun_completion_setup(new_net_info);
-                        network_changed.store(true, Ordering::Relaxed);
-                        if let Err(e) = shutdown_tx.send(()).await {
-                            log::warn!("sending shutdown signal failed: {}", e);
+            use bytes::BytesMut;
+            use protobuf::Message;
+            use protocol::{
+                generated::notification::{StatusNotification, StatusRequest},
+                unpack_msg_frame,
+            };
+            use std::{net::SocketAddr, str::FromStr, time::Duration};
+            use tokio::{io::AsyncReadExt, time::timeout};
+            use udp_stream::UdpListener;
+            const UDP_BUFFER_SIZE: usize = 1024; // 17kb
+            const UDP_TIMEOUT: u64 = 10 * 1000; // 10sec
+            let listener = UdpListener::bind(SocketAddr::from_str("127.0.0.1:11771").unwrap())
+                .await
+                .expect("12345");
+            // let mut buf = BytesMut::with_capacity(UDP_BUFFER_SIZE);
+            let mut buf = vec![0u8; UDP_BUFFER_SIZE];
+            let mut interval = interval_at(
+                Instant::now() + Duration::from_secs(7),
+                Duration::from_secs(5),
+            );
+            let mut should_exit = true;
+            loop {
+                tokio::select! {
+                     Some(signal) = signals.next() =>{
+                        match signal {
+                            // SIGPIPE => {
+                            //     log::trace!("signal received {}", &SIGPIPE);
+                            //     // sys::post_tun_completion_setup(old_net_info);
+                            //     // thread::sleep(std::time::Duration::from_secs(1));
+                            //     // sys::post_tun_reload_setup(new_net_info);
+                            //     network_changed.store(true, Ordering::Relaxed);
+                            //     if let Err(e) = shutdown_tx.send(()).await {
+                            //         log::warn!("sending shutdown signal failed: {}", e);
+                            //     }
+                            //     return;
+                            // }
+                            SIGALRM =>{
+                                log::trace!("signal received {}", &SIGALRM);
+                                // sys::post_tun_completion_setup(new_net_info);
+                                network_changed.store(true, Ordering::Relaxed);
+                                if let Err(e) = shutdown_tx.send(()).await {
+                                    log::warn!("sending shutdown signal failed: {}", e);
+                                }
+                                break;
+                            }
+                            SIGTERM
+                            // | SIGINT | SIGQUIT
+                            => {
+                                log::trace!("signal received {}", &SIGTERM);
+                                // println!("signal received {}", &SIGTERM);
+                                // sys::post_tun_completion_setup(new_net_info);
+                                if let Err(e) = shutdown_tx.send(()).await {
+                                    log::warn!("sending shutdown signal failed: {}", e);
+                                }
+                                break;
+                            }
+                            _ => unreachable!(),
                         }
-                        return;
                     }
-                    SIGTERM
-                    // | SIGINT | SIGQUIT
-                    => {
-                        log::trace!("signal received {}", &SIGTERM);
-                        // sys::post_tun_completion_setup(new_net_info);
-                        if let Err(e) = shutdown_tx.send(()).await {
-                            log::warn!("sending shutdown signal failed: {}", e);
+                    Ok((mut stream, _)) = listener.accept() =>{
+                        // buf.clear();
+                        match timeout(Duration::from_millis(UDP_TIMEOUT), stream.read(&mut buf))
+                    .await
+                    .unwrap()
+                        {
+                            Ok(len) => {
+                                let mut buf = BytesMut::from(&buf[..len]);
+                                unpack_msg_frame(&mut buf).unwrap();
+                                println!("udp received: {:?}", buf);
+                              let in_msg = StatusRequest::parse_from_bytes(&buf).unwrap();
+                                println!("protocol: {:?}", in_msg.status);
+                            if in_msg.status.value()  == StatusNotification::Running.value(){
+                                should_exit = false;
+                            }
+                        },
+                            Err(_) => {
+                                stream.shutdown();
+                                continue;
+                            }
+                        };
+                    }
+                    _ = interval.tick() => {
+                        if should_exit{
+                            if let Err(e) = shutdown_tx.send(()).await {
+                              log::warn!("sending shutdown signal failed: {}", e);
+                            }
+                            break
                         }
-                        return;
+                        should_exit = true;
                     }
-                    _ => unreachable!(),
                 }
             }
             signals_handle.close();
@@ -459,31 +518,6 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             log::warn!("start config file watcher failed: {}", e);
         }
     }*/
-
-    #[cfg(feature = "api")]
-    {
-        use std::net::{IpAddr, SocketAddr};
-        let listen_addr = if !(&*option::API_LISTEN).is_empty() {
-            Some(
-                (&*option::API_LISTEN)
-                    .parse::<SocketAddr>()
-                    .map_err(|e| Error::Config(anyhow!("parse SocketAddr failed: {}", e)))?,
-            )
-        } else if let Some(api) = config.api.as_ref() {
-            Some(SocketAddr::new(
-                api.address
-                    .parse::<IpAddr>()
-                    .map_err(|e| Error::Config(anyhow!("parse IpAddr failed: {}", e)))?,
-                api.port as u16,
-            ))
-        } else {
-            None
-        };
-        if let Some(listen_addr) = listen_addr {
-            let api_server = ApiServer::new(runtime_manager.clone());
-            runners.push(api_server.serve(listen_addr));
-        }
-    }
 
     drop(config); // explicitly free the memory
 

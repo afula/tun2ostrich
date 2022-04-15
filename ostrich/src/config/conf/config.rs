@@ -652,7 +652,7 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
         }
     }
 
-    let mut inbounds = protobuf::RepeatedField::new();
+    let mut inbounds = protobuf::Vec::new();
     if let Some(ext_general) = &conf.general {
         if ext_general.http_interface.is_some() && ext_general.http_port.is_some() {
             let mut inbound = internal::Inbound::new();
@@ -680,7 +680,7 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
             inbound.tag = "tun".to_string();
             let mut settings = internal::TunInboundSettings::new();
 
-            let mut fake_dns_exclude = protobuf::RepeatedField::new();
+            let mut fake_dns_exclude = Vec::new();
             if let Some(ext_always_real_ip) = &ext_general.always_real_ip {
                 for item in ext_always_real_ip {
                     fake_dns_exclude.push(item.clone())
@@ -690,7 +690,7 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
                 }
             }
 
-            let mut fake_dns_include = protobuf::RepeatedField::new();
+            let mut fake_dns_include = Vec::new();
             if let Some(ext_always_fake_ip) = &ext_general.always_fake_ip {
                 for item in ext_always_fake_ip {
                     fake_dns_include.push(item.clone())
@@ -735,7 +735,7 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
         }
     }
 
-    let mut outbounds = protobuf::RepeatedField::new();
+    let mut outbounds = Vec::new();
     if let Some(ext_proxies) = &conf.proxy {
         for ext_proxy in ext_proxies {
             let mut outbound = internal::Outbound::new();
@@ -1067,7 +1067,7 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
     }
 
     let mut int_router = internal::Router::new();
-    let mut rules = protobuf::RepeatedField::new();
+    let mut rules = Vec::new();
     if let Some(ext_rules) = conf.rule.as_mut() {
         for ext_rule in ext_rules.iter_mut() {
             let mut rule = internal::Router_Rule::new();
@@ -1153,10 +1153,10 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
             int_router.domain_resolve = ext_domain_resolve;
         }
     }
-    let router = protobuf::SingularPtrField::some(int_router);
+    let router = protobuf::MessageField::some(int_router);
 
     let mut dns = internal::Dns::new();
-    let mut servers = protobuf::RepeatedField::new();
+    let mut servers = Vec::new();
     let mut hosts = HashMap::new();
     if let Some(ext_general) = &conf.general {
         if let Some(ext_dns_servers) = &ext_general.dns_server {
@@ -1171,7 +1171,7 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
     if let Some(ext_hosts) = &conf.host {
         for (name, static_ips) in ext_hosts.iter() {
             let mut ips = internal::Dns_Ips::new();
-            let mut ip_vals = protobuf::RepeatedField::new();
+            let mut ip_vals = Vec::new();
             for ip in static_ips {
                 ip_vals.push(ip.to_owned());
             }
@@ -1188,20 +1188,20 @@ pub fn to_internal(conf: &mut Config) -> Result<internal::Config> {
             let mut api_inner = internal::Api::new();
             api_inner.address = ext_general.api_interface.as_ref().unwrap().to_string();
             api_inner.port = ext_general.api_port.unwrap() as u32;
-            protobuf::SingularPtrField::some(api_inner)
+            protobuf::MessageField::some(api_inner)
         } else {
-            protobuf::SingularPtrField::none()
+            protobuf::MessageField::none()
         }
     } else {
-        protobuf::SingularPtrField::none()
+        protobuf::MessageField::none()
     };
 
     let mut config = internal::Config::new();
-    config.log = protobuf::SingularPtrField::some(log);
+    config.log = protobuf::MessageField::some(log);
     config.inbounds = inbounds;
     config.outbounds = outbounds;
     config.router = router;
-    config.dns = protobuf::SingularPtrField::some(dns);
+    config.dns = protobuf::MessageField::some(dns);
     config.api = api;
 
     Ok(config)

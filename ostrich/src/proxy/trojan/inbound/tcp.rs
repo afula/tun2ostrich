@@ -43,8 +43,8 @@ struct StreamToDatagramRecvHalf<T>(T, DatagramSource);
 
 #[async_trait]
 impl<T> InboundDatagramRecvHalf for StreamToDatagramRecvHalf<T>
-    where
-        T: AsyncRead + Send + Sync + Unpin,
+where
+    T: AsyncRead + Send + Sync + Unpin,
 {
     async fn recv_from(
         &mut self,
@@ -87,8 +87,8 @@ struct StreamToDatagramSendHalf<T>(T);
 
 #[async_trait]
 impl<T> InboundDatagramSendHalf for StreamToDatagramSendHalf<T>
-    where
-        T: AsyncWrite + Send + Sync + Unpin,
+where
+    T: AsyncWrite + Send + Sync + Unpin,
 {
     async fn send_to(
         &mut self,
