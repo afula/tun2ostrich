@@ -9,8 +9,8 @@ use futures::future::select_ok;
 use futures::stream::Stream;
 use futures::TryFutureExt;
 use log::*;
-use thiserror::Error;
 use socket2::SockRef;
+use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpSocket, TcpStream, UdpSocket};
 use tokio::time::timeout;
@@ -39,7 +39,6 @@ pub mod stream;
 
 pub mod null;
 
-
 #[cfg(feature = "outbound-direct")]
 pub mod direct;
 
@@ -50,16 +49,15 @@ pub mod socks;
 pub mod trojan;
 
 #[cfg(all(
-feature = "inbound-tun",
-any(
-target_os = "ios",
-target_os = "android",
-target_os = "macos",
-target_os = "linux"
-)
+    feature = "inbound-tun",
+    any(
+        target_os = "ios",
+        target_os = "android",
+        target_os = "macos",
+        target_os = "linux"
+    )
 ))]
 pub mod tun;
-
 
 pub use datagram::{
     SimpleInboundDatagram, SimpleInboundDatagramRecvHalf, SimpleInboundDatagramSendHalf,
@@ -183,7 +181,7 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
         match bind {
             OutboundBind::Interface(iface) => {
                 #[cfg(target_os = "macos")]
-                    unsafe {
+                unsafe {
                     let ifa = CString::new(iface.as_bytes()).unwrap();
                     let ifidx: libc::c_uint = libc::if_nametoindex(ifa.as_ptr());
                     if ifidx == 0 {
@@ -223,7 +221,7 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
                     return Ok(());
                 }
                 #[cfg(target_os = "linux")]
-                    unsafe {
+                unsafe {
                     let ifa = CString::new(iface.as_bytes()).unwrap();
                     let ret = libc::setsockopt(
                         socket.as_raw_fd(),
@@ -240,12 +238,12 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
                     return Ok(());
                 }
                 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-                    {
-                        return Err(io::Error::new(
-                            io::ErrorKind::Other,
-                            "binding to interface is not supported on this platform",
-                        ));
-                    }
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "binding to interface is not supported on this platform",
+                    ));
+                }
             }
             OutboundBind::Ip(addr) => {
                 if (addr.is_ipv4() && indicator.is_ipv4())
@@ -293,7 +291,7 @@ pub async fn new_udp_socket(indicator: &SocketAddr) -> io::Result<UdpSocket> {
     }
 
     #[cfg(target_os = "android")]
-        protect_socket(socket.as_raw_fd()).await?;
+    protect_socket(socket.as_raw_fd()).await?;
 
     UdpSocket::from_std(socket.into())
 }
@@ -323,14 +321,14 @@ async fn tcp_dial_task(dial_addr: SocketAddr) -> io::Result<(AnyStream, SocketAd
     bind_socket(&socket, &dial_addr).await?;
 
     #[cfg(target_os = "android")]
-        protect_socket(socket.as_raw_fd()).await?;
+    protect_socket(socket.as_raw_fd()).await?;
 
     trace!("tcp dialing {}", &dial_addr);
     let stream = timeout(
         Duration::from_secs(*option::OUTBOUND_DIAL_TIMEOUT),
         socket.connect(dial_addr),
     )
-        .await??;
+    .await??;
 
     apply_socket_opts(&stream)?;
 
@@ -353,7 +351,7 @@ pub async fn connect_tcp_outbound(
                 &sess.destination.host(),
                 &sess.destination.port(),
             )
-                .await?,
+            .await?,
         )),
         Some(OutboundConnect::NoConnect) | None => Ok(None),
     }
@@ -486,7 +484,7 @@ pub type AnyStream = Box<dyn ProxyStream>;
 
 /// An outbound handler for both UDP and TCP outgoing connections.
 pub trait OutboundHandler:
-TcpOutboundHandler + UdpOutboundHandler + Tag + Color + Send + Unpin
+    TcpOutboundHandler + UdpOutboundHandler + Tag + Color + Send + Unpin
 {
 }
 
@@ -580,7 +578,7 @@ pub trait UdpOutboundHandler: Send + Sync + Unpin {
 }
 
 type AnyUdpOutboundHandler =
-Box<dyn UdpOutboundHandler<UStream = AnyStream, Datagram = AnyOutboundDatagram>>;
+    Box<dyn UdpOutboundHandler<UStream = AnyStream, Datagram = AnyOutboundDatagram>>;
 
 /// An outbound transport represents either a reliable or unreliable transport.
 pub enum OutboundTransport<S, D> {
@@ -593,7 +591,7 @@ pub enum OutboundTransport<S, D> {
 pub type AnyOutboundTransport = OutboundTransport<AnyStream, AnyOutboundDatagram>;
 
 pub trait InboundHandler:
-TcpInboundHandler + UdpInboundHandler + Tag + Send + Sync + Unpin
+    TcpInboundHandler + UdpInboundHandler + Tag + Send + Sync + Unpin
 {
     fn has_tcp(&self) -> bool;
     fn has_udp(&self) -> bool;
@@ -622,7 +620,7 @@ pub trait TcpInboundHandler: Send + Sync + Unpin {
 }
 
 pub type AnyTcpInboundHandler =
-Arc<dyn TcpInboundHandler<TStream = AnyStream, TDatagram = AnyInboundDatagram>>;
+    Arc<dyn TcpInboundHandler<TStream = AnyStream, TDatagram = AnyInboundDatagram>>;
 
 /// An inbound handler for incoming UDP connections.
 #[async_trait]
@@ -637,7 +635,7 @@ pub trait UdpInboundHandler: Send + Sync + Unpin {
 }
 
 pub type AnyUdpInboundHandler =
-Arc<dyn UdpInboundHandler<UStream = AnyStream, UDatagram = AnyInboundDatagram>>;
+    Arc<dyn UdpInboundHandler<UStream = AnyStream, UDatagram = AnyInboundDatagram>>;
 
 /// An unreliable transport for inbound handlers.
 pub trait InboundDatagram: Send + Sync + Unpin {
@@ -701,7 +699,7 @@ pub enum BaseInboundTransport<S, D> {
 pub type AnyBaseInboundTransport = BaseInboundTransport<AnyStream, AnyInboundDatagram>;
 
 pub type IncomingTransport<S, D> =
-Box<dyn Stream<Item = BaseInboundTransport<S, D>> + Send + Unpin>;
+    Box<dyn Stream<Item = BaseInboundTransport<S, D>> + Send + Unpin>;
 
 pub type AnyIncomingTransport = IncomingTransport<AnyStream, AnyInboundDatagram>;
 

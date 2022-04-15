@@ -247,27 +247,27 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
     if let Some(ext_log) = &json.log {
         if let Some(ext_level) = &ext_log.level {
             match ext_level.as_str() {
-                "trace" => log.level = internal::Log_Level::TRACE,
-                "debug" => log.level = internal::Log_Level::DEBUG,
-                "info" => log.level = internal::Log_Level::INFO,
-                "warn" => log.level = internal::Log_Level::WARN,
-                "error" => log.level = internal::Log_Level::ERROR,
-                _ => log.level = internal::Log_Level::WARN,
+                "trace" => log.level = internal::log::Level::TRACE.into(),
+                "debug" => log.level = internal::log::Level::DEBUG.into(),
+                "info" => log.level = internal::log::Level::INFO.into(),
+                "warn" => log.level = internal::log::Level::WARN.into(),
+                "error" => log.level = internal::log::Level::ERROR.into(),
+                _ => log.level = internal::log::Level::WARN.into(),
             }
         }
 
         if let Some(ext_output) = &ext_log.output {
             match ext_output.as_str() {
-                "console" => log.output = internal::Log_Output::CONSOLE,
+                "console" => log.output = internal::log::Output::CONSOLE.into(),
                 _ => {
-                    log.output = internal::Log_Output::FILE;
+                    log.output = internal::log::Output::FILE.into();
                     log.output_file = ext_output.clone();
                 }
             }
         }
     }
 
-    let mut inbounds = protobuf::RepeatedField::new();
+    let mut inbounds = Vec::new();
     if let Some(ext_inbounds) = &json.inbounds {
         for ext_inbound in ext_inbounds {
             let mut inbound = internal::Inbound::new();
@@ -299,7 +299,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                     let ext_settings: TunInboundSettings =
                         serde_json::from_str(ext_inbound.settings.as_ref().unwrap().get()).unwrap();
 
-                    let mut fake_dns_exclude = protobuf::RepeatedField::new();
+                    let mut fake_dns_exclude = Vec::new();
                     if let Some(ext_excludes) = ext_settings.fake_dns_exclude {
                         for ext_exclude in ext_excludes {
                             fake_dns_exclude.push(ext_exclude);
@@ -309,7 +309,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                         settings.fake_dns_exclude = fake_dns_exclude;
                     }
 
-                    let mut fake_dns_include = protobuf::RepeatedField::new();
+                    let mut fake_dns_include = Vec::new();
                     if let Some(ext_includes) = ext_settings.fake_dns_include {
                         for ext_include in ext_includes {
                             fake_dns_include.push(ext_include);
@@ -495,7 +495,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
         }
     }
 
-    let mut outbounds = protobuf::RepeatedField::new();
+    let mut outbounds = Vec::new();
     if let Some(ext_outbounds) = &json.outbounds {
         for ext_outbound in ext_outbounds.iter() {
             let mut outbound = internal::Outbound::new();
@@ -599,7 +599,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                         if let Some(ext_server_name) = ext_settings.server_name {
                             settings.server_name = ext_server_name; // TODO checks
                         }
-                        let mut alpns = protobuf::RepeatedField::new();
+                        let mut alpns = Vec::new();
                         if let Some(ext_alpns) = ext_settings.alpn {
                             for ext_alpn in ext_alpns {
                                 alpns.push(ext_alpn);
@@ -877,14 +877,14 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
         }
     }
 
-    let mut router = protobuf::SingularPtrField::none();
+    let mut router = protobuf::MessageField::none();
     if let Some(ext_router) = json.router.as_mut() {
         let mut int_router = internal::Router::new();
-        let mut rules = protobuf::RepeatedField::new();
+        let mut rules = Vec::new();
         if let Some(ext_rules) = ext_router.rules.as_mut() {
             // a map for caching external site so we need not load a same file multiple times
             for ext_rule in ext_rules.iter_mut() {
-                let mut rule = internal::Router_Rule::new();
+                let mut rule = internal::router::Rule::new();
                 let target_tag = std::mem::take(&mut ext_rule.target);
                 rule.target_tag = target_tag;
                 if let Some(ext_ips) = ext_rule.ip.as_mut() {
@@ -894,31 +894,31 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                 }
                 if let Some(ext_domains) = ext_rule.domain.as_mut() {
                     for ext_domain in ext_domains.drain(0..) {
-                        let mut domain = internal::Router_Rule_Domain::new();
-                        domain.field_type = internal::Router_Rule_Domain_Type::FULL;
+                        let mut domain = internal::router::rule::Domain::new();
+                        domain.field_type = internal::router::rule::domain::Type::FULL.into();
                         domain.value = ext_domain;
                         rule.domains.push(domain);
                     }
                 }
                 if let Some(ext_domain_keywords) = ext_rule.domain_keyword.as_mut() {
                     for ext_domain_keyword in ext_domain_keywords.drain(0..) {
-                        let mut domain = internal::Router_Rule_Domain::new();
-                        domain.field_type = internal::Router_Rule_Domain_Type::PLAIN;
+                        let mut domain = internal::router::rule::Domain::new();
+                        domain.field_type = internal::router::rule::domain::Type::PLAIN.into();
                         domain.value = ext_domain_keyword;
                         rule.domains.push(domain);
                     }
                 }
                 if let Some(ext_domain_suffixes) = ext_rule.domain_suffix.as_mut() {
                     for ext_domain_suffix in ext_domain_suffixes.drain(0..) {
-                        let mut domain = internal::Router_Rule_Domain::new();
-                        domain.field_type = internal::Router_Rule_Domain_Type::DOMAIN;
+                        let mut domain = internal::router::rule::Domain::new();
+                        domain.field_type = internal::router::rule::domain::Type::DOMAIN.into();
                         domain.value = ext_domain_suffix;
                         rule.domains.push(domain);
                     }
                 }
                 if let Some(ext_geoips) = ext_rule.geoip.as_mut() {
                     for ext_geoip in ext_geoips.drain(0..) {
-                        let mut mmdb = internal::Router_Rule_Mmdb::new();
+                        let mut mmdb = internal::router::rule::Mmdb::new();
                         let asset_loc = Path::new(&*crate::option::ASSET_LOCATION);
                         mmdb.file = asset_loc.join("geo.mmdb").to_string_lossy().to_string();
                         mmdb.country_code = ext_geoip;
@@ -948,11 +948,11 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
         if let Some(ext_domain_resolve) = ext_router.domain_resolve {
             int_router.domain_resolve = ext_domain_resolve;
         }
-        router = protobuf::SingularPtrField::some(int_router);
+        router = protobuf::MessageField::some(int_router);
     }
 
     let mut dns = internal::Dns::new();
-    let mut servers = protobuf::RepeatedField::new();
+    let mut servers = Vec::new();
     let mut hosts = HashMap::new();
     if let Some(ext_dns) = &json.dns {
         if let Some(ext_servers) = ext_dns.servers.as_ref() {
@@ -962,8 +962,8 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
         }
         if let Some(ext_hosts) = ext_dns.hosts.as_ref() {
             for (name, static_ips) in ext_hosts.iter() {
-                let mut ips = internal::Dns_Ips::new();
-                let mut ip_vals = protobuf::RepeatedField::new();
+                let mut ips = internal::dns::Ips::new();
+                let mut ip_vals = Vec::new();
                 for ip in static_ips {
                     ip_vals.push(ip.to_owned());
                 }
@@ -988,20 +988,20 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
             let mut api = internal::Api::new();
             api.address = ext_address.to_owned();
             api.port = ext_port.to_owned() as u32;
-            protobuf::SingularPtrField::some(api)
+            protobuf::MessageField::some(api)
         } else {
-            protobuf::SingularPtrField::none()
+            protobuf::MessageField::none()
         }
     } else {
-        protobuf::SingularPtrField::none()
+        protobuf::MessageField::none()
     };
 
     let mut config = internal::Config::new();
-    config.log = protobuf::SingularPtrField::some(log);
+    config.log = protobuf::MessageField::some(log);
     config.inbounds = inbounds;
     config.outbounds = outbounds;
     config.router = router;
-    config.dns = protobuf::SingularPtrField::some(dns);
+    config.dns = protobuf::MessageField::some(dns);
     config.api = api;
     Ok(config)
 }

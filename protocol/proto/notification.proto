@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+enum StatusNotification {
+  UNKNOWN = 0;
+  Running = 1;
+  Reload = 2;
+  Exit = 3;
+}
+
+message StatusRequest {
+  StatusNotification status = 1;
+}

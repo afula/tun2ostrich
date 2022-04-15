@@ -105,6 +105,10 @@ message TrojanOutboundSettings {
 	string address = 1;
 	uint32 port = 2;
 	string password = 3;
+	string server_name =4;
+	repeated string alpn =5;
+	string certificate =6;
+	string suites =7;
 }
 
 message TlsOutboundSettings {

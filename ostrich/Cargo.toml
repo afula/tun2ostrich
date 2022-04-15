@@ -96,7 +96,7 @@ ctrlc = ["tokio/signal"]
 # Common
 tokio = { version = "1", features = ["sync", "io-util", "net", "time", "rt", "rt-multi-thread"] }
 futures-util = "0.3"
-protobuf = "2"
+#protobuf = "2"
 thiserror = "1.0"
 futures = "0.3"
 async-trait = "0.1"
@@ -114,6 +114,8 @@ serde_json = { version = "1.0", features = ["raw_value"], optional = true }
 serde_derive = { version = "1.0", optional = true }
 serde = { version = "1.0", optional = true }
 
+protobuf = "3.0.0-alpha.10"
+protocol = {path = "../protocol"}
 # config-conf
 regex = { version = "1", default-features = false, features = ["std", "perf"], optional = true }
 
@@ -191,13 +193,16 @@ arc-swap = "1.5.0"
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
 tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
-netstack-lwip = { git = "https://github.com/eycorsican/netstack-lwip.git", tag = "v0.3.0", optional = true }
+netstack-lwip = { git = "https://github.com/eycorsican/netstack-lwip.git", optional = true }
 signal-hook = "0.3.13"
 signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
 
 [target.'cfg(target_os = "windows")'.dependencies]
 win_tun = { path = "../win_tun", features = ["async"], optional = true }
 wintun = "0.2"
+
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+udp-stream = {git = "https://github.com/SajjadPourali/udp-stream.git"}
 
 [target.'cfg(any(target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
 pnet_datalink = { version = "0.29.0", package = "pnet_datalink" }
@@ -217,4 +222,6 @@ rcgen = "0.9.2"
 [build-dependencies]
 cc = "1.0"
 bindgen = "0.59.2"
-protoc-rust = "2"
+protobuf-codegen = "3.0.0-alpha.10"
+protoc-bin-vendored = "3.0.0"
+prost-build = "0.10.1"

@@ -92,7 +92,7 @@ impl NatManager {
                 tokio::time::sleep(Duration::from_secs(
                     *option::UDP_SESSION_TIMEOUT_CHECK_INTERVAL,
                 ))
-                    .await;
+                .await;
             }
         });
 

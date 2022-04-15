@@ -1,5 +1,7 @@
+use bytes::BytesMut;
 use futures::stream::StreamExt;
 use ostrich::common::cmd;
+use protocol::{build_running_notification_req_cmd, pack_msg_frame};
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
 use std::process::Command;
@@ -7,6 +9,9 @@ use std::process::Stdio;
 use std::time::Duration;
 use tokio::runtime;
 use tokio::time::sleep;
+use tokio::{net::UdpSocket, time::timeout};
+
+pub const DEFAULT_COMMAND_ADDR: &str = "127.0.0.1:11771";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the runtime
@@ -32,6 +37,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
 
         tokio::spawn(async move {
+            let socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+            let mut data = BytesMut::default();
+            build_running_notification_req_cmd(&mut data).await.unwrap();
+            println!("#0 data len: {}", data.len());
+            let msg = pack_msg_frame(data.as_ref());
+            println!("#1 data len: {}", msg.len());
+
             loop {
                 sleep(Duration::from_secs(3)).await;
                 if let Ok(interface) = cmd::get_default_interface_v2() {
@@ -66,6 +78,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("reload");
                     }
                 }
+
+                if let Err(_) = timeout(
+                    Duration::from_secs(60),
+                    socket.send_to(msg.as_ref(), DEFAULT_COMMAND_ADDR),
+                )
+                .await
+                {
+                    println!("cant send notification request")
+                };
             }
         });
         let mut signals = Signals::new(&[SIGTERM]).unwrap();

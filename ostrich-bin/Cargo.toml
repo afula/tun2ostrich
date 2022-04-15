@@ -8,9 +8,9 @@ name = "ostrich_worker"
 path = "src/worker.rs"
 
 # [target.'cfg(target_os = "linux")']
-# [[bin]]
-# name = "ostrich_manager"
-# path = "src/manager.rs"
+ [[bin]]
+ name = "ostrich_manager"
+ path = "src/manager.rs"
 
 
 #[[bin]]
@@ -37,8 +37,11 @@ default-openssl = [
 
 [dependencies]
 ostrich = { path = "../ostrich", default-features = true }
+protocol = {path = "../protocol" }
 tokio = { version = "1", features = ["rt"] }
 argh = "0.1"
+bytes = "1.0.1"
+
 [target.'cfg(target_os = "linux")'.dependencies]
 rlimit = "0.6.2"
 signal-hook = "0.3.13"

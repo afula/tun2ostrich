@@ -177,7 +177,7 @@ impl NetworkInboundListener {
                     handler.as_ref(),
                     Box::new(SimpleInboundDatagram(socket)),
                 )
-                    .await
+                .await
                 {
                     Ok(res) => match res {
                         InboundTransport::Stream(stream, mut sess) => {

@@ -68,8 +68,8 @@ impl Dispatcher {
     }
 
     pub async fn dispatch_tcp<T>(&self, sess: &mut Session, lhs: T)
-        where
-            T: 'static + AsyncRead + AsyncWrite + Unpin + Send + Sync,
+    where
+        T: 'static + AsyncRead + AsyncWrite + Unpin + Send + Sync,
     {
         let mut lhs: Box<dyn ProxyStream> =
             if !sess.destination.is_domain() && sess.destination.port() == 443 {
@@ -182,7 +182,7 @@ impl Dispatcher {
                     Duration::from_secs(*option::TCP_UPLINK_TIMEOUT),
                     Duration::from_secs(*option::TCP_DOWNLINK_TIMEOUT),
                 )
-                    .await
+                .await
                 {
                     Ok((up_count, down_count)) => {
                         debug!(
