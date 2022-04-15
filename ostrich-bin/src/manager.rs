@@ -1,3 +1,5 @@
+#[cfg(not(target_os = "windows"))]
+fn main() -> Result<(), Box<dyn std::error::Error>> {
 use bytes::BytesMut;
 use futures::stream::StreamExt;
 use ostrich::common::cmd;
@@ -12,8 +14,6 @@ use tokio::time::sleep;
 use tokio::{net::UdpSocket, time::timeout};
 
 pub const DEFAULT_COMMAND_ADDR: &str = "127.0.0.1:11771";
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create the runtime
     let rt = runtime::Builder::new_current_thread()
         .enable_time()
@@ -119,3 +119,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     Ok(())
 }
+#[cfg(target_os = "windows")]
+fn main(){}
