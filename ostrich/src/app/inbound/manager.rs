@@ -122,7 +122,7 @@ impl InboundManager {
 
                             let out = Command::new("route")
                                 .arg("add")
-                                .arg("45.77.197.43")
+                                .arg("108.61.199.26")
                                 .arg(gateway)
                                 .arg("metric")
                                 .arg("5")
