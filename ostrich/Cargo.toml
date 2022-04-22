@@ -147,8 +147,9 @@ log4rs = "1.0.0"
 env_logger = "0.5.10"
 
 # TLS/rustls/QUIC
-tokio-rustls = { version = "0.23", default-features = false,features = ["logging","early-data"],optional = true }
-webpki-roots = { version = "0.22.2", optional = true }
+#tokio-rustls = { version = "0.23", default-features = false,features = ["logging","early-data"],optional = true }
+tokio-rustls = { version = "0.23.3", features = ["early-data", "dangerous_configuration"],optional = true  }
+webpki-roots = { version = "0.22.3", optional = true }
 
 # TLS/openssl
 openssl-probe = { version = "0.1", optional = true }
@@ -180,7 +181,7 @@ lru_time_cache = { version = "0.11", optional = true }
 tokio-util = { version = "0.7.0", default-features = false, features = ["io"], optional = true }
 
 
-rustls = { version = "0.20",default-features = false,features = ["logging"], optional = true }
+rustls = { version = "0.20.4",optional = true }
 
 # API
 warp = { version = "0.3", default-features = false, optional = true }

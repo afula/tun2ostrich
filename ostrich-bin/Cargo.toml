@@ -42,7 +42,7 @@ tokio = { version = "1", features = ["rt"] }
 argh = "0.1"
 bytes = "1.0.1"
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 rlimit = "0.6.2"
 signal-hook = "0.3.13"
 signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}

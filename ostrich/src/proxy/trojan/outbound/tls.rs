@@ -162,11 +162,8 @@ pub fn make_config(config: &TrojanOutboundSettings) -> Arc<rustls::ClientConfig>
     let versions = lookup_versions();
 
     let mut tls_config = rustls::ClientConfig::builder()
-        .with_cipher_suites(&suites)
-        .with_safe_default_kx_groups()
-        .with_protocol_versions(&versions)
-        .expect("inconsistent cipher-suite/versions selected")
-        .with_root_certificates(root_store)
+        .with_safe_defaults()
+        .with_custom_certificate_verifier(Arc::new(certs::SkipVerify {}))
         .with_no_client_auth();
 
     // tls_config.key_log = Arc::new(rustls::KeyLogFile::new());
@@ -182,16 +179,16 @@ pub fn make_config(config: &TrojanOutboundSettings) -> Arc<rustls::ClientConfig>
     // config.session_storage = Arc::new(PersistCache::new(&args.flag_cache));
 
     // tls_config.session_storage = Arc::new(PersistCache::new(&None));
-    tls_config.enable_sni = true;
+    // tls_config.enable_sni = true;
     // tls_config.enable_tickets = true;
     // tls_config.enable_early_data = true;
 
-    tls_config.alpn_protocols = config
+/*    tls_config.alpn_protocols = config
         .alpn
         .iter()
         .map(|proto| proto.as_bytes().to_vec())
         .collect();
-    tls_config.enable_early_data = true;
+    tls_config.enable_early_data = true;*/
     // tls_config.max_fragment_size = args.flag_max_frag_size;
 
     // apply_dangerous_options(config, &mut tls_config);
@@ -213,4 +210,24 @@ pub fn make_config(config: &TrojanOutboundSettings) -> Arc<rustls::ClientConfig>
     //     .with_root_certificates(root_cert_store)
     //     .with_no_client_auth(); // i guess this was previously the default?
     // Arc::new(tls_config)
+}
+mod certs{
+
+    use rustls::client::{ServerCertVerified, ServerCertVerifier};
+    pub struct SkipVerify {}
+
+    impl ServerCertVerifier for SkipVerify {
+        fn verify_server_cert(
+            &self,
+            _end_entity: &rustls::Certificate,
+            _intermediates: &[rustls::Certificate],
+            _server_name: &rustls::ServerName,
+            _scts: &mut dyn Iterator<Item = &[u8]>,
+            _ocsp_response: &[u8],
+            _now: std::time::SystemTime,
+        ) -> std::result::Result<rustls::client::ServerCertVerified, rustls::Error>
+        {
+            Ok(ServerCertVerified::assertion())
+        }
+    }
 }
