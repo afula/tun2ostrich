@@ -23,7 +23,8 @@ pub const DEFAULT_COMMAND_ADDR: &str = "127.0.0.1:11771";
     rt.block_on(async {
         // let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
         std::thread::spawn(|| {
-            let p = Command::new("./ostrich_worker")
+            let p = Command::new("sudo")
+                .arg("./ostrich_worker")
                 .arg("-c")
                 .arg("latest.json")
                 .stderr(Stdio::null())
