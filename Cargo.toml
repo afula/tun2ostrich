@@ -7,9 +7,10 @@ members = [
 default-members = ["ostrich-bin"]
 
 [profile.release]
-opt-level = 3
+strip = true
+opt-level = "z"
 lto = true
-# codegen-units = 1
+codegen-units = 1
 panic = "abort"
 
 [profile.dev]

@@ -35,6 +35,10 @@ pub mod session;
 mod sys;
 pub mod util;
 
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+#[global_allocator]
+static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc;
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error(transparent)]
@@ -350,9 +354,13 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
     // }
-    #[cfg(all(
+  /*  #[cfg(all(
         feature = "inbound-tun",
         any(target_os = "macos", target_os = "linux",)
+    ))]*/
+    #[cfg(all(
+    feature = "inbound-tun",
+    any(target_os = "macos")
     ))]
     {
         use futures::stream::StreamExt;
