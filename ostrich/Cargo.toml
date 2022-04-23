@@ -185,6 +185,9 @@ rustls = { version = "0.20.4",optional = true }
 # API
 warp = { version = "0.3", default-features = false, optional = true }
 
+#allocator
+rpmalloc = { version = "0.2.0", features = ["guards", "statistics","unlimited_cache", "unlimited_global_cache", "unlimited_thread_cache"] }
+
 #hashmap
 indexmap = {git = "https://github.com/bluss/indexmap.git",features =["std"]}
 dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
@@ -207,7 +210,6 @@ udp-stream = {git = "https://github.com/SajjadPourali/udp-stream.git"}
 [target.'cfg(any(target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
 pnet_datalink = { version = "0.29.0", package = "pnet_datalink" }
 libc = "0.2"
-rpmalloc = { version = "0.2.0", features = ["guards", "statistics","unlimited_cache", "unlimited_global_cache", "unlimited_thread_cache"] }
 
 # Used in mobile logger
 [target.'cfg(any(target_os = "ios", target_os = "macos", target_os = "android"))'.dependencies]
