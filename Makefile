@@ -1,5 +1,5 @@
 ios:
-	RUSTFLAGS="-Z strip=symbols" cargo lipo --release -p ostrich-ffi
+	cargo lipo --release -p ostrich-ffi
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/universal/release/ostrich.h
 
 ios-dev:
