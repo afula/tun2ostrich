@@ -53,14 +53,20 @@ impl InboundManager {
     ) -> Result<Self> {
         let mut handlers: IndexMap<String, AnyInboundHandler> = IndexMap::new();
         let inbounds = config.inbounds.clone();
-        let dns_hosts = config.dns.hosts.clone();
-        let dns_servers = config.dns.servers.clone();
+        let mut dns_hosts: Vec<String> = Vec::with_capacity(config.dns.hosts.len());
+        let dns_servers = Vec::from(config.dns.servers.clone());
+        for (_,  ips) in  &config.dns.hosts {
+            dns_hosts.append( &mut ips.values.to_owned())
+        }
 
         for inbound in inbounds.iter() {
             let tag = String::from(&inbound.tag);
             match inbound.protocol.as_str() {
                 #[cfg(feature = "inbound-socks")]
                 "socks" => {
+
+                    let dns_hosts = dns_hosts.clone();
+                    let dns_servers = dns_servers.clone();
                     let tcp = Arc::new(socks::inbound::TcpHandler);
                     let udp = Arc::new(socks::inbound::UdpHandler);
                     let handler = Arc::new(proxy::inbound::Handler::new(
@@ -114,24 +120,23 @@ impl InboundManager {
                                 .status()
                                 .expect("failed to execute command");
                             println!("process finished with: {}", out);
-                            for (_,hosts) in dns_hosts {
-                                for host in hosts.values{
+                            for host in &dns_hosts {
                                     let out = Command::new("route")
                                         .arg("add")
-                                        .arg(host)
-                                        .arg(gateway.clone())
+                                        .arg(host.as_str())
+                                        .arg(gateway.as_str())
                                         .arg("metric")
                                         .arg("5")
                                         .status()
                                         .expect("failed to execute command");
                                     println!("process finished with: {}", out);
-                                }
+       
                             }
-                            for dns_server in dns_servers {
+                            for dns_server in &dns_servers {
                                 let out = Command::new("route")
                                     .arg("add")
-                                    .arg(dns_server)
-                                    .arg(gateway)
+                                    .arg(dns_server.as_str())
+                                    .arg(gateway.as_str())
                                     .arg("metric")
                                     .arg("5")
                                     .status()
