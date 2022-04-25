@@ -7,19 +7,19 @@ ios-dev:
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/universal/debug/ostrich.h
 
 ios-opt:
-	RUSTFLAGS="-Z strip=symbols" cargo lipo --release --targets aarch64-apple-ios --manifest-path ostrich-ffi/Cargo.toml --no-default-features --features "default-openssl"
+	cargo lipo --release --targets aarch64-apple-ios --manifest-path ostrich-ffi/Cargo.toml --no-default-features --features "default-openssl"
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/universal/release/ostrich.h
 
 mac:
-	RUSTFLAGS="-Z strip=symbols" cargo build --release --targets x86_64-apple-darwin -p ostrich-ffi
+	cargo build --release --targets x86_64-apple-darwin -p ostrich-ffi
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/debug/ostrich.h
 
 mac-m1:
-    RUSTFLAGS="-Z strip=symbols" cargo build --release --targets aarch64-apple-darwin -p ostrich-ffi
+	cargo build --release --targets aarch64-apple-darwin -p ostrich-ffi
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/debug/ostrich.h
 
 lib:
-	RUSTFLAGS="-Z strip=symbols" cargo build -p ostrich-ffi --release
+	cargo build -p ostrich-ffi --release
 	cbindgen --config ostrich-ffi/cbindgen.toml ostrich-ffi/src/lib.rs > target/release/ostrich.h
 
 lib-dev:

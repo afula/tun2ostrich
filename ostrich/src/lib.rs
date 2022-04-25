@@ -291,7 +291,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     ));
     let nat_manager = Arc::new(NatManager::new(dispatcher.clone()));
     let inbound_manager =
-        InboundManager::new(&config.inbounds, dispatcher, nat_manager).map_err(Error::Config)?;
+        InboundManager::new(&config, dispatcher, nat_manager).map_err(Error::Config)?;
     let mut inbound_net_runners = inbound_manager
         .get_network_runners()
         .map_err(Error::Config)?;

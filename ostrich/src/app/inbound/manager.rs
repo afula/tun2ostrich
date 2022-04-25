@@ -7,6 +7,7 @@ use protobuf::Message;
 use crate::app::dispatcher::Dispatcher;
 use crate::app::nat_manager::NatManager;
 use crate::config;
+use crate::config::Config;
 use crate::proxy;
 use crate::proxy::AnyInboundHandler;
 use crate::Runner;
@@ -46,11 +47,14 @@ pub struct InboundManager {
 
 impl InboundManager {
     pub fn new(
-        inbounds: &Vec<config::Inbound>,
+        config: &Config,
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,
     ) -> Result<Self> {
         let mut handlers: IndexMap<String, AnyInboundHandler> = IndexMap::new();
+        let inbounds = config.inbounds.clone();
+        let dns_hosts = config.dns.hosts.clone();
+        let dns_servers = config.dns.servers.clone();
 
         for inbound in inbounds.iter() {
             let tag = String::from(&inbound.tag);
@@ -110,25 +114,30 @@ impl InboundManager {
                                 .status()
                                 .expect("failed to execute command");
                             println!("process finished with: {}", out);
-                            let out = Command::new("route")
-                                .arg("add")
-                                .arg("1.1.1.1")
-                                .arg(gateway.clone())
-                                .arg("metric")
-                                .arg("5")
-                                .status()
-                                .expect("failed to execute command");
-                            println!("process finished with: {}", out);
-
-                            let out = Command::new("route")
-                                .arg("add")
-                                .arg("108.61.199.26")
-                                .arg(gateway)
-                                .arg("metric")
-                                .arg("5")
-                                .status()
-                                .expect("failed to execute command");
-                            println!("process finished with: {}", out);
+                            for (_,hosts) in dns_hosts {
+                                for host in hosts.values{
+                                    let out = Command::new("route")
+                                        .arg("add")
+                                        .arg(host)
+                                        .arg(gateway.clone())
+                                        .arg("metric")
+                                        .arg("5")
+                                        .status()
+                                        .expect("failed to execute command");
+                                    println!("process finished with: {}", out);
+                                }
+                            }
+                            for dns_server in dns_servers {
+                                let out = Command::new("route")
+                                    .arg("add")
+                                    .arg(dns_server)
+                                    .arg(gateway)
+                                    .arg("metric")
+                                    .arg("5")
+                                    .status()
+                                    .expect("failed to execute command");
+                                println!("process finished with: {}", out);
+                            }
                         });
                     }
                 }
