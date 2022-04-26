@@ -54,7 +54,8 @@ pub mod trojan;
         target_os = "ios",
         target_os = "android",
         target_os = "macos",
-        target_os = "linux"
+        target_os = "linux",
+        target_os = "windows"
     )
 ))]
 pub mod tun;

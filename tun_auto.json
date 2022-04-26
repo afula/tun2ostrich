@@ -8,7 +8,7 @@
       "1.1.1.1"
     ],
     "hosts": {
-        "www.walkonbit.site":[
+        "walkonbit.online":[
       "108.61.199.26"
     ]}
   },
@@ -25,8 +25,8 @@
     {
       "protocol": "trojan",
       "settings": {
-        "address": "www.walkonbit.site",
-        "password": "1457c15e",
+        "address": "walkonbit.online",
+        "password": "138c58c5",
         "port": 443,
         "alpn": [
           "http/1.1"
@@ -60,18 +60,6 @@
           "84.200.69.80",
           "84.200.70.40",
           "108.61.199.26"
-        ],
-        "target": "direct_out"
-      },
-      {
-        "external": [
-          "site:/home/damo/test/site.dat:cn"
-        ],
-        "target": "direct_out"
-      },
-      {
-        "external": [
-          "mmdb:/home/damo/test/geo.mmdb:cn"
         ],
         "target": "direct_out"
       }

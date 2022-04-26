@@ -1,0 +1,710 @@
+[37m[2022-04-26 15:15:23][[37mDEBUG[0m[37m] default handler [proxy_out][0m
+[90m[2022-04-26 15:15:23][[90mTRACE[0m[90m] added handler [proxy_out][0m
+[90m[2022-04-26 15:15:23][[90mTRACE[0m[90m] added handler [direct_out][0m
+[90m[2022-04-26 15:15:23][[90mTRACE[0m[90m] added runtime 1[0m
+[37m[2022-04-26 15:15:23][[32mINFO[0m[37m] tun inbound started[0m
+[37m[2022-04-26 15:15:23][[32mINFO[0m[37m] start tun inbound[0m
+[37m[2022-04-26 15:15:27][[37mDEBUG[0m[37m] added udp session 172.7.0.2:5353 -> 224.0.0.251:5353 (1)[0m
+[37m[2022-04-26 15:15:27][[37mDEBUG[0m[37m] added udp session 172.7.0.2:137 -> 172.7.0.255:137 (2)[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:27][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:5353 -> 224.0.0.251:5353[0m
+[37m[2022-04-26 15:15:27][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:137 -> 172.7.0.255:137[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] tcp connected 10.0.0.162:51547 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:27][[90mTRACE[0m[90m] tcp connected 10.0.0.162:51548 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:27][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [457ms] 224.0.0.251:5353[0m
+[37m[2022-04-26 15:15:27][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [465ms] 172.7.0.255:137[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] sniffed domain default.exp-tas.com for tcp link 172.7.0.2:51546 <-> 13.107.5.93:443[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] added udp session 172.7.0.2:58819 -> 239.255.255.250:1900 (3)[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] added udp session 172.7.0.2:64769 -> 239.255.255.250:3702 (4)[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:64769 -> 239.255.255.250:3702[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:58819 -> 239.255.255.250:1900[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] looking up host default.exp-tas.com on 1.1.1.1:53[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] return 1 ips (ttl 3530) for default.exp-tas.com from 1.1.1.1:53 in 22ms[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] ips for default.exp-tas.com:
+CacheEntry {
+    ips: [
+        13.107.5.93,
+    ],
+    deadline: Instant {
+        t: 655381.3578864s,
+    },
+}[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] re-matching with resolved ip [13.107.5.93] for [default.exp-tas.com][0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:51546 -> default.exp-tas.com:443[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp connected 10.0.0.162:52470 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp connected 10.0.0.162:52471 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp connected 10.0.0.162:52472 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] added udp session 172.7.0.2:64787 -> 239.255.255.250:1900 (5)[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:52469 -> 75.75.75.75:53[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:28][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:64787 -> 239.255.255.250:1900[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:28][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:58427 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:58426 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [471ms] 239.255.255.250:3702[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [476ms] 239.255.255.250:1900[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [458ms] default.exp-tas.com:443[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [454ms] 239.255.255.250:1900[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [475ms] 75.75.75.75:53[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:63256 -> 75.75.75.75:53[0m
+[37m[2022-04-26 15:15:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:60511 -> 75.75.75.75:53[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:15:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:53621 -> 75.75.75.75:53[0m
+[37m[2022-04-26 15:15:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:58425 -> 75.75.75.75:53[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53622 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53625 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53623 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53624 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [454ms] 75.75.75.75:53[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [464ms] 75.75.75.75:53[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [478ms] 75.75.75.75:53[0m
+[37m[2022-04-26 15:15:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [484ms] 75.75.75.75:53[0m
+[90m[2022-04-26 15:15:30][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:30][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:50168 -> 75.75.76.76:53[0m
+[90m[2022-04-26 15:15:30][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:30][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:30][[90mTRACE[0m[90m] tcp connected 10.0.0.162:50169 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:30][[37mDEBUG[0m[37m] tcp link 172.7.0.2:63256 <-> 75.75.75.75:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:15:30][[37mDEBUG[0m[37m] tcp link 172.7.0.2:51546 <-> default.exp-tas.com:443 done, (961, 6319) bytes transfered [proxy_out][0m
+[37m[2022-04-26 15:15:30][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [469ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:15:31][[37mDEBUG[0m[37m] tcp link 172.7.0.2:50168 <-> 75.75.76.76:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:15:34][[37mDEBUG[0m[37m] added udp session 172.7.0.2:53062 -> 239.255.255.250:3702 (6)[0m
+[90m[2022-04-26 15:15:34][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:34][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:53062 -> 239.255.255.250:3702[0m
+[90m[2022-04-26 15:15:34][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:34][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:35][[90mTRACE[0m[90m] tcp connected 10.0.0.162:50178 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:35][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [462ms] 239.255.255.250:3702[0m
+[90m[2022-04-26 15:15:38][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:38][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:50177 -> 104.168.47.39:1688[0m
+[90m[2022-04-26 15:15:38][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:38][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:39][[90mTRACE[0m[90m] tcp connected 10.0.0.162:65231 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:39][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [687ms] 104.168.47.39:1688[0m
+[37m[2022-04-26 15:15:39][[37mDEBUG[0m[37m] tcp link 172.7.0.2:50177 <-> 104.168.47.39:1688 error: unexpected end of file [proxy_out][0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:15:40][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:50010 -> 75.75.76.76:53[0m
+[37m[2022-04-26 15:15:40][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:65230 -> 75.75.76.76:53[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:40][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:62399 -> 75.75.76.76:53[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:15:40][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:53558 -> 75.75.76.76:53[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53567 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53569 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53570 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:15:40][[90mTRACE[0m[90m] tcp connected 10.0.0.162:53568 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:15:40][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [445ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:15:40][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [473ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:15:40][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [474ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:15:40][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [484ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:15:41][[37mDEBUG[0m[37m] tcp link 172.7.0.2:62399 <-> 75.75.76.76:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:07][[37mDEBUG[0m[37m] udp session 172.7.0.2:5353 ended[0m
+[37m[2022-04-26 15:16:07][[37mDEBUG[0m[37m] udp session 172.7.0.2:137 ended[0m
+[37m[2022-04-26 15:16:07][[37mDEBUG[0m[37m] udp session 172.7.0.2:64769 ended[0m
+[37m[2022-04-26 15:16:07][[37mDEBUG[0m[37m] udp session 172.7.0.2:64787 ended[0m
+[90m[2022-04-26 15:16:07][[90mTRACE[0m[90m] removed 4 nat sessions, remaining 2 sessions[0m
+[37m[2022-04-26 15:16:17][[37mDEBUG[0m[37m] udp session 172.7.0.2:53062 ended[0m
+[37m[2022-04-26 15:16:17][[37mDEBUG[0m[37m] udp session 172.7.0.2:58819 ended[0m
+[90m[2022-04-26 15:16:17][[90mTRACE[0m[90m] removed 2 nat sessions, remaining 0 sessions[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57083 -> 75.75.76.76:53[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:53422 -> 75.75.76.76:53[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:56059 -> 75.75.76.76:53[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:59285 -> 75.75.76.76:53[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] added udp session 172.7.0.2:58819 -> 239.255.255.250:1900 (1)[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:63712 -> 75.75.76.76:53[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] sniffed domain dc.services.visualstudio.com for tcp link 172.7.0.2:57084 <-> 40.78.253.202:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:58819 -> 239.255.255.250:1900[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] looking up host dc.services.visualstudio.com on 1.1.1.1:53[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] return 1 ips (ttl 297) for dc.services.visualstudio.com from 1.1.1.1:53 in 100ms[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] ips for dc.services.visualstudio.com:
+CacheEntry {
+    ips: [
+        40.78.253.199,
+    ],
+    deadline: Instant {
+        t: 652203.9991988s,
+    },
+}[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] re-matching with resolved ip [40.78.253.199] for [dc.services.visualstudio.com][0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:16:24][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57084 -> dc.services.visualstudio.com:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57086 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57089 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57087 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57088 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57090 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57091 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:24][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57092 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:16:24][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [576ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:16:24][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [579ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:16:24][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [580ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:16:24][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [583ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:16:24][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [584ms] 75.75.76.76:53[0m
+[37m[2022-04-26 15:16:24][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [608ms] 239.255.255.250:1900[0m
+[37m[2022-04-26 15:16:24][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [513ms] dc.services.visualstudio.com:443[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] sniffed domain activity.windows.com for tcp link 172.7.0.2:57085 <-> 20.69.137.228:443[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] sniffed domain mobile.events.data.microsoft.com for tcp link 172.7.0.2:57093 <-> 20.50.73.10:443[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] looking up host mobile.events.data.microsoft.com on 1.1.1.1:53[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] looking up host activity.windows.com on 1.1.1.1:53[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] return 1 ips (ttl 3552) for activity.windows.com from 1.1.1.1:53 in 26ms[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] ips for activity.windows.com:
+CacheEntry {
+    ips: [
+        20.69.137.228,
+    ],
+    deadline: Instant {
+        t: 655460.7137059s,
+    },
+}[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] re-matching with resolved ip [20.69.137.228] for [activity.windows.com][0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57085 -> activity.windows.com:443[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] return 1 ips (ttl 83) for mobile.events.data.microsoft.com from 1.1.1.1:53 in 26ms[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] ips for mobile.events.data.microsoft.com:
+CacheEntry {
+    ips: [
+        20.189.173.10,
+    ],
+    deadline: Instant {
+        t: 651991.7143366s,
+    },
+}[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] re-matching with resolved ip [20.189.173.10] for [mobile.events.data.microsoft.com][0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:16:26][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57093 -> mobile.events.data.microsoft.com:443[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57094 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:16:26][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57095 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:16:26][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [439ms] activity.windows.com:443[0m
+[37m[2022-04-26 15:16:26][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [453ms] mobile.events.data.microsoft.com:443[0m
+[37m[2022-04-26 15:16:29][[37mDEBUG[0m[37m] tcp link 172.7.0.2:52469 <-> 75.75.75.75:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:29][[37mDEBUG[0m[37m] tcp link 172.7.0.2:53621 <-> 75.75.75.75:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:29][[37mDEBUG[0m[37m] tcp link 172.7.0.2:60511 <-> 75.75.75.75:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:29][[37mDEBUG[0m[37m] tcp link 172.7.0.2:58425 <-> 75.75.75.75:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:40][[37mDEBUG[0m[37m] tcp link 172.7.0.2:50010 <-> 75.75.76.76:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:40][[37mDEBUG[0m[37m] tcp link 172.7.0.2:53558 <-> 75.75.76.76:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:40][[37mDEBUG[0m[37m] tcp link 172.7.0.2:65230 <-> 75.75.76.76:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:16:45][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57083 <-> 75.75.76.76:53 done, (0, 0) bytes transfered [proxy_out][0m
+[37m[2022-04-26 15:16:45][[37mDEBUG[0m[37m] tcp link 172.7.0.2:53422 <-> 75.75.76.76:53 done, (0, 0) bytes transfered [proxy_out][0m
+[37m[2022-04-26 15:16:45][[37mDEBUG[0m[37m] tcp link 172.7.0.2:63712 <-> 75.75.76.76:53 done, (0, 0) bytes transfered [proxy_out][0m
+[37m[2022-04-26 15:16:45][[37mDEBUG[0m[37m] tcp link 172.7.0.2:56059 <-> 75.75.76.76:53 done, (0, 0) bytes transfered [proxy_out][0m
+[37m[2022-04-26 15:16:50][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57084 <-> dc.services.visualstudio.com:443 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:17:03][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57093 <-> mobile.events.data.microsoft.com:443 done, (2785, 4874) bytes transfered [proxy_out][0m
+[37m[2022-04-26 15:17:07][[37mDEBUG[0m[37m] udp session 172.7.0.2:58819 ended[0m
+[90m[2022-04-26 15:17:07][[90mTRACE[0m[90m] removed 1 nat sessions, remaining 0 sessions[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] sniffed domain activity.windows.com for tcp link 172.7.0.2:57103 <-> 20.69.137.228:443[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] sniffed domain bam-cell.nr-data.net for tcp link 172.7.0.2:57106 <-> 162.247.243.146:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] re-matching with resolved ip [20.69.137.228] for [activity.windows.com][0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57103 -> activity.windows.com:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] looking up host bam-cell.nr-data.net on 1.1.1.1:53[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] sniffed domain bam-cell.nr-data.net for tcp link 172.7.0.2:57107 <-> 162.247.243.146:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] looking up host bam-cell.nr-data.net on 1.1.1.1:53[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] return 2 ips (ttl 1603) for bam-cell.nr-data.net from 1.1.1.1:53 in 24ms[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] ips for bam-cell.nr-data.net:
+CacheEntry {
+    ips: [
+        162.247.243.147,
+        162.247.243.146,
+    ],
+    deadline: Instant {
+        t: 653567.86s,
+    },
+}[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] re-matching with resolved ip [162.247.243.147] for [bam-cell.nr-data.net][0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57106 -> bam-cell.nr-data.net:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] return 2 ips (ttl 1338) for bam-cell.nr-data.net from 1.1.1.1:53 in 35ms[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] ips for bam-cell.nr-data.net:
+CacheEntry {
+    ips: [
+        162.247.243.147,
+        162.247.243.146,
+    ],
+    deadline: Instant {
+        t: 653302.8717009s,
+    },
+}[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] re-matching with resolved ip [162.247.243.147] for [bam-cell.nr-data.net][0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57107 -> bam-cell.nr-data.net:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:22][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57085 <-> activity.windows.com:443 error: unexpected end of file [proxy_out][0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57112 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57113 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:17:22][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57114 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:22][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [535ms] bam-cell.nr-data.net:443[0m
+[37m[2022-04-26 15:17:22][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [548ms] bam-cell.nr-data.net:443[0m
+[37m[2022-04-26 15:17:22][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [574ms] activity.windows.com:443[0m
+[37m[2022-04-26 15:17:23][[37mDEBUG[0m[37m] sniffed domain analysis.bytefence.com for tcp link 172.7.0.2:57111 <-> 54.84.60.156:443[0m
+[90m[2022-04-26 15:17:23][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:17:23][[37mDEBUG[0m[37m] looking up host analysis.bytefence.com on 1.1.1.1:53[0m
+[37m[2022-04-26 15:17:23][[37mDEBUG[0m[37m] return 2 ips (ttl 300) for analysis.bytefence.com from 1.1.1.1:53 in 48ms[0m
+[90m[2022-04-26 15:17:23][[90mTRACE[0m[90m] ips for analysis.bytefence.com:
+CacheEntry {
+    ips: [
+        54.84.60.156,
+        3.227.77.1,
+    ],
+    deadline: Instant {
+        t: 652265.8617061s,
+    },
+}[0m
+[90m[2022-04-26 15:17:23][[90mTRACE[0m[90m] re-matching with resolved ip [54.84.60.156] for [analysis.bytefence.com][0m
+[90m[2022-04-26 15:17:23][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:17:23][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57111 -> analysis.bytefence.com:443[0m
+[90m[2022-04-26 15:17:23][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:17:23][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:17:23][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57115 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:23][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [470ms] analysis.bytefence.com:443[0m
+[37m[2022-04-26 15:17:27][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57111 <-> analysis.bytefence.com:443 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:17:28][[37mDEBUG[0m[37m] added udp session 172.7.0.2:60092 -> 239.255.255.250:1900 (1)[0m
+[90m[2022-04-26 15:17:28][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:17:28][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:60092 -> 239.255.255.250:1900[0m
+[90m[2022-04-26 15:17:28][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:17:28][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:17:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57116 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:29][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [508ms] 239.255.255.250:1900[0m
+[37m[2022-04-26 15:17:29][[37mDEBUG[0m[37m] sniffed domain analysis.bytefence.com for tcp link 172.7.0.2:57117 <-> 54.84.60.156:443[0m
+[90m[2022-04-26 15:17:29][[90mTRACE[0m[90m] re-matching with resolved ip [54.84.60.156] for [analysis.bytefence.com][0m
+[90m[2022-04-26 15:17:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:17:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57117 -> analysis.bytefence.com:443[0m
+[90m[2022-04-26 15:17:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:17:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:29][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57103 <-> activity.windows.com:443 done, (2419, 6620) bytes transfered [proxy_out][0m
+[90m[2022-04-26 15:17:30][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57118 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:30][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [726ms] analysis.bytefence.com:443[0m
+[37m[2022-04-26 15:17:32][[37mDEBUG[0m[37m] added udp session 172.7.0.2:58819 -> 239.255.255.250:1900 (2)[0m
+[90m[2022-04-26 15:17:32][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:17:32][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:58819 -> 239.255.255.250:1900[0m
+[90m[2022-04-26 15:17:32][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:17:32][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:17:32][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57119 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:17:32][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [472ms] 239.255.255.250:1900[0m
+[37m[2022-04-26 15:17:34][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57117 <-> analysis.bytefence.com:443 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:17:43][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57106 <-> bam-cell.nr-data.net:443 done, (621, 3581) bytes transfered [proxy_out][0m
+[37m[2022-04-26 15:18:07][[37mDEBUG[0m[37m] udp session 172.7.0.2:60092 ended[0m
+[90m[2022-04-26 15:18:07][[90mTRACE[0m[90m] removed 1 nat sessions, remaining 1 sessions[0m
+[37m[2022-04-26 15:18:17][[37mDEBUG[0m[37m] udp session 172.7.0.2:58819 ended[0m
+[90m[2022-04-26 15:18:17][[90mTRACE[0m[90m] removed 1 nat sessions, remaining 0 sessions[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] added udp session 172.7.0.2:58819 -> 239.255.255.250:1900 (1)[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain static-cdn.spot.im for tcp link 172.7.0.2:57147 <-> 13.249.205.20:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain static-cdn.spot.im for tcp link 172.7.0.2:57151 <-> 13.249.205.20:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain api-2-0.spot.im for tcp link 172.7.0.2:57149 <-> 13.249.205.33:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain pix.spot.im for tcp link 172.7.0.2:57143 <-> 13.249.205.24:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain static-cdn.spot.im for tcp link 172.7.0.2:57150 <-> 13.249.205.20:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain api-2-0.spot.im for tcp link 172.7.0.2:57141 <-> 13.249.205.33:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host static-cdn.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:58819 -> 239.255.255.250:1900[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host static-cdn.spot.im on 1.1.1.1:53[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host pix.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host static-cdn.spot.im on 1.1.1.1:53[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain static-cdn.spot.im for tcp link 172.7.0.2:57148 <-> 13.249.205.20:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host api-2-0.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host api-2-0.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain static-cdn.spot.im for tcp link 172.7.0.2:57142 <-> 13.249.205.20:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain mobile.events.data.microsoft.com for tcp link 172.7.0.2:57154 <-> 20.189.173.15:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain direct-events-collector.spot.im for tcp link 172.7.0.2:57153 <-> 13.249.205.9:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain api-2-0.spot.im for tcp link 172.7.0.2:57144 <-> 13.249.205.33:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain direct-events-collector.spot.im for tcp link 172.7.0.2:57152 <-> 13.249.205.9:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host static-cdn.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host static-cdn.spot.im on 1.1.1.1:53[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain mobile.events.data.microsoft.com for tcp link 172.7.0.2:57155 <-> 20.189.173.15:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain static-cdn.spot.im for tcp link 172.7.0.2:57145 <-> 13.249.205.20:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host direct-events-collector.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host api-2-0.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] sniffed domain pix.spot.im for tcp link 172.7.0.2:57146 <-> 13.249.205.24:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host direct-events-collector.spot.im on 1.1.1.1:53[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host static-cdn.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host mobile.events.data.microsoft.com on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host mobile.events.data.microsoft.com on 1.1.1.1:53[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] looking up host pix.spot.im on 1.1.1.1:53[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 54) for direct-events-collector.spot.im from 1.1.1.1:53 in 26ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for direct-events-collector.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.60,
+        13.249.205.24,
+        13.249.205.9,
+        13.249.205.90,
+    ],
+    deadline: Instant {
+        t: 652085.9178088s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.60] for [direct-events-collector.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57152 -> direct-events-collector.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 38) for api-2-0.spot.im from 1.1.1.1:53 in 27ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for api-2-0.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.43,
+        13.249.205.15,
+        13.249.205.33,
+        13.249.205.27,
+    ],
+    deadline: Instant {
+        t: 652069.9186365s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.43] for [api-2-0.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57144 -> api-2-0.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 36) for api-2-0.spot.im from 1.1.1.1:53 in 28ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for api-2-0.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.15,
+        13.249.205.43,
+        13.249.205.27,
+        13.249.205.33,
+    ],
+    deadline: Instant {
+        t: 652067.9194973s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.15] for [api-2-0.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57149 -> api-2-0.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 38) for api-2-0.spot.im from 1.1.1.1:53 in 42ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for api-2-0.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.27,
+        13.249.205.33,
+        13.249.205.15,
+        13.249.205.43,
+    ],
+    deadline: Instant {
+        t: 652069.9325669s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.27] for [api-2-0.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57141 -> api-2-0.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 1 ips (ttl 102) for mobile.events.data.microsoft.com from 1.1.1.1:53 in 42ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for mobile.events.data.microsoft.com:
+CacheEntry {
+    ips: [
+        20.42.72.131,
+    ],
+    deadline: Instant {
+        t: 652133.9332167s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [20.42.72.131] for [mobile.events.data.microsoft.com][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57154 -> mobile.events.data.microsoft.com:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 54) for pix.spot.im from 1.1.1.1:53 in 43ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for pix.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.90,
+        13.249.205.9,
+        13.249.205.60,
+        13.249.205.24,
+    ],
+    deadline: Instant {
+        t: 652085.9339164s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.90] for [pix.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57143 -> pix.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 54) for direct-events-collector.spot.im from 1.1.1.1:53 in 43ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for direct-events-collector.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.60,
+        13.249.205.24,
+        13.249.205.9,
+        13.249.205.90,
+    ],
+    deadline: Instant {
+        t: 652085.9345198s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.60] for [direct-events-collector.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57153 -> direct-events-collector.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 1 ips (ttl 107) for mobile.events.data.microsoft.com from 1.1.1.1:53 in 43ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for mobile.events.data.microsoft.com:
+CacheEntry {
+    ips: [
+        40.79.197.35,
+    ],
+    deadline: Instant {
+        t: 652138.935076s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [40.79.197.35] for [mobile.events.data.microsoft.com][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57155 -> mobile.events.data.microsoft.com:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 60) for static-cdn.spot.im from 1.1.1.1:53 in 45ms[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 60) for static-cdn.spot.im from 1.1.1.1:53 in 45ms[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 60) for static-cdn.spot.im from 1.1.1.1:53 in 44ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for static-cdn.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.69,
+        13.249.205.51,
+        13.249.205.20,
+        13.249.205.2,
+    ],
+    deadline: Instant {
+        t: 652091.9357482s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for static-cdn.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.69,
+        13.249.205.51,
+        13.249.205.20,
+        13.249.205.2,
+    ],
+    deadline: Instant {
+        t: 652091.9357725s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for static-cdn.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.69,
+        13.249.205.51,
+        13.249.205.20,
+        13.249.205.2,
+    ],
+    deadline: Instant {
+        t: 652091.9357972s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.69] for [static-cdn.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.69] for [static-cdn.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57148 -> static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57142 -> static-cdn.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.69] for [static-cdn.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57145 -> static-cdn.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 60) for static-cdn.spot.im from 1.1.1.1:53 in 46ms[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 60) for static-cdn.spot.im from 1.1.1.1:53 in 46ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for static-cdn.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.69,
+        13.249.205.51,
+        13.249.205.20,
+        13.249.205.2,
+    ],
+    deadline: Instant {
+        t: 652091.9367636s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for static-cdn.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.69,
+        13.249.205.51,
+        13.249.205.20,
+        13.249.205.2,
+    ],
+    deadline: Instant {
+        t: 652091.9367254s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.69] for [static-cdn.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.69] for [static-cdn.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57151 -> static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57147 -> static-cdn.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 60) for static-cdn.spot.im from 1.1.1.1:53 in 49ms[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] return 4 ips (ttl 54) for pix.spot.im from 1.1.1.1:53 in 48ms[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for static-cdn.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.69,
+        13.249.205.51,
+        13.249.205.20,
+        13.249.205.2,
+    ],
+    deadline: Instant {
+        t: 652091.9404145s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] ips for pix.spot.im:
+CacheEntry {
+    ips: [
+        13.249.205.90,
+        13.249.205.24,
+        13.249.205.9,
+        13.249.205.60,
+    ],
+    deadline: Instant {
+        t: 652085.9404754s,
+    },
+}[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.90] for [pix.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57146 -> pix.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] re-matching with resolved ip [13.249.205.69] for [static-cdn.spot.im][0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] pick route failed: no matching rules[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] picked default route [proxy_out] for 172.7.0.2:57150 -> static-cdn.spot.im:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] socket bind 0.0.0.0:0[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp dialing 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57157 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57158 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57159 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57160 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57162 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57161 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57164 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57163 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57166 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57169 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57165 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57167 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57168 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57170 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57172 <-> 108.61.199.26:443[0m
+[90m[2022-04-26 15:18:29][[90mTRACE[0m[90m] tcp connected 10.0.0.162:57171 <-> 108.61.199.26:443[0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] tcp link 172.7.0.2:57107 <-> bam-cell.nr-data.net:443 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:18:29][[37mDEBUG[0m[37m] tcp link 172.7.0.2:59285 <-> 75.75.76.76:53 error: unexpected end of file [proxy_out][0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[33mudp[0m] [[35mproxy_out[0m] [468ms] 239.255.255.250:1900[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [447ms] direct-events-collector.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [459ms] api-2-0.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [470ms] api-2-0.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [474ms] mobile.events.data.microsoft.com:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [476ms] api-2-0.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [476ms] direct-events-collector.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [516ms] pix.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [516ms] static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [518ms] static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [527ms] static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [529ms] static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [533ms] mobile.events.data.microsoft.com:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [534ms] static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [554ms] static-cdn.spot.im:443[0m
+[37m[2022-04-26 15:18:29][[32mINFO[0m[37m] [tun_in] [[34mtcp[0m] [[35mproxy_out[0m] [558ms] pix.spot.im:443[0m
+[90m[2022-04-26 15:18:46][[90mTRACE[0m[90m] removed runtime 1[0m

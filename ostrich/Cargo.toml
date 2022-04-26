@@ -144,7 +144,7 @@ colored = "2.0"
 # log = "0.4.14"
 log-panics = "2.0.0"
 log4rs = "1.0.0"
-env_logger = "0.5.10"
+env_logger = "0.9.0"
 
 # TLS/rustls/QUIC
 #tokio-rustls = { version = "0.23", default-features = false,features = ["logging","early-data"],optional = true }
@@ -196,13 +196,16 @@ arc-swap = "1.5.0"
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
 tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
-netstack-lwip = { git = "https://github.com/eycorsican/netstack-lwip.git", optional = true }
+# netstack-lwip = { git = "https://github.com/eycorsican/netstack-lwip.git", optional = true }
 signal-hook = "0.3.13"
 signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
-
+# TUN
+[target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux", target_os = "windows"))'.dependencies]
+netstack-lwip = { path = "../netstack-lwip", optional = true }
 [target.'cfg(target_os = "windows")'.dependencies]
 win_tun = { path = "../win_tun", features = ["async"], optional = true }
 wintun = "0.2"
+smoltcp = "0.8.0"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 udp-stream = {git = "https://github.com/SajjadPourali/udp-stream.git"}

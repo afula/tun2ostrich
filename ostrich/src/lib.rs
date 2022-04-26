@@ -35,9 +35,9 @@ pub mod session;
 mod sys;
 pub mod util;
 
-// #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows",target_os = "ios"))]
+/* // #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows",target_os = "ios"))]
 #[global_allocator]
-static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc;
+static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc; */
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -342,7 +342,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
             target_os = "android",
             target_os = "macos",
             target_os = "linux",
-            // target_os = "windows"
+            target_os = "windows"
         )
     ))]
     if let Ok(r) = inbound_manager.get_tun_runner() {
