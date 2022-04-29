@@ -360,7 +360,7 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     ))]*/
     #[cfg(all(
     feature = "inbound-tun",
-    any(target_os = "macos")
+    any(target_os = "android")
     ))]
     {
         use futures::stream::StreamExt;
