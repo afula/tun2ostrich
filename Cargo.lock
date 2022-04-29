@@ -982,6 +982,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ipconfig"
+version = "0.3.0"
+source = "git+https://github.com/liranringel/ipconfig.git#b67d3db5d2b58eaedeb8120150c0c9d3d63eb427"
+dependencies = [
+ "socket2",
+ "widestring 0.5.1",
+ "winapi",
+ "winreg",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1423,6 +1434,7 @@ dependencies = [
  "http",
  "hyper",
  "indexmap 2.0.0-pre",
+ "ipconfig 0.3.0 (git+https://github.com/liranringel/ipconfig.git)",
  "lazy_static",
  "libc",
  "libloading",
@@ -2628,7 +2640,7 @@ checksum = "e4ba72c2ea84515690c9fcef4c6c660bb9df3036ed1051686de84605b74fd558"
 dependencies = [
  "cfg-if 1.0.0",
  "futures-util",
- "ipconfig",
+ "ipconfig 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static",
  "log",
  "lru-cache",
@@ -2992,7 +3004,7 @@ dependencies = [
  "futures",
  "futures-core",
  "ioctl-sys",
- "ipconfig",
+ "ipconfig 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc",
  "log",
  "packet",

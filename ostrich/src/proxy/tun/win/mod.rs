@@ -1,11 +1,11 @@
 use std::net::Ipv4Addr;
 
 #[cfg(target_os = "windows")]
-pub mod windows;
-/* #[cfg(target_os = "windows")]
+pub mod ipset;
+#[cfg(target_os = "windows")]
 pub mod route;
 #[cfg(target_os = "windows")]
-pub mod ipset; */
+pub mod windows;
 
 #[derive(Clone)]
 pub struct TunIpAddr {

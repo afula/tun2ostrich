@@ -47,6 +47,7 @@ pub struct InboundManager {
 
 impl InboundManager {
     pub fn new(
+        mut ipset: Vec<String>,
         config: &Config,
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,
@@ -55,8 +56,8 @@ impl InboundManager {
         let inbounds = config.inbounds.clone();
         let mut dns_hosts: Vec<String> = Vec::with_capacity(config.dns.hosts.len());
         let dns_servers = Vec::from(config.dns.servers.clone());
-        for (_,  ips) in  &config.dns.hosts {
-            dns_hosts.append( &mut ips.values.to_owned())
+        for (_, ips) in &config.dns.hosts {
+            dns_hosts.append(&mut ips.values.to_owned())
         }
 
         for inbound in inbounds.iter() {
@@ -64,7 +65,6 @@ impl InboundManager {
             match inbound.protocol.as_str() {
                 #[cfg(feature = "inbound-socks")]
                 "socks" => {
-
                     let dns_hosts = dns_hosts.clone();
                     let dns_servers = dns_servers.clone();
                     let tcp = Arc::new(socks::inbound::TcpHandler);
@@ -121,16 +121,15 @@ impl InboundManager {
                                 .expect("failed to execute command");
                             println!("process finished with: {}", out);
                             for host in &dns_hosts {
-                                    let out = Command::new("route")
-                                        .arg("add")
-                                        .arg(host.as_str())
-                                        .arg(gateway.as_str())
-                                        .arg("metric")
-                                        .arg("5")
-                                        .status()
-                                        .expect("failed to execute command");
-                                    println!("process finished with: {}", out);
-       
+                                let out = Command::new("route")
+                                    .arg("add")
+                                    .arg(host.as_str())
+                                    .arg(gateway.as_str())
+                                    .arg("metric")
+                                    .arg("5")
+                                    .status()
+                                    .expect("failed to execute command");
+                                println!("process finished with: {}", out);
                             }
                             for dns_server in &dns_servers {
                                 let out = Command::new("route")
@@ -189,6 +188,54 @@ impl InboundManager {
                     let settings =
                         crate::config::TunInboundSettings::parse_from_bytes(&inbound.settings)?;
                     tun_auto = settings.auto;
+                    #[cfg(target_os = "windows")]
+                    {
+                        use crate::common::cmd;
+                        use std::process::Command;
+                        let gateway = cmd::get_default_ipv4_gateway().unwrap();
+                        println!("gateway: {:?}", gateway);
+                        let mut if_index: u32 = 0;
+
+                        let mut adapters = ipconfig::get_adapters().unwrap();
+                        adapters.sort_by(|ip1, ip2| ip1.ipv4_metric().cmp(&ip2.ipv4_metric()));
+                        for adapter in adapters {
+                            println!(
+                                "{}: IfType: {:?}  IPs: {:?} - IPv4 metric: {} IPv6 metric: {} IPV6 index: {:?}, Dns server: {:?}, Gateways: {:?}",
+                                adapter.friendly_name(),
+                                adapter.if_type(),
+                                adapter.ip_addresses(),
+                                adapter.ipv4_metric(),
+                                adapter.ipv6_metric(),
+                                adapter.ipv6_if_index(),
+                                adapter.dns_servers(),
+                                adapter.gateways()
+                            );
+                            if adapter.gateways().contains(&gateway.parse().unwrap()) {
+                                if_index = adapter.ipv6_if_index();
+                                for dns in adapter.dns_servers() {
+                                    if dns.is_ipv4() {
+                                        ipset.push(dns.to_string())
+                                    }
+                                }
+                            }
+                        }
+
+                        let prefix = 32;
+                        use crate::proxy::tun::win::route::route_add_with_if;
+                        println!("ipset: {:?}, if_index: {:?}", &ipset, if_index);
+                        let ip_mask = !((1 << (32 - prefix)) - 1);
+                        for ip in &ipset{
+                            let out = Command::new("route")
+                            .arg("add")
+                            .arg(ip)
+                            .arg(&gateway)
+                            .arg("metric")
+                            .arg("5")
+                            .status()
+                            .expect("failed to execute command");
+                        println!("process finished with: {}", out);
+                        }
+                    }
                 }
                 _ => {
                     if inbound.port != 0 {

@@ -107,16 +107,16 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
 
         common::cmd::add_default_ipv4_route(
             option::DEFAULT_TUN_IPV4_GW.parse::<Ipv4Addr>().unwrap(),
-            iface.clone(),
+            "utun233".to_string(),
             true,
         )
         .unwrap();
-        common::cmd::add_default_ipv4_route(
+/*         common::cmd::add_default_ipv4_route(
             ipv4_gw.parse::<Ipv4Addr>().unwrap(),
             iface.clone(),
             false,
         )
-        .unwrap();
+        .unwrap(); */
 
         #[cfg(target_os = "linux")]
         {
@@ -137,7 +137,7 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
             )
             .unwrap();
 
-            if let Some(ipv6_gw) = ipv6_gw {
+/*             if let Some(ipv6_gw) = ipv6_gw {
                 common::cmd::delete_default_ipv6_route(None).unwrap();
                 common::cmd::add_default_ipv6_route(
                     option::DEFAULT_TUN_IPV6_GW.parse::<Ipv6Addr>().unwrap(),
@@ -151,7 +151,7 @@ pub fn post_tun_creation_setup(net_info: &NetInfo) {
                     false,
                 )
                 .unwrap();
-            }
+            } */
 
             #[cfg(target_os = "linux")]
             {
@@ -208,7 +208,7 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
         }
 
         if *option::ENABLE_IPV6 {
-            if let Some(ipv6_gw) = ipv6_gw {
+/*             if let Some(ipv6_gw) = ipv6_gw {
                 common::cmd::delete_default_ipv6_route(None).unwrap();
                 common::cmd::delete_default_ipv6_route(Some(iface.clone())).unwrap();
                 common::cmd::add_default_ipv6_route(
@@ -217,7 +217,7 @@ pub fn post_tun_completion_setup(net_info: &NetInfo) {
                     true,
                 )
                 .unwrap();
-            }
+            } */
 
             #[cfg(target_os = "linux")]
             {
