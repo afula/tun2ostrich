@@ -160,6 +160,7 @@ pub fn new(
     inbound: Inbound,
     dispatcher: Arc<Dispatcher>,
     nat_manager: Arc<NatManager>,
+    #[cfg(target_os = "windows")] wintun_path: String,
 ) -> Result<Runner> {
     let settings = TunInboundSettings::parse_from_bytes(&inbound.settings)?;
     // FIXME it's a bad design to have 2 lists in config while we need only one
@@ -176,7 +177,6 @@ pub fn new(
         (FakeDnsMode::Exclude, fake_dns_exclude)
     };
 
-
     if settings.auto {
         assert!(settings.fd == -1, "tun-auto is not compatible with tun-fd");
     }
@@ -188,7 +188,8 @@ pub fn new(
             target_os = "macos",
             target_os = "linux",
         )
-    ))]{
+    ))]
+    {
         let mut cfg = tun::Configuration::default();
         if settings.fd >= 0 {
             cfg.raw_fd(settings.fd);
@@ -236,15 +237,15 @@ pub fn new(
             for filter in fake_dns_filters.into_iter() {
                 fakedns.add_filter(filter).await;
             }
-    
+
             let inbound_tag = inbound.tag.clone();
             let framed = tun.into_framed();
             let (mut tun_sink, mut tun_stream) = framed.split();
             let (stack, mut tcp_listener, udp_socket) = netstack::NetStack::new();
             let (mut stack_sink, mut stack_stream) = stack.split();
-    
+
             let mut futs: Vec<Runner> = Vec::new();
-    
+
             // Reads packet from stack and sends to TUN.
             futs.push(Box::pin(async move {
                 while let Some(pkt) = stack_stream.next().await {
@@ -253,7 +254,7 @@ pub fn new(
                     }
                 }
             }));
-    
+
             // Reads packet from TUN and sends to stack.
             futs.push(Box::pin(async move {
                 while let Some(pkt) = tun_stream.next().await {
@@ -262,7 +263,7 @@ pub fn new(
                     }
                 }
             }));
-    
+
             // Extracts TCP connections from stack and sends them to the dispatcher.
             let inbound_tag_cloned = inbound_tag.clone();
             let fakedns_cloned = fakedns.clone();
@@ -278,17 +279,17 @@ pub fn new(
                     ));
                 }
             }));
-    
+
             // Receive and send UDP packets between netstack and NAT manager. The NAT
             // manager would maintain UDP sessions and send them to the dispatcher.
             futs.push(Box::pin(async move {
-                handle_inbound_datagram(udp_socket, inbound_tag, nat_manager, fakedns.clone()).await;
+                handle_inbound_datagram(udp_socket, inbound_tag, nat_manager, fakedns.clone())
+                    .await;
             }));
-    
+
             info!("start tun inbound");
             futures::future::select_all(futs).await;
         }))
-    
     }
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "windows")))]
@@ -320,7 +321,7 @@ pub fn new(
             let gateway = cmd::get_default_ipv4_gateway().unwrap();
             println!("gateway: {:?}", gateway);
 
-            let tun_device = Wintun::create(mtu, &[tun_addr]).unwrap();
+            let tun_device = Wintun::create(mtu, &[tun_addr], wintun_path).unwrap();
             // let (tun_tx, tun_rx) = device.split();
             let tun_device_rx = tun_device.session.clone();
             let tun_device_tx = tun_device.session.clone();
@@ -348,7 +349,6 @@ pub fn new(
             let mut futs: Vec<Runner> = Vec::new();
             // Reads packet from stack and sends to TUN.
             let s2t = tokio::task::spawn(async move {
-      
                 while let Some(pkt) = stack_stream.next().await {
                     if let Ok(pkt) = pkt {
                         let n = pkt.len();
@@ -364,7 +364,7 @@ pub fn new(
                     }
                 }
 
-/*                 loop {
+                /*                 loop {
                     match stack_reader.read(&mut buf).await {
                         Ok(0) => {
                             debug!("read stack eof");
@@ -390,18 +390,15 @@ pub fn new(
 
             // Reads packet from TUN and sends to stack.
             let t2s = tokio::task::spawn(async move {
-      
                 loop {
                     match tun_device_rx.receive_blocking() {
-                        Ok(packet) => {
-                            match stack_sink.send(packet.bytes().to_vec()).await {
-                                Ok(_) => (),
-                                Err(e) => {
-                                    warn!("write pkt to stack failed: {}", e);
-                                    return;
-                                }
+                        Ok(packet) => match stack_sink.send(packet.bytes().to_vec()).await {
+                            Ok(_) => (),
+                            Err(e) => {
+                                warn!("write pkt to stack failed: {}", e);
+                                return;
                             }
-                        }
+                        },
                         Err(err) => {
                             error!("Got error while reading: {:?}", err);
                             break;
@@ -410,9 +407,7 @@ pub fn new(
                 }
             });
 
-
-    
-/*             // Reads packet from stack and sends to TUN.
+            /*             // Reads packet from stack and sends to TUN.
             futs.push(Box::pin(async move {
                 while let Some(pkt) = stack_stream.next().await {
                     if let Ok(pkt) = pkt {
@@ -420,7 +415,7 @@ pub fn new(
                     }
                 }
             }));
-    
+
             // Reads packet from TUN and sends to stack.
             futs.push(Box::pin(async move {
                 while let Some(pkt) = tun_stream.next().await {
@@ -429,7 +424,7 @@ pub fn new(
                     }
                 }
             })); */
-    
+
             // Extracts TCP connections from stack and sends them to the dispatcher.
             let inbound_tag_cloned = inbound_tag.clone();
             let fakedns_cloned = fakedns.clone();
@@ -445,19 +440,19 @@ pub fn new(
                     ));
                 }
             }));
-    
+
             // Receive and send UDP packets between netstack and NAT manager. The NAT
             // manager would maintain UDP sessions and send them to the dispatcher.
             futs.push(Box::pin(async move {
-                handle_inbound_datagram(udp_socket, inbound_tag, nat_manager, fakedns.clone()).await;
+                handle_inbound_datagram(udp_socket, inbound_tag, nat_manager, fakedns.clone())
+                    .await;
             }));
-            tokio::spawn(async{
+            tokio::spawn(async {
                 info!("start tun inbound");
                 futures::future::select_all(futs).await;
             });
             info!("tun inbound started");
             futures::future::select(t2s, s2t).await;
-
         }))
     }
 }

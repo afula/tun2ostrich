@@ -35,8 +35,14 @@ struct Args {
 
 fn main() {
     let args: Args = argh::from_env();
+    #[cfg(target_os = "windows")]
+    let wintun_path = "your\\path\\wintun.dll";
 
-    if let Err(e) = ostrich::util::run_with_options(args.config) {
+    if let Err(e) = ostrich::util::run_with_options(
+        args.config,
+        #[cfg(target_os = "windows")]
+        wintun_path.to_string(),
+    ) {
         println!("start ostrich failed: {}", e);
         exit(1);
     }

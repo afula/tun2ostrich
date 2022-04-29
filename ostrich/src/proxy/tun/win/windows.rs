@@ -33,7 +33,7 @@ pub struct Wintun {
 }
 
 impl Wintun {
-    pub fn create(mtu: usize, ip_addrs: &[TunIpAddr]) -> Result<Wintun> {
+    pub fn create(mtu: usize, ip_addrs: &[TunIpAddr], wintun_path: String) -> Result<Wintun> {
         // drop old wintun adapter
         // {
         //     let _ = WintunAdapter::open_adapter(ADAPTER_NAME);
@@ -43,7 +43,8 @@ impl Wintun {
         // std::thread::sleep(Duration::from_millis(100));
         // let adapter = WintunAdapter::create_adapter(ADAPTER_NAME, TUNNEL_TYPE, ADAPTER_GUID)?;
 
-        let wintun = unsafe { wintun::load_from_path("misc/wintun.dll").expect("cant load dll") };
+        let wintun =
+            unsafe { wintun::load_from_path(wintun_path.as_str()).expect("cant load dll") };
         let adapter = Adapter::create(&wintun, ADAPTER_NAME, ADAPTER_NAME, None)
             .expect("cant create adapter");
         let session = Arc::new(

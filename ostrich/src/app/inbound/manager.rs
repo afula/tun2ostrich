@@ -51,6 +51,7 @@ impl InboundManager {
         config: &Config,
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,
+        #[cfg(target_os = "windows")] wintun_path: String,
     ) -> Result<Self> {
         let mut handlers: IndexMap<String, AnyInboundHandler> = IndexMap::new();
         let inbounds = config.inbounds.clone();
@@ -183,6 +184,8 @@ impl InboundManager {
                         inbound: inbound.clone(),
                         dispatcher: dispatcher.clone(),
                         nat_manager: nat_manager.clone(),
+                        #[cfg(target_os = "windows")]
+                        wintun_path: wintun_path.clone(),
                     };
                     tun_listener.replace(listener);
                     let settings =
@@ -224,16 +227,16 @@ impl InboundManager {
                         use crate::proxy::tun::win::route::route_add_with_if;
                         println!("ipset: {:?}, if_index: {:?}", &ipset, if_index);
                         let ip_mask = !((1 << (32 - prefix)) - 1);
-                        for ip in &ipset{
+                        for ip in &ipset {
                             let out = Command::new("route")
-                            .arg("add")
-                            .arg(ip)
-                            .arg(&gateway)
-                            .arg("metric")
-                            .arg("5")
-                            .status()
-                            .expect("failed to execute command");
-                        println!("process finished with: {}", out);
+                                .arg("add")
+                                .arg(ip)
+                                .arg(&gateway)
+                                .arg("metric")
+                                .arg("5")
+                                .status()
+                                .expect("failed to execute command");
+                            println!("process finished with: {}", out);
                         }
                     }
                 }

@@ -12,6 +12,8 @@ pub struct TunInboundListener {
     pub inbound: Inbound,
     pub dispatcher: Arc<Dispatcher>,
     pub nat_manager: Arc<NatManager>,
+    #[cfg(target_os = "windows")]
+    pub wintun_path: String,
 }
 
 impl TunInboundListener {
@@ -20,6 +22,8 @@ impl TunInboundListener {
             self.inbound.clone(),
             self.dispatcher.clone(),
             self.nat_manager.clone(),
+            #[cfg(target_os = "windows")]
+            self.wintun_path.clone(),
         )
     }
 }

@@ -25,13 +25,18 @@ pub fn run_with_options(
     // rt_id: crate::RuntimeId,
     config_path: String,
     #[cfg(target_os = "android")] socket_protect_path: Option<String>,
+    #[cfg(target_os = "windows")] wintun_path: String,
 ) -> Result<(), crate::Error> {
     let opts = get_start_options(
         config_path,
         #[cfg(target_os = "android")]
         socket_protect_path,
     );
-    crate::start(opts)
+    crate::start(
+        opts,
+        #[cfg(target_os = "windows")]
+        wintun_path,
+    )
 }
 
 pub async fn test_outbound(tag: &str, config: &Config) {

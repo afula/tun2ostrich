@@ -1,4 +1,4 @@
-use std::net::{Ipv4Addr, Ipv6Addr,IpAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::process::Command;
 
 use anyhow::Result;
@@ -56,15 +56,10 @@ pub fn get_default_interface() -> Result<String> {
         .lines()
         .skip(3)
         .map(|line| {
-            let a: Vec<&str> = line
-                .split_whitespace()
-                .map(str::trim)
-                .collect();
+            let a: Vec<&str> = line.split_whitespace().map(str::trim).collect();
             a
         })
-        .find(|cols|
-            cols[0] == if_idx.as_str()
-        )
+        .find(|cols| cols[0] == if_idx.as_str())
         .unwrap();
     assert!(cols.len() == 5);
     Ok(cols[4].to_string())
@@ -79,7 +74,10 @@ pub fn add_interface_ipv4_address(
     mask: Ipv4Addr,
 ) -> Result<()> {
     let out = Command::new("netsh")
-        .arg("interface").arg("ipv4").arg("set").arg("address")
+        .arg("interface")
+        .arg("ipv4")
+        .arg("set")
+        .arg("address")
         .arg(name)
         .arg("static")
         .arg(addr.to_string())
@@ -94,7 +92,10 @@ pub fn add_interface_ipv4_address(
 
 pub fn add_interface_ipv6_address(name: &str, addr: Ipv6Addr, prefixlen: i32) -> Result<()> {
     let out = Command::new("netsh")
-        .arg("interface").arg("ipv6").arg("set").arg("address")
+        .arg("interface")
+        .arg("ipv6")
+        .arg("set")
+        .arg("address")
         .arg(format!("interface={}", name))
         .arg(format!("address={}", addr.to_string()))
         .arg("store=active")
@@ -104,8 +105,6 @@ pub fn add_interface_ipv6_address(name: &str, addr: Ipv6Addr, prefixlen: i32) ->
 }
 
 pub fn add_default_ipv4_route(gateway: Ipv4Addr, interface: String, primary: bool) -> Result<()> {
-
-
     let mut if_idx = 0;
 
     let mut adapters = ipconfig::get_adapters().unwrap();
@@ -123,7 +122,7 @@ pub fn add_default_ipv4_route(gateway: Ipv4Addr, interface: String, primary: boo
         .arg("add")
         .arg("route")
         .arg("0.0.0.0/0")
-        .arg(format!("{}",if_idx).as_str())
+        .arg(format!("{}", if_idx).as_str())
         .arg(gateway.to_string())
         .arg(metric)
         .arg("store=active")
@@ -233,7 +232,11 @@ pub fn set_ipv6_forwarding(val: bool) -> Result<()> {
 
 fn get_default_ipv4_route_entry() -> Result<Vec<String>> {
     let entries = get_ipv4_route_entries().unwrap();
-    let e = entries.iter().filter(|&e| e[3] == "0.0.0.0/0").last().unwrap();
+    let e = entries
+        .iter()
+        .filter(|&e| e[3] == "0.0.0.0/0")
+        .last()
+        .unwrap();
     Ok(e.clone())
 }
 
@@ -258,11 +261,7 @@ fn get_default_ipv6_route_entry() -> Result<String> {
         .expect("failed to execute command");
     assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
-    let line = out
-        .lines()
-        .skip(3)
-        .next()
-        .unwrap();
+    let line = out.lines().skip(3).next().unwrap();
     Ok(line.to_string())
 }
 
@@ -270,11 +269,10 @@ fn get_interface_entry(interface: &str) -> Result<Vec<String>> {
     let entries = get_interface_entries().unwrap();
     let entry = entries
         .iter()
-        .filter(|&e| {
-            e[4].eq(interface)
-        })
+        .filter(|&e| e[4].eq(interface))
         .last()
-        .unwrap().clone();
+        .unwrap()
+        .clone();
     Ok(entry)
 }
 
@@ -305,7 +303,8 @@ fn get_interface_entries() -> Result<Vec<Vec<String>>> {
                 .map(str::to_string)
                 .collect();
             a
-        }).collect();
+        })
+        .collect();
     Ok(cols)
 }
 
@@ -323,7 +322,12 @@ fn get_ipv4_route_entries() -> Result<Vec<Vec<String>>> {
         .lines()
         .skip(3)
         .filter(|line| !line.trim().is_empty())
-        .map(|line| line.split_whitespace().map(str::trim).map(str::to_string).collect::<Vec<_>>())
+        .map(|line| {
+            line.split_whitespace()
+                .map(str::trim)
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
         .collect::<Vec<_>>();
     Ok(entries)
 }

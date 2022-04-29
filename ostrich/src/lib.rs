@@ -236,7 +236,10 @@ pub struct StartOptions {
     pub socket_protect_path: Option<String>,
 }
 
-pub fn start(opts: StartOptions) -> Result<(), Error> {
+pub fn start(
+    opts: StartOptions,
+    #[cfg(target_os = "windows")] wintun_path: String,
+) -> Result<(), Error> {
     println!("start with options:\n{:#?}", opts);
 
     // let (reload_tx, mut reload_rx) = mpsc::channel(1);
@@ -295,8 +298,15 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         ipset.append(&mut ips.values.to_owned())
     }
 
-    let inbound_manager = InboundManager::new(ipset.clone(), &config, dispatcher, nat_manager)
-        .map_err(Error::Config)?;
+    let inbound_manager = InboundManager::new(
+        ipset.clone(),
+        &config,
+        dispatcher,
+        nat_manager,
+        #[cfg(target_os = "windows")]
+        wintun_path,
+    )
+    .map_err(Error::Config)?;
 
     let mut inbound_net_runners = inbound_manager
         .get_network_runners()
@@ -360,14 +370,11 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
     // }
-  /*  #[cfg(all(
+    /*  #[cfg(all(
         feature = "inbound-tun",
         any(target_os = "macos", target_os = "linux",)
     ))]*/
-    #[cfg(all(
-    feature = "inbound-tun",
-    any(target_os = "android")
-    ))]
+    #[cfg(all(feature = "inbound-tun", any(target_os = "android")))]
     {
         use futures::stream::StreamExt;
         use signal_hook::consts::signal::*;

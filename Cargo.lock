@@ -1499,6 +1499,7 @@ dependencies = [
  "ostrich",
  "protocol",
  "rlimit",
+ "serde_json",
  "signal-hook",
  "signal-hook-tokio",
  "tokio",
