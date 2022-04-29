@@ -1,24 +1,24 @@
 use std::{
     cmp::Ordering,
     fs::File,
-    io::{BufRead, BufReader,Result},
+    io::{BufRead, BufReader},
     net::Ipv4Addr,
     ops::Not,
 };
 
-use smoltcp::wire::{IpAddress, IpEndpoint};
-
 use super::route::route_add_with_if;
+use anyhow::Result;
+use smoltcp::wire::{IpAddress, IpEndpoint};
 
 //TODO ipv6
 pub fn is_private(endpoint: IpEndpoint) -> bool {
     if let IpAddress::Ipv4(ip) = endpoint.addr {
         endpoint.port == 0
-        || ip.is_unspecified() //0.0.0.0/8
+            || ip.is_unspecified() //0.0.0.0/8
             || ip.0[0] == 10 //10.0.0.0/8
             || ip.is_loopback() //127.0.0.0/8
             || ip.is_link_local() //169.254.0.0/16
-            || ip.0[0] == 172 && ip.0[1] &0xf0 == 16 //172.16.0.0/12
+            || ip.0[0] == 172 && ip.0[1] & 0xf0 == 16 //172.16.0.0/12
             || ip.0[0] == 192 && ip.0[1] == 168 //192.168.0.0/16
             || ip.is_multicast() //224.0.0.0/4
             || ip.0[0] & 0xf0 == 240 // 240.0.0.0/4
@@ -133,9 +133,8 @@ impl IPSet {
     }
 
     pub fn add_route(&self, index: u32) -> Result<()> {
-        route_add_with_if(123434343, !0, index)?;
         for item in &self.data {
-            route_add_with_if(item.ip, item.mask(), index)?;
+            route_add_with_if(item.ip, item.mask(), 0, index)?;
         }
         Ok(())
     }

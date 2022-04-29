@@ -183,7 +183,7 @@ pub fn make_config(config: &TrojanOutboundSettings) -> Arc<rustls::ClientConfig>
     // tls_config.enable_tickets = true;
     // tls_config.enable_early_data = true;
 
-/*    tls_config.alpn_protocols = config
+    /*    tls_config.alpn_protocols = config
         .alpn
         .iter()
         .map(|proto| proto.as_bytes().to_vec())
@@ -211,7 +211,7 @@ pub fn make_config(config: &TrojanOutboundSettings) -> Arc<rustls::ClientConfig>
     //     .with_no_client_auth(); // i guess this was previously the default?
     // Arc::new(tls_config)
 }
-mod certs{
+mod certs {
 
     use rustls::client::{ServerCertVerified, ServerCertVerifier};
     pub struct SkipVerify {}
@@ -225,8 +225,7 @@ mod certs{
             _scts: &mut dyn Iterator<Item = &[u8]>,
             _ocsp_response: &[u8],
             _now: std::time::SystemTime,
-        ) -> std::result::Result<rustls::client::ServerCertVerified, rustls::Error>
-        {
+        ) -> std::result::Result<rustls::client::ServerCertVerified, rustls::Error> {
             Ok(ServerCertVerified::assertion())
         }
     }

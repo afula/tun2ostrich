@@ -344,25 +344,6 @@ pub fn new(
                 .status()
                 .expect("failed to execute command");
             println!("process finished with: {}", out);
-            let out = Command::new("route")
-                .arg("add")
-                .arg("1.1.1.1")
-                .arg(gateway.clone())
-                .arg("metric")
-                .arg("5")
-                .status()
-                .expect("failed to execute command");
-            println!("process finished with: {}", out);
-
-            let out = Command::new("route")
-                .arg("add")
-                .arg("108.61.199.26")
-                .arg(gateway)
-                .arg("metric")
-                .arg("5")
-                .status()
-                .expect("failed to execute command");
-            println!("process finished with: {}", out);
 
             let mut futs: Vec<Runner> = Vec::new();
             // Reads packet from stack and sends to TUN.

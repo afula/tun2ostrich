@@ -1,13 +1,13 @@
 // use simple_wintun::adapter::{WintunAdapter, WintunStream};
 // use simple_wintun::ReadResult;
-use super::{TunIpAddr/* ,ipset::IPSet */};
+use super::TunIpAddr;
 use std::io::{Error, ErrorKind, Result};
 use std::net::Ipv4Addr;
 use std::process::Command;
 use std::sync::Arc;
 use std::time::Duration;
 use wintun::{Adapter, Session};
-/* 
+/*
 fn apply_ipset(file: &str, index: u32, inverse: bool) -> Result<()> {
     let mut ipset = IPSet::with_file(file, inverse)?;
 /*     if OPTIONS.wintun_args().inverse_route {
@@ -44,29 +44,39 @@ impl Wintun {
         // let adapter = WintunAdapter::create_adapter(ADAPTER_NAME, TUNNEL_TYPE, ADAPTER_GUID)?;
 
         let wintun = unsafe { wintun::load_from_path("misc/wintun.dll").expect("cant load dll") };
-        let adapter =
-            Adapter::create(&wintun, "utun233", ADAPTER_NAME, None).expect("cant create adapter");
+        let adapter = Adapter::create(&wintun, ADAPTER_NAME, ADAPTER_NAME, None)
+            .expect("cant create adapter");
         let session = Arc::new(
             adapter
                 .start_session(wintun::MAX_RING_CAPACITY)
                 .expect("cant start adapter session"),
         );
+        /*         let index = adapter.get_adapter_index().expect("cant get adapter index");
+        let mask = 32;
+        use super::route::route_add_with_if;
+        println!("ipset: {:?}",&ipset);
+        for ip in &ipset {
+            let ip: std::net::Ipv4Addr = ip.parse().expect(&format!("wrong ip address:{}",&ip));
+            let ip_u32: u32 = ip.into();
+            let ip_mask = !((1 << (32 - mask)) - 1);
+            println!("ip mask: {:?}",&ip_mask);
+            route_add_with_if(ip.into(), ip_mask, 0, 18).map_err(|e| {
+                println!("{:?}",e);
+                e
+            }).expect(&format!("could not add ip: {:?} to route table", &ip).as_str());
+        } */
 
-    // /// reference trojan-rs
-    // /// https://github.com/lazytiger/trojan-rs/blob/master/src/wintun/mod.rs
-    // // log::info!("dll:{}", OPTIONS.wintun_args().wintun);
-    // let wintun = unsafe { wintun::load_from_path("wintun.dll").expect("cant load dll") };
-    // let adapter = Adapter::create(&wintun, "utun233", ADAPTER_NAME, None)?;
-    // let session = Arc::new(adapter.start_session(wintun::MAX_RING_CAPACITY)?);
-    // let index = adapter.get_adapter_index()?;
+        // /// reference trojan-rs
+        // /// https://github.com/lazytiger/trojan-rs/blob/master/src/wintun/mod.rs
+        // // log::info!("dll:{}", OPTIONS.wintun_args().wintun);
+        // let wintun = unsafe { wintun::load_from_path("wintun.dll").expect("cant load dll") };
+        // let adapter = Adapter::create(&wintun, "utun233", ADAPTER_NAME, None)?;
+        // let session = Arc::new(adapter.start_session(wintun::MAX_RING_CAPACITY)?);
+        // let index = adapter.get_adapter_index()?;
 
-    // if let Some(file) = &OPTIONS.wintun_args().route_ipset {
-    //     apply_ipset(file, index, false)?;//TODO true/false
-    // }
-
-
-
-
+        // if let Some(file) = &OPTIONS.wintun_args().route_ipset {
+        //     apply_ipset(file, index, false)?;//TODO true/false
+        // }
 
         // for TunIpAddr { ip, netmask } in ip_addrs {
         //     let status = Command::new("netsh")

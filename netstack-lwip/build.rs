@@ -47,7 +47,7 @@ fn compile_lwip() {
         .include("src/lwip/include")
         .warnings(false)
         .flag_if_supported("-Wno-everything")
-    .compile("liblwip"); // MARKER BEGIN - END Remove lib suffix
+        .compile("liblwip"); // MARKER BEGIN - END Remove lib suffix
 }
 
 fn generate_lwip_bindings() {

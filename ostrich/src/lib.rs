@@ -290,8 +290,14 @@ pub fn start(opts: StartOptions) -> Result<(), Error> {
         dns_client.clone(),
     ));
     let nat_manager = Arc::new(NatManager::new(dispatcher.clone()));
-    let inbound_manager =
-        InboundManager::new(&config, dispatcher, nat_manager).map_err(Error::Config)?;
+    let mut ipset = Vec::from(config.dns.servers.clone());
+    for (_, ips) in &config.dns.hosts {
+        ipset.append(&mut ips.values.to_owned())
+    }
+
+    let inbound_manager = InboundManager::new(ipset.clone(), &config, dispatcher, nat_manager)
+        .map_err(Error::Config)?;
+
     let mut inbound_net_runners = inbound_manager
         .get_network_runners()
         .map_err(Error::Config)?;

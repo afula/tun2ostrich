@@ -66,6 +66,24 @@ pub use datagram::{
 };
 pub use stream::BufHeadProxyStream;
 
+#[cfg(target_os = "windows")]
+use std::{io::ErrorKind, mem};
+#[cfg(target_os = "windows")]
+use winapi::{
+    ctypes::{c_char, c_int},
+    shared::{
+        minwindef::{BOOL, DWORD, FALSE, LPDWORD, LPVOID},
+        netioapi::if_nametoindex,
+        ntdef::PCSTR,
+        ws2def::{IPPROTO_IP, IPPROTO_IPV6, IPPROTO_TCP},
+        ws2ipdef::IPV6_UNICAST_IF,
+    },
+    um::{
+        mswsock::SIO_UDP_CONNRESET,
+        winsock2::{setsockopt, WSAGetLastError, WSAIoctl, SOCKET, SOCKET_ERROR},
+    },
+};
+
 #[derive(Error, Debug)]
 pub enum ProxyError {
     #[error(transparent)]
@@ -128,17 +146,36 @@ trait BindSocket: AsRawFd {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()>;
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-trait BindSocket {
+#[cfg(target_os = "windows")]
+trait WinBindSocket {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()>;
+    // fn as_raw_socket(&self) -> RawSocket;
 }
-
+#[cfg(target_os = "windows")]
+impl WinBindSocket for TcpSocket {
+    fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()> {
+        self.bind(bind_addr.to_owned())
+    }
+    // fn as_raw_socket(&self) -> RawSocket{
+    //         self.as_raw_socket()
+    // }
+}
+#[cfg(target_os = "windows")]
+impl WinBindSocket for socket2::Socket {
+    fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()> {
+        self.bind(&bind_addr.to_owned().into())
+    }
+    // fn as_raw_socket(&self) -> RawSocket{
+    //     self.as_raw_socket()
+    // }
+}
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 impl BindSocket for TcpSocket {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()> {
         self.bind(bind_addr.to_owned())
     }
 }
-
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 impl BindSocket for socket2::Socket {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()> {
         self.bind(&bind_addr.to_owned().into())
@@ -162,7 +199,7 @@ impl TcpListener {
         Ok((stream, addr))
     }
 }
-
+#[cfg(not(target_os = "windows"))]
 async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::Result<()> {
     match indicator.ip() {
         IpAddr::V4(v4) if v4.is_loopback() => {
@@ -244,6 +281,99 @@ async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::R
                         io::ErrorKind::Other,
                         "binding to interface is not supported on this platform",
                     ));
+                }
+            }
+            OutboundBind::Ip(addr) => {
+                if (addr.is_ipv4() && indicator.is_ipv4())
+                    || (addr.is_ipv6() && indicator.is_ipv6())
+                {
+                    if let Err(e) = socket.bind(addr) {
+                        last_err = Some(e);
+                        continue;
+                    }
+                    trace!("socket bind {}", addr);
+                    return Ok(());
+                }
+            }
+        }
+    }
+    Err(last_err.unwrap_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "could not bind to any address or interface",
+        )
+    }))
+}
+#[cfg(target_os = "windows")]
+async fn bind_socket<T: AsRawSocket + WinBindSocket>(
+    socket: &T,
+    indicator: &SocketAddr,
+) -> io::Result<()> {
+    match indicator.ip() {
+        IpAddr::V4(v4) if v4.is_loopback() => {
+            socket.bind(&SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 0).into())?;
+            trace!("socket bind loopback v4");
+            return Ok(());
+        }
+        IpAddr::V6(v6) if v6.is_loopback() => {
+            socket.bind(&SocketAddrV6::new("::1".parse().unwrap(), 0, 0, 0).into())?;
+            trace!("socket bind loopback v6");
+            return Ok(());
+        }
+        _ => {}
+    }
+    let mut last_err = None;
+    for bind in option::OUTBOUND_BINDS.iter() {
+        match bind {
+            OutboundBind::Interface(iface) => {
+                // ws2ipdef.h
+                // https://github.com/retep998/winapi-rs/pull/1007
+                const IP_UNICAST_IF: DWORD = 31;
+                let handle = socket.as_raw_socket() as SOCKET;
+
+                unsafe {
+                    // Windows if_nametoindex requires a C-string for interface name
+                    let ifname = CString::new(iface.as_str()).expect("iface");
+
+                    // https://docs.microsoft.com/en-us/previous-versions/windows/hardware/drivers/ff553788(v=vs.85)
+                    // let if_index = if_nametoindex(ifname.as_ptr() as PCSTR);
+                    let if_index = 18;
+
+                    if if_index == 0 {
+                        // If the if_nametoindex function fails and returns zero, it is not possible to determine an error code.
+                        error!("if_nametoindex {} fails", iface);
+                        return Err(io::Error::new(
+                            ErrorKind::InvalidInput,
+                            "invalid interface name",
+                        ));
+                    }
+
+                    // https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options
+                    let if_index = if_index as DWORD;
+
+                    let ret = match indicator {
+                        SocketAddr::V4(..) => setsockopt(
+                            handle,
+                            IPPROTO_IP as c_int,
+                            IP_UNICAST_IF as c_int,
+                            &if_index as *const _ as *const c_char,
+                            mem::size_of_val(&if_index) as c_int,
+                        ),
+                        SocketAddr::V6(..) => setsockopt(
+                            handle,
+                            IPPROTO_IPV6 as c_int,
+                            IPV6_UNICAST_IF as c_int,
+                            &if_index as *const _ as *const c_char,
+                            mem::size_of_val(&if_index) as c_int,
+                        ),
+                    };
+
+                    if ret == SOCKET_ERROR {
+                        let err = io::Error::from_raw_os_error(WSAGetLastError());
+                        error!("set IP_UNICAST_IF / IPV6_UNICAST_IF error: {}", err);
+                        return Err(err);
+                    }
+                    trace!("socket bind interface index{}", if_index);
                 }
             }
             OutboundBind::Ip(addr) => {

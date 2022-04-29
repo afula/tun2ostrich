@@ -220,6 +220,7 @@ memchr = { version = "2" }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["mswsock", "winsock2", "netioapi"] }
+ipconfig = {git = "https://github.com/liranringel/ipconfig.git"}
 
 ##allocator
 #[target.'cfg(any(target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
