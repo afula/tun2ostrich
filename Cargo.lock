@@ -417,16 +417,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "5.2.0"
-source = "git+https://github.com/xacrimon/dashmap.git#a8187ba89619069f98b6937d4df2cb915306ea15"
-dependencies = [
- "cfg-if 1.0.0",
- "num_cpus",
- "parking_lot 0.12.0",
-]
-
-[[package]]
 name = "data-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1423,7 +1413,6 @@ dependencies = [
  "chrono",
  "cidr",
  "colored 2.0.0",
- "dashmap",
  "directories",
  "env_logger",
  "fern",

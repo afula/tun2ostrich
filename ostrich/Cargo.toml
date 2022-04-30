@@ -190,7 +190,7 @@ rpmalloc = { version = "0.2.0", features = ["guards", "statistics","unlimited_ca
 
 #hashmap
 indexmap = {git = "https://github.com/bluss/indexmap.git",features =["std"]}
-dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
+#dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
 futures-timer = "3"
 arc-swap = "1.5.0"
 # TUN
