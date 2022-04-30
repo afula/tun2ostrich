@@ -239,6 +239,7 @@ pub struct StartOptions {
 pub fn start(
     opts: StartOptions,
     #[cfg(target_os = "windows")] wintun_path: String,
+    #[cfg(target_os = "windows")] tun2socks_path: String,
 ) -> Result<(), Error> {
     println!("start with options:\n{:#?}", opts);
 
@@ -305,6 +306,8 @@ pub fn start(
         nat_manager,
         #[cfg(target_os = "windows")]
         wintun_path,
+        #[cfg(target_os = "windows")]
+        tun2socks_path,
     )
     .map_err(Error::Config)?;
 
