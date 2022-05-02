@@ -76,6 +76,7 @@ impl InboundManager {
                         use std::process::Command;
                         use tokio::sync::mpsc;
                         let (tun_tx, mut tun_rx) = mpsc::channel(1);
+                        let tun2socks_path = tun2socks_path.clone();
 
                         tokio::spawn(async move {
                             let _ = Command::new(tun2socks_path.as_str())
