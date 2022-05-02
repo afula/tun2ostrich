@@ -895,7 +895,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                 if let Some(ext_domains) = ext_rule.domain.as_mut() {
                     for ext_domain in ext_domains.drain(0..) {
                         let mut domain = internal::router::rule::Domain::new();
-                        domain.field_type = internal::router::rule::domain::Type::FULL.into();
+                        domain.type_ = internal::router::rule::domain::Type::FULL.into();
                         domain.value = ext_domain;
                         rule.domains.push(domain);
                     }
@@ -903,7 +903,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                 if let Some(ext_domain_keywords) = ext_rule.domain_keyword.as_mut() {
                     for ext_domain_keyword in ext_domain_keywords.drain(0..) {
                         let mut domain = internal::router::rule::Domain::new();
-                        domain.field_type = internal::router::rule::domain::Type::PLAIN.into();
+                        domain.type_ = internal::router::rule::domain::Type::PLAIN.into();
                         domain.value = ext_domain_keyword;
                         rule.domains.push(domain);
                     }
@@ -911,7 +911,7 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                 if let Some(ext_domain_suffixes) = ext_rule.domain_suffix.as_mut() {
                     for ext_domain_suffix in ext_domain_suffixes.drain(0..) {
                         let mut domain = internal::router::rule::Domain::new();
-                        domain.field_type = internal::router::rule::domain::Type::DOMAIN.into();
+                        domain.type_ = internal::router::rule::domain::Type::DOMAIN.into();
                         domain.value = ext_domain_suffix;
                         rule.domains.push(domain);
                     }

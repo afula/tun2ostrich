@@ -65,20 +65,20 @@ pub fn add_external_rule(rule: &mut internal::router::Rule, ext_external: &str) 
             let mut site_group = input.read_message::<geosite::SiteGroup>()?;
             if site_group.tag == code.to_uppercase() {
                 for domain in site_group.domain.iter_mut() {
-                    let mut domain_rule = match domain.field_type.enum_value_or_default() {
+                    let mut domain_rule = match domain.type_.enum_value_or_default() {
                         geosite::domain::Type::Plain => {
                             let mut d = internal::router::rule::Domain::new();
-                            d.field_type = internal::router::rule::domain::Type::PLAIN.into();
+                            d.type_ = internal::router::rule::domain::Type::PLAIN.into();
                             d
                         }
                         geosite::domain::Type::Domain => {
                             let mut d = internal::router::rule::Domain::new();
-                            d.field_type = internal::router::rule::domain::Type::DOMAIN.into();
+                            d.type_ = internal::router::rule::domain::Type::DOMAIN.into();
                             d
                         }
                         geosite::domain::Type::Full => {
                             let mut d = internal::router::rule::Domain::new();
-                            d.field_type = internal::router::rule::domain::Type::FULL.into();
+                            d.type_ = internal::router::rule::domain::Type::FULL.into();
                             d
                         }
                         _ => {

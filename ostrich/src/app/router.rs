@@ -330,7 +330,7 @@ impl DomainMatcher {
         let mut cond_or = ConditionOr::new();
         for rr_domain in domains.iter_mut() {
             let filter = std::mem::take(&mut rr_domain.value);
-            match rr_domain.field_type.enum_value_or_default() {
+            match rr_domain.type_.enum_value_or_default() {
                 config::router::rule::domain::Type::PLAIN => {
                     cond_or.add(Box::new(DomainKeywordMatcher::new(filter)));
                 }
