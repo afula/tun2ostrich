@@ -8,8 +8,7 @@ pub fn get_default_ipv4_gateway() -> Result<String> {
         .arg("-n")
         .arg("get")
         .arg("1")
-        .output()
-        .expect("failed to execute command");
+        .output()?;
     assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out

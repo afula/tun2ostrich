@@ -35,7 +35,7 @@ pub mod session;
 mod sys;
 pub mod util;
 
- // #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows",target_os = "ios"))]
+// #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows",target_os = "ios"))]
 #[global_allocator]
 static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc;
 
@@ -377,67 +377,29 @@ pub fn start(
         feature = "inbound-tun",
         any(target_os = "macos", target_os = "linux",)
     ))]*/
-    #[cfg(all(feature = "inbound-tun", any(target_os = "android")))]
+    // #[cfg(all(feature = "inbound-tun", any(target_os = "android")))]
     {
         use futures::stream::StreamExt;
         use signal_hook::consts::signal::*;
         use signal_hook_tokio::Signals;
-        // use std::thread;
-        // use signal_hook::iterator::Signals;
-
-        /*        async fn handle_signals(
-            mut signals: Signals,
-            _old_net_info: &NetInfo,
-            new_net_info: &NetInfo,
-            shutdown_tx: mpsc::Sender<()>,
-        ) {
-            while let Some(signal) = signals.next().await {
-                match signal {
-                    SIGALRM => {
-                        log::trace!("signal received {}", &SIGALRM);
-                        // sys::post_tun_completion_setup(old_net_info);
-                        // thread::sleep(std::time::Duration::from_secs(1));
-                        // sys::post_tun_reload_setup(new_net_info);
-
-                    }
-                    SIGTERM
-                    // | SIGINT | SIGQUIT
-                    => {
-                        log::trace!("signal received {}", &SIGTERM);
-                        // sys::post_tun_completion_setup(new_net_info);
-                        if let Err(e) = shutdown_tx.send(()).await {
-                            log::warn!("sending shutdown signal failed: {}", e);
-                        }
-                        return;
-                    }
-                    _ => unreachable!(),
-                }
-            }
-        }*/
-
         let mut signals = Signals::new(&[SIGTERM, SIGPIPE, SIGALRM])?;
         let signals_handle = signals.handle();
         // let net_info = net_info.clone();
         let shutdown_tx = shutdown_tx.clone();
         let network_changed = network_changed.clone();
-
-        // let new_net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
-        //     sys::get_net_info()
-        // } else {
-        //     sys::NetInfo::default()
-        // };
+        let mut default_ipv4 = net_info.default_ipv4_address.clone().unwrap();
 
         tokio::spawn(async move {
-            use bytes::BytesMut;
+            /*            use bytes::BytesMut;
             use protobuf::Message;
             use protocol::{
                 generated::notification::{StatusNotification, StatusRequest},
                 unpack_msg_frame,
-            };
-            use std::{net::SocketAddr, str::FromStr, time::Duration};
-            use tokio::{io::AsyncReadExt, time::timeout};
-            use udp_stream::UdpListener;
-            const UDP_BUFFER_SIZE: usize = 1024; // 17kb
+            };*/
+            // use std::{net::SocketAddr, str::FromStr, time::Duration};
+            // use tokio::{io::AsyncReadExt, time::timeout};
+            // use udp_stream::UdpListener;
+            /*            const UDP_BUFFER_SIZE: usize = 1024; // 17kb
             const UDP_TIMEOUT: u64 = 10 * 1000; // 10sec
             let listener = UdpListener::bind(SocketAddr::from_str("127.0.0.1:11771").unwrap())
                 .await
@@ -447,80 +409,165 @@ pub fn start(
             let mut interval = interval_at(
                 Instant::now() + Duration::from_secs(7),
                 Duration::from_secs(5),
-            );
-            let mut should_exit = true;
+            );*/
+            // let mut should_exit = true;
+            use if_watch::{IfEvent, IfWatcher};
+            let mut if_set = IfWatcher::new().await.unwrap();
+
+            // let ipv4_default = common::cmd::get_default_ipv4_address().unwrap();
+
+            /*            let event = if_set.await?;
+            match event {
+                IfEvent::Up(up_ip) => {}
+                IfEvent::Down(dw_ip) => {
+
+                    if default_ipv4 == dw_ip.addr().to_string(){
+                        network_changed.store(true, Ordering::Relaxed);
+                        match common::cmd::get_default_ipv4_address(){
+                            Ok(ip) =>{
+                                default_ipv4 = ip;
+                                println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                // #[cfg(all(feature = "inbound-tun", any(target_os = "macos")))]{
+                                //
+                                // }
+                                let net_info = sys::get_net_info();
+                                if let sys::NetInfo {
+                                    default_interface: Some(iface),
+                                    ..
+                                } = &net_info
+                                {
+                                    // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+                                    //     format!("{},{}", v, iface)
+                                    // } else {
+                                    //     iface.clone()
+                                    // };
+                                    println!("OUTBOUND_INTERFACE: {:?}", iface);
+                                    std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                    println!("OUTBOUND_INTERFACE: {:?}", get_env_var_or("OUTBOUND_INTERFACE", "0.0.0.0,::".to_string()));
+                                }
+                                sys::post_tun_creation_setup(&net_info);
+                            }
+                            Err(_) =>{
+
+                            }
+                        }
+                    }
+
+                }
+            }*/
+
             loop {
                 tokio::select! {
-                     Some(signal) = signals.next() =>{
-                        match signal {
-                            // SIGPIPE => {
-                            //     log::trace!("signal received {}", &SIGPIPE);
-                            //     // sys::post_tun_completion_setup(old_net_info);
-                            //     // thread::sleep(std::time::Duration::from_secs(1));
-                            //     // sys::post_tun_reload_setup(new_net_info);
-                            //     network_changed.store(true, Ordering::Relaxed);
-                            //     if let Err(e) = shutdown_tx.send(()).await {
-                            //         log::warn!("sending shutdown signal failed: {}", e);
-                            //     }
-                            //     return;
-                            // }
-                            SIGALRM =>{
-                                log::trace!("signal received {}", &SIGALRM);
-                                // sys::post_tun_completion_setup(new_net_info);
-                                network_changed.store(true, Ordering::Relaxed);
-                                if let Err(e) = shutdown_tx.send(()).await {
-                                    log::warn!("sending shutdown signal failed: {}", e);
+                        Ok(event) = &mut if_set =>{
+                            println!("got if event: {:?}", event);
+                            match event {
+                                IfEvent::Up(up_ip) => {}
+                                IfEvent::Down(dw_ip) => {
+                                    if default_ipv4 == dw_ip.addr().to_string(){
+                                        network_changed.store(true, Ordering::Relaxed);
+                                        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                        match common::cmd::get_default_ipv4_address(){
+                                            Ok(ip) =>{
+                                                default_ipv4 = ip;
+                                                println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                                #[cfg(target_os = "macos")]{
+                                                    let net_info = sys::get_net_info();
+                                                    if let sys::NetInfo {
+                                                        default_interface: Some(iface),
+                                                        ..
+                                                    } = &net_info
+                                                    {
+                                                        // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+                                                        //     format!("{},{}", v, iface)
+                                                        // } else {
+                                                        //     iface.clone()
+                                                        // };
+                                                        std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                        println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
+                                                    }
+                                                    sys::post_tun_creation_setup(&net_info);
+                                                }
+                                            }
+                                            Err(_) =>{
+                                                println!("you have disconnected from every internet")
+                                            }
+                                        }
+                                    }
+
                                 }
-                                break;
                             }
-                            SIGTERM
-                            // | SIGINT | SIGQUIT
-                            => {
-                                log::trace!("signal received {}", &SIGTERM);
-                                // println!("signal received {}", &SIGTERM);
-                                // sys::post_tun_completion_setup(new_net_info);
-                                if let Err(e) = shutdown_tx.send(()).await {
-                                    log::warn!("sending shutdown signal failed: {}", e);
+                        }
+                         Some(signal) = signals.next() =>{
+                            match signal {
+                                // SIGPIPE => {
+                                //     log::trace!("signal received {}", &SIGPIPE);
+                                //     // sys::post_tun_completion_setup(old_net_info);
+                                //     // thread::sleep(std::time::Duration::from_secs(1));
+                                //     // sys::post_tun_reload_setup(new_net_info);
+                                //     network_changed.store(true, Ordering::Relaxed);
+                                //     if let Err(e) = shutdown_tx.send(()).await {
+                                //         log::warn!("sending shutdown signal failed: {}", e);
+                                //     }
+                                //     return;
+                                // }
+                                SIGALRM =>{
+                                    log::trace!("signal received {}", &SIGALRM);
+                                    // sys::post_tun_completion_setup(new_net_info);
+                                    network_changed.store(true, Ordering::Relaxed);
+                                    if let Err(e) = shutdown_tx.send(()).await {
+                                        log::warn!("sending shutdown signal failed: {}", e);
+                                    }
+                                    break;
                                 }
-                                break;
+                                SIGTERM
+                                // | SIGINT | SIGQUIT
+                                => {
+                                    log::trace!("signal received {}", &SIGTERM);
+                                    // println!("signal received {}", &SIGTERM);
+                                    // sys::post_tun_completion_setup(new_net_info);
+                                    if let Err(e) = shutdown_tx.send(()).await {
+                                        log::warn!("sending shutdown signal failed: {}", e);
+                                    }
+                                    break;
+                                }
+                                _ => unreachable!(),
                             }
-                            _ => unreachable!(),
                         }
-                    }
-                    Ok((mut stream, _)) = listener.accept() =>{
-                        // buf.clear();
-                        match timeout(Duration::from_millis(UDP_TIMEOUT), stream.read(&mut buf))
-                    .await
-                    .unwrap()
-                        {
-                            Ok(len) => {
-                                let mut buf = BytesMut::from(&buf[..len]);
-                                unpack_msg_frame(&mut buf).unwrap();
-                                println!("udp received: {:?}", buf);
-                              let in_msg = StatusRequest::parse_from_bytes(&buf).unwrap();
-                                println!("protocol: {:?}", in_msg.status);
-                            if in_msg.status.value()  == StatusNotification::Running.value(){
-                                should_exit = false;
-                            }
-                        },
-                            Err(_) => {
-                                stream.shutdown();
-                                continue;
-                            }
-                        };
-                    }
-                    _ = interval.tick() => {
-                        if should_exit{
-                            if let Err(e) = shutdown_tx.send(()).await {
-                              log::warn!("sending shutdown signal failed: {}", e);
-                            }
-                            break
+    /*                    Ok((mut stream, _)) = listener.accept() =>{
+                            // buf.clear();
+                            match timeout(Duration::from_millis(UDP_TIMEOUT), stream.read(&mut buf))
+                        .await
+                        .unwrap()
+                            {
+                                Ok(len) => {
+                                    let mut buf = BytesMut::from(&buf[..len]);
+                                    unpack_msg_frame(&mut buf).unwrap();
+                                    println!("udp received: {:?}", buf);
+                                  let in_msg = StatusRequest::parse_from_bytes(&buf).unwrap();
+                                    println!("protocol: {:?}", in_msg.status);
+                                if in_msg.status.value()  == StatusNotification::Running.value(){
+                                    should_exit = false;
+                                }
+                            },
+                                Err(_) => {
+                                    stream.shutdown();
+                                    continue;
+                                }
+                            };
                         }
-                        should_exit = true;
+                        _ = interval.tick() => {
+                            if should_exit{
+                                if let Err(e) = shutdown_tx.send(()).await {
+                                  log::warn!("sending shutdown signal failed: {}", e);
+                                }
+                                break
+                            }
+                            should_exit = true;
+                        }*/
                     }
-                }
             }
             signals_handle.close();
+            Ok(()) as std::io::Result<()>
         });
     }
 

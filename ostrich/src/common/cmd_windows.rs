@@ -4,11 +4,10 @@ use std::process::Command;
 use anyhow::Result;
 
 pub fn get_default_ipv4_gateway() -> Result<String> {
-    let cols = get_default_ipv4_route_entry().unwrap();
+    let cols = get_default_ipv4_route_entry()?;
     // let cols: Vec<&str> = line
     //     .split_whitespace()
     //     .map(str::trim)
-    //     .collect();
     assert!(cols.len() == 6);
     Ok(cols[5].to_string())
 }
@@ -231,12 +230,8 @@ pub fn set_ipv6_forwarding(val: bool) -> Result<()> {
 }
 
 fn get_default_ipv4_route_entry() -> Result<Vec<String>> {
-    let entries = get_ipv4_route_entries().unwrap();
-    let e = entries
-        .iter()
-        .filter(|&e| e[3] == "0.0.0.0/0")
-        .last()
-        .unwrap();
+    let entries = get_ipv4_route_entries()?;
+    let e = entries.iter().filter(|&e| e[3] == "0.0.0.0/0").last()?;
     Ok(e.clone())
 }
 
@@ -314,8 +309,7 @@ fn get_ipv4_route_entries() -> Result<Vec<Vec<String>>> {
         .arg("ipv4")
         .arg("show")
         .arg("route")
-        .output()
-        .expect("failed to execute command");
+        .output()?;
     assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let entries = out
