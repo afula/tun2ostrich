@@ -26,6 +26,7 @@ pub fn run_with_options(
     config_path: String,
     #[cfg(target_os = "android")] socket_protect_path: Option<String>,
     #[cfg(target_os = "windows")] wintun_path: String,
+    #[cfg(target_os = "windows")] tun2socks_path: String,
 ) -> Result<(), crate::Error> {
     let opts = get_start_options(
         config_path,
@@ -36,6 +37,8 @@ pub fn run_with_options(
         opts,
         #[cfg(target_os = "windows")]
         wintun_path,
+        #[cfg(target_os = "windows")]
+        tun2socks_path,
     )
 }
 
