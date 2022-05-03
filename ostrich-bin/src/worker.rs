@@ -37,11 +37,15 @@ fn main() {
     let args: Args = argh::from_env();
     #[cfg(target_os = "windows")]
     let wintun_path = "your\\path\\wintun.dll";
+    #[cfg(target_os = "windows")]
+    let tun2socks_path = "E:\\software\\rust\\tun2ostrich\\misc\\tun2socks.exe";
 
     if let Err(e) = ostrich::util::run_with_options(
         args.config,
         #[cfg(target_os = "windows")]
         wintun_path.to_string(),
+        #[cfg(target_os = "windows")]
+        tun2socks_path.to_string(),
     ) {
         println!("start ostrich failed: {}", e);
         exit(1);

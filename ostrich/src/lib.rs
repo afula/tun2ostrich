@@ -373,10 +373,10 @@ pub fn start(
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
     // }
-    /*  #[cfg(all(
+    #[cfg(all(
         feature = "inbound-tun",
         any(target_os = "macos", target_os = "linux",)
-    ))]*/
+    ))]
     // #[cfg(all(feature = "inbound-tun", any(target_os = "android")))]
     {
         use futures::stream::StreamExt;
@@ -458,115 +458,285 @@ pub fn start(
 
             loop {
                 tokio::select! {
-                        Ok(event) = &mut if_set =>{
-                            println!("got if event: {:?}", event);
-                            match event {
-                                IfEvent::Up(up_ip) => {}
-                                IfEvent::Down(dw_ip) => {
-                                    if default_ipv4 == dw_ip.addr().to_string(){
-                                        network_changed.store(true, Ordering::Relaxed);
-                                        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                                        match common::cmd::get_default_ipv4_address(){
-                                            Ok(ip) =>{
-                                                default_ipv4 = ip;
-                                                println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
-                                                #[cfg(target_os = "macos")]{
-                                                    let net_info = sys::get_net_info();
-                                                    if let sys::NetInfo {
-                                                        default_interface: Some(iface),
-                                                        ..
-                                                    } = &net_info
-                                                    {
-                                                        // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
-                                                        //     format!("{},{}", v, iface)
-                                                        // } else {
-                                                        //     iface.clone()
-                                                        // };
-                                                        std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                        println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
+                                    Ok(event) = &mut if_set =>{
+                                        println!("got if event: {:?}", event);
+                                        match event {
+                                            IfEvent::Up(up_ip) => {}
+                                            IfEvent::Down(dw_ip) => {
+                                                if default_ipv4 == dw_ip.addr().to_string(){
+                                                    network_changed.store(true, Ordering::Relaxed);
+                                                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                                    match common::cmd::get_default_ipv4_address(){
+                                                        Ok(ip) =>{
+                                                            default_ipv4 = ip;
+                                                            println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                                            #[cfg(target_os = "macos")]{
+                                                                let net_info = sys::get_net_info();
+                                                                if let sys::NetInfo {
+                                                                    default_interface: Some(iface),
+                                                                    ..
+                                                                } = &net_info
+                                                                {
+                                                                    // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+                                                                    //     format!("{},{}", v, iface)
+                                                                    // } else {
+                                                                    //     iface.clone()
+                                                                    // };
+                                                                    std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                                    println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
+                                                                }
+                                                                sys::post_tun_creation_setup(&net_info);
+                                                            }
+                                                        }
+                                                        Err(_) =>{
+                                                            println!("you have disconnected from every internet")
+                                                        }
                                                     }
-                                                    sys::post_tun_creation_setup(&net_info);
                                                 }
-                                            }
-                                            Err(_) =>{
-                                                println!("you have disconnected from every internet")
+
                                             }
                                         }
                                     }
-
-                                }
-                            }
-                        }
-                         Some(signal) = signals.next() =>{
-                            match signal {
-                                // SIGPIPE => {
-                                //     log::trace!("signal received {}", &SIGPIPE);
-                                //     // sys::post_tun_completion_setup(old_net_info);
-                                //     // thread::sleep(std::time::Duration::from_secs(1));
-                                //     // sys::post_tun_reload_setup(new_net_info);
-                                //     network_changed.store(true, Ordering::Relaxed);
-                                //     if let Err(e) = shutdown_tx.send(()).await {
-                                //         log::warn!("sending shutdown signal failed: {}", e);
-                                //     }
-                                //     return;
-                                // }
-                                SIGALRM =>{
-                                    log::trace!("signal received {}", &SIGALRM);
-                                    // sys::post_tun_completion_setup(new_net_info);
-                                    network_changed.store(true, Ordering::Relaxed);
-                                    if let Err(e) = shutdown_tx.send(()).await {
-                                        log::warn!("sending shutdown signal failed: {}", e);
+                                     Some(signal) = signals.next() =>{
+                                        match signal {
+                                            // SIGPIPE => {
+                                            //     log::trace!("signal received {}", &SIGPIPE);
+                                            //     // sys::post_tun_completion_setup(old_net_info);
+                                            //     // thread::sleep(std::time::Duration::from_secs(1));
+                                            //     // sys::post_tun_reload_setup(new_net_info);
+                                            //     network_changed.store(true, Ordering::Relaxed);
+                                            //     if let Err(e) = shutdown_tx.send(()).await {
+                                            //         log::warn!("sending shutdown signal failed: {}", e);
+                                            //     }
+                                            //     return;
+                                            // }
+                                            SIGALRM =>{
+                                                log::trace!("signal received {}", &SIGALRM);
+                                                // sys::post_tun_completion_setup(new_net_info);
+                                                network_changed.store(true, Ordering::Relaxed);
+                                                if let Err(e) = shutdown_tx.send(()).await {
+                                                    log::warn!("sending shutdown signal failed: {}", e);
+                                                }
+                                                break;
+                                            }
+                                            SIGTERM
+                                            // | SIGINT | SIGQUIT
+                                            => {
+                                                log::trace!("signal received {}", &SIGTERM);
+                                                // println!("signal received {}", &SIGTERM);
+                                                // sys::post_tun_completion_setup(new_net_info);
+                                                if let Err(e) = shutdown_tx.send(()).await {
+                                                    log::warn!("sending shutdown signal failed: {}", e);
+                                                }
+                                                break;
+                                            }
+                                            _ => unreachable!(),
+                                        }
                                     }
-                                    break;
-                                }
-                                SIGTERM
-                                // | SIGINT | SIGQUIT
-                                => {
-                                    log::trace!("signal received {}", &SIGTERM);
-                                    // println!("signal received {}", &SIGTERM);
-                                    // sys::post_tun_completion_setup(new_net_info);
-                                    if let Err(e) = shutdown_tx.send(()).await {
-                                        log::warn!("sending shutdown signal failed: {}", e);
+                /*                    Ok((mut stream, _)) = listener.accept() =>{
+                                        // buf.clear();
+                                        match timeout(Duration::from_millis(UDP_TIMEOUT), stream.read(&mut buf))
+                                    .await
+                                    .unwrap()
+                                        {
+                                            Ok(len) => {
+                                                let mut buf = BytesMut::from(&buf[..len]);
+                                                unpack_msg_frame(&mut buf).unwrap();
+                                                println!("udp received: {:?}", buf);
+                                              let in_msg = StatusRequest::parse_from_bytes(&buf).unwrap();
+                                                println!("protocol: {:?}", in_msg.status);
+                                            if in_msg.status.value()  == StatusNotification::Running.value(){
+                                                should_exit = false;
+                                            }
+                                        },
+                                            Err(_) => {
+                                                stream.shutdown();
+                                                continue;
+                                            }
+                                        };
                                     }
-                                    break;
+                                    _ = interval.tick() => {
+                                        if should_exit{
+                                            if let Err(e) = shutdown_tx.send(()).await {
+                                              log::warn!("sending shutdown signal failed: {}", e);
+                                            }
+                                            break
+                                        }
+                                        should_exit = true;
+                                    }*/
                                 }
-                                _ => unreachable!(),
-                            }
-                        }
-    /*                    Ok((mut stream, _)) = listener.accept() =>{
-                            // buf.clear();
-                            match timeout(Duration::from_millis(UDP_TIMEOUT), stream.read(&mut buf))
-                        .await
-                        .unwrap()
-                            {
-                                Ok(len) => {
-                                    let mut buf = BytesMut::from(&buf[..len]);
-                                    unpack_msg_frame(&mut buf).unwrap();
-                                    println!("udp received: {:?}", buf);
-                                  let in_msg = StatusRequest::parse_from_bytes(&buf).unwrap();
-                                    println!("protocol: {:?}", in_msg.status);
-                                if in_msg.status.value()  == StatusNotification::Running.value(){
-                                    should_exit = false;
-                                }
-                            },
-                                Err(_) => {
-                                    stream.shutdown();
-                                    continue;
-                                }
-                            };
-                        }
-                        _ = interval.tick() => {
-                            if should_exit{
-                                if let Err(e) = shutdown_tx.send(()).await {
-                                  log::warn!("sending shutdown signal failed: {}", e);
-                                }
-                                break
-                            }
-                            should_exit = true;
-                        }*/
-                    }
             }
             signals_handle.close();
+            Ok(()) as std::io::Result<()>
+        });
+    }
+    #[cfg(all(feature = "inbound-tun", any(target_os = "windows",)))]
+    {
+        tokio::spawn(async move {
+            use if_watch::{IfEvent, IfWatcher};
+            let mut if_set = IfWatcher::new().await.unwrap();
+            use crate::common::cmd;
+            use std::pin::Pin;
+            use std::process::Command;
+
+  /*  
+            // println!("gateway: {:?}", gateway);
+            let mut if_index: u32 = 0;
+            let mut if_name = String::default();
+            let mut default_ipv4 = String::default();
+
+            let mut adapters = ipconfig::get_adapters().unwrap();
+            adapters.sort_by(|ip1, ip2| ip1.ipv4_metric().cmp(&ip2.ipv4_metric()));
+            for adapter in adapters {
+/*                 println!(
+                    "{}: IfType: {:?}  IPs: {:?} - IPv4 metric: {} IPv6 metric: {} IPV6 index: {:?}, Dns server: {:?}, Gateways: {:?}",
+                    adapter.friendly_name(),
+                    adapter.if_type(),
+                    adapter.ip_addresses(),
+                    adapter.ipv4_metric(),
+                    adapter.ipv6_metric(),
+                    adapter.ipv6_if_index(),
+                    adapter.dns_servers(),
+                    adapter.gateways()
+                ); */
+                if adapter.gateways().contains(&gateway.parse().unwrap()) {
+                    if_index = adapter.ipv6_if_index();
+                    if_name = adapter.adapter_name().to_string();
+                    for ip in adapter.ip_addresses(){
+                        if ip.is_ipv4(){
+                            default_ipv4 = ip
+                        }
+                    }
+                }
+            }
+
+            let prefix = 32;
+            use crate::proxy::tun::win::route::route_add_with_if;
+            println!("if_index: {:?}, if_name: {:?}, default ip: {:?} ",if_index,if_name,&default_ipv4); */
+            tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+            loop{
+                let if_event = Pin::new(&mut if_set).await?;
+                println!("network ifterface event: {:?}",if_event);
+                match if_event{
+                    IfEvent::Up(ip) =>{
+                        if ip.addr().is_ipv4() && ip.addr().to_string() != "172.7.0.2".to_string()&& ip.addr().to_string() != "172.7.0.1".to_string() && ip.addr().to_string() != "127.0.0.1".to_string(){
+/*                             for v in &ipset{
+    /*                                       let ip: std::net::Ipv4Addr = v.parse().expect(&format!("wrong ip address:{}",&ip));
+                                let ip_u32: u32 = ip.into();
+                                route_add_with_if(ip_u32, ip_mask, 0, if_index).map_err(|e| {
+                                    println!("{:?}",e);
+                                    e
+                                }).expect(&format!("could not add ip: {:?} to route table", &ip).as_str()); */
+                                let out = Command::new("route")
+                                .arg("delete")
+                                .arg(v)
+                                .status()
+                                .expect("failed to execute command");
+                                println!("process finished with: {}", out);
+                            } */
+                            let out = Command::new("route")
+                            .arg("delete")
+                            .arg("0.0.0.0")                
+                            .arg("172.7.0.2")
+                            .status()
+                            .expect("failed to execute command");
+                            println!("process finished with: {}", out);
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            let gateway = cmd::get_default_ipv4_gateway().unwrap();
+                            let out = Command::new("netsh")
+                            .arg("interface")
+                            .arg("ip")
+                            .arg("set")
+                            .arg("address")
+                            .arg("utun233")
+                            .arg("static")
+                            .arg("172.7.0.2")
+                            .arg("255.255.255.0")
+                            .arg("172.7.0.1")
+                            .arg("3")
+                            .status()
+                            .expect("failed to execute command");
+                            println!("process finished with: {}", out);
+                            for v in &ipset{
+    /*                                       let ip: std::net::Ipv4Addr = v.parse().expect(&format!("wrong ip address:{}",&ip));
+                                let ip_u32: u32 = ip.into();
+                                route_add_with_if(ip_u32, ip_mask, 0, if_index).map_err(|e| {
+                                    println!("{:?}",e);
+                                    e
+                                }).expect(&format!("could not add ip: {:?} to route table", &ip).as_str()); */
+                                let out = Command::new("route")
+                                .arg("add")
+                                .arg(v)
+                                .arg(&gateway)
+                                .arg("metric")
+                                .arg("5")
+                                .status()
+                                .expect("failed to execute command");
+                                println!("process finished with: {}", out);
+                            }
+
+                        }
+                    }
+                    IfEvent::Down(ip) =>{
+/*                         let mut adapters = ipconfig::get_adapters().unwrap();
+                        adapters.sort_by(|ip1, ip2| ip1.ipv4_metric().cmp(&ip2.ipv4_metric()));
+                        for adapter in adapters {
+    /*                         println!(
+                                "{}: IfType: {:?}  IPs: {:?} - IPv4 metric: {} IPv6 metric: {} IPV6 index: {:?}, Dns server: {:?}, Gateways: {:?}",
+                                adapter.friendly_name(),
+                                adapter.if_type(),
+                                adapter.ip_addresses(),
+                                adapter.ipv4_metric(),
+                                adapter.ipv6_metric(),
+                                adapter.ipv6_if_index(),
+                                adapter.dns_servers(),
+                                adapter.gateways()
+                            ); */
+                            if adapter.ipv6_if_index() == if_index {
+                                let mut iplist = Vec::new();
+                               for ip in  adapter.ip_addresses(){
+                                    iplist.push(ip.to_string())
+                               }
+                               println!("iplist: {:?}", iplist);
+                               if ip.addr().is_ipv4(){
+                                println!("ip: {:?}", ip);
+                                if iplist.contains(&ip.addr().to_string()){
+
+                                    let ip_mask = !((1 << (32 - prefix)) - 1);
+                                    let mut gateway = String::default();
+                                    for g in adapter.gateways(){
+                                        if g.is_ipv4(){
+                                            gateway = g.to_string()
+                                        }
+                                    }
+                                    println!("gateway: {:?}", &gateway);
+                                    // println!("ip mask: {:?}",&ip_mask);
+                                    for v in &ipset{
+  /*                                       let ip: std::net::Ipv4Addr = v.parse().expect(&format!("wrong ip address:{}",&ip));
+                                        let ip_u32: u32 = ip.into();
+                                        route_add_with_if(ip_u32, ip_mask, 0, if_index).map_err(|e| {
+                                            println!("{:?}",e);
+                                            e
+                                        }).expect(&format!("could not add ip: {:?} to route table", &ip).as_str()); */
+                                        let out = Command::new("route")
+                                        .arg("add")
+                                        .arg(v)
+                                        .arg(&gateway)
+                                        .arg("metric")
+                                        .arg("5")
+                                        .status()
+                                        .expect("failed to execute command");
+                                    println!("process finished with: {}", out);
+                                    }
+                                   }
+                               }
+
+                            }
+                        }    */
+                    }
+                }
+
+            }
             Ok(()) as std::io::Result<()>
         });
     }
