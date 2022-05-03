@@ -414,7 +414,6 @@ pub fn start(
     {
         tokio::spawn(async move {
             use if_watch::{IfEvent, IfWatcher};
-            let mut if_set = IfWatcher::new().await.unwrap();
             use crate::common::cmd;
             use std::pin::Pin;
             use std::process::Command;
@@ -454,6 +453,7 @@ pub fn start(
                         use crate::proxy::tun::win::route::route_add_with_if;
                         println!("if_index: {:?}, if_name: {:?}, default ip: {:?} ",if_index,if_name,&default_ipv4); */
             tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+            let mut if_set = IfWatcher::new().await.unwrap();
             loop {
                 let if_event = Pin::new(&mut if_set).await?;
                 println!("network ifterface event: {:?}", if_event);
@@ -463,120 +463,72 @@ pub fn start(
                             && ip.addr().to_string() != "172.7.0.2".to_string()
                             && ip.addr().to_string() != "172.7.0.1".to_string()
                             && ip.addr().to_string() != "127.0.0.1".to_string()
+                            // && ip.addr().to_string() != init_gateway
                         {
-                            /*                             for v in &ipset{
-                            /*                                       let ip: std::net::Ipv4Addr = v.parse().expect(&format!("wrong ip address:{}",&ip));
-                                                        let ip_u32: u32 = ip.into();
-                                                        route_add_with_if(ip_u32, ip_mask, 0, if_index).map_err(|e| {
-                                                            println!("{:?}",e);
-                                                            e
-                                                        }).expect(&format!("could not add ip: {:?} to route table", &ip).as_str()); */
-                                                        let out = Command::new("route")
-                                                        .arg("delete")
-                                                        .arg(v)
-                                                        .status()
-                                                        .expect("failed to execute command");
-                                                        println!("process finished with: {}", out);
-                                                    } */
-                            let out = Command::new("route")
-                                .arg("delete")
-                                .arg("0.0.0.0")
-                                .arg("172.7.0.2")
-                                .status()
-                                .expect("failed to execute command");
-                            println!("process finished with: {}", out);
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                            let gateway = cmd::get_default_ipv4_gateway().unwrap();
-                            let out = Command::new("netsh")
-                                .arg("interface")
-                                .arg("ip")
-                                .arg("set")
-                                .arg("address")
-                                .arg("utun233")
-                                .arg("static")
-                                .arg("172.7.0.2")
-                                .arg("255.255.255.0")
-                                .arg("172.7.0.1")
-                                .arg("3")
-                                .status()
-                                .expect("failed to execute command");
-                            println!("process finished with: {}", out);
-                            for v in &ipset {
-                                /*                                       let ip: std::net::Ipv4Addr = v.parse().expect(&format!("wrong ip address:{}",&ip));
+                            /*                             for v in &ipset {
+                                let ip: std::net::Ipv4Addr =
+                                    v.parse().expect(&format!("wrong ip address:{}", &ip));
                                 let ip_u32: u32 = ip.into();
-                                route_add_with_if(ip_u32, ip_mask, 0, if_index).map_err(|e| {
-                                    println!("{:?}",e);
-                                    e
-                                }).expect(&format!("could not add ip: {:?} to route table", &ip).as_str()); */
+                                route_add_with_if(ip_u32, ip_mask, 0, if_index)
+                                    .map_err(|e| {
+                                        println!("{:?}", e);
+                                        e
+                                    })
+                                    .expect(
+                                        &format!("could not add ip: {:?} to route table", &ip)
+                                            .as_str(),
+                                    );
                                 let out = Command::new("route")
-                                    .arg("add")
+                                    .arg("delete")
                                     .arg(v)
-                                    .arg(&gateway)
-                                    .arg("metric")
-                                    .arg("5")
                                     .status()
                                     .expect("failed to execute command");
                                 println!("process finished with: {}", out);
+                            } */
+                            let out = Command::new("route")
+                                .arg("delete")
+                                .arg("0.0.0.0")
+                                .arg("172.7.0.1")
+                                .status()
+                                .expect("failed to execute command");
+                            println!("route delete command finished with: {}", out);
+                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            match cmd::get_default_ipv4_gateway() {
+                                Ok(gw) => {
+                                    let out = Command::new("netsh")
+                                        .arg("interface")
+                                        .arg("ip")
+                                        .arg("set")
+                                        .arg("address")
+                                        .arg("utun233")
+                                        .arg("static")
+                                        .arg("172.7.0.2")
+                                        .arg("255.255.255.0")
+                                        .arg("172.7.0.1")
+                                        .arg("3")
+                                        .status()
+                                        .expect("failed to execute command");
+                                    println!("setup tun device command finished with: {}", out);
+                                    for v in &ipset {
+                                        let out = Command::new("route")
+                                            .arg("add")
+                                            .arg(v)
+                                            .arg(&gw)
+                                            .arg("metric")
+                                            .arg("5")
+                                            .status()
+                                            .expect("failed to execute command");
+                                        println!("route add command finished with: {}", out);
+                                    }
+                                }
+                                Err(e) => {
+                                    println!("network changed,cant get gateway:{:?}", e);
+                                    continue;
+                                }
                             }
                         }
                     }
-                    IfEvent::Down(ip) => {
-                        /*                         let mut adapters = ipconfig::get_adapters().unwrap();
-                                              adapters.sort_by(|ip1, ip2| ip1.ipv4_metric().cmp(&ip2.ipv4_metric()));
-                                              for adapter in adapters {
-                          /*                         println!(
-                                                      "{}: IfType: {:?}  IPs: {:?} - IPv4 metric: {} IPv6 metric: {} IPV6 index: {:?}, Dns server: {:?}, Gateways: {:?}",
-                                                      adapter.friendly_name(),
-                                                      adapter.if_type(),
-                                                      adapter.ip_addresses(),
-                                                      adapter.ipv4_metric(),
-                                                      adapter.ipv6_metric(),
-                                                      adapter.ipv6_if_index(),
-                                                      adapter.dns_servers(),
-                                                      adapter.gateways()
-                                                  ); */
-                                                  if adapter.ipv6_if_index() == if_index {
-                                                      let mut iplist = Vec::new();
-                                                     for ip in  adapter.ip_addresses(){
-                                                          iplist.push(ip.to_string())
-                                                     }
-                                                     println!("iplist: {:?}", iplist);
-                                                     if ip.addr().is_ipv4(){
-                                                      println!("ip: {:?}", ip);
-                                                      if iplist.contains(&ip.addr().to_string()){
-
-                                                          let ip_mask = !((1 << (32 - prefix)) - 1);
-                                                          let mut gateway = String::default();
-                                                          for g in adapter.gateways(){
-                                                              if g.is_ipv4(){
-                                                                  gateway = g.to_string()
-                                                              }
-                                                          }
-                                                          println!("gateway: {:?}", &gateway);
-                                                          // println!("ip mask: {:?}",&ip_mask);
-                                                          for v in &ipset{
-                        /*                                       let ip: std::net::Ipv4Addr = v.parse().expect(&format!("wrong ip address:{}",&ip));
-                                                              let ip_u32: u32 = ip.into();
-                                                              route_add_with_if(ip_u32, ip_mask, 0, if_index).map_err(|e| {
-                                                                  println!("{:?}",e);
-                                                                  e
-                                                              }).expect(&format!("could not add ip: {:?} to route table", &ip).as_str()); */
-                                                              let out = Command::new("route")
-                                                              .arg("add")
-                                                              .arg(v)
-                                                              .arg(&gateway)
-                                                              .arg("metric")
-                                                              .arg("5")
-                                                              .status()
-                                                              .expect("failed to execute command");
-                                                          println!("process finished with: {}", out);
-                                                          }
-                                                         }
-                                                     }
-
-                                                  }
-                                              }    */
-                    }
+                    IfEvent::Down(ip) => {}
                 }
             }
             Ok(()) as std::io::Result<()>

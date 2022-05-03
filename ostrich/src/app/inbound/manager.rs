@@ -46,7 +46,7 @@ pub struct InboundManager {
 
 impl InboundManager {
     pub fn new(
-        #[cfg(target_os = "windows")] ipset: Vec<String>,
+        #[cfg(target_os = "windows")] mut ipset: Vec<String>,
         config: &Config,
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,

@@ -8,19 +8,19 @@ pub fn get_default_ipv4_gateway() -> Result<String> {
     // let cols: Vec<&str> = line
     //     .split_whitespace()
     //     .map(str::trim)
-    assert!(cols.len() == 6);
+    // assert!(cols.len() == 6);
     Ok(cols[5].to_string())
 }
 
 pub fn get_default_ipv6_gateway() -> Result<String> {
-    let gateway = get_default_ipv4_gateway().unwrap();
+    let gateway = get_default_ipv4_gateway()?;
     println!("ipv4 gateway: {:?}", gateway);
     let mut ipv6_gateway = String::default();
 
-    let mut adapters = ipconfig::get_adapters().unwrap();
+    let mut adapters = ipconfig::get_adapters()?;
     adapters.sort_by(|ip1, ip2| ip1.ipv4_metric().cmp(&ip2.ipv4_metric()));
     for adapter in adapters {
-        if adapter.gateways().contains(&gateway.parse().unwrap()) {
+        if adapter.gateways().contains(&gateway.parse()?) {
             for ip in adapter.gateways() {
                 if ip.is_ipv6() {
                     ipv6_gateway = ip.to_string();
@@ -41,15 +41,14 @@ pub fn get_default_ipv6_address() -> Result<String> {
 }
 
 pub fn get_default_interface() -> Result<String> {
-    let if_idx = get_default_ipv4_interface_index().unwrap();
+    let if_idx = get_default_ipv4_interface_index()?;
     let out = Command::new("netsh")
         .arg("interface")
         .arg("ipv4")
         .arg("show")
         .arg("interface")
-        .output()
-        .expect("failed to execute command");
-    assert!(out.status.success());
+        .output()?;
+    // assert!(out.status.success());
     let output = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = output
         .lines()
@@ -59,8 +58,8 @@ pub fn get_default_interface() -> Result<String> {
             a
         })
         .find(|cols| cols[0] == if_idx.as_str())
-        .unwrap();
-    assert!(cols.len() == 5);
+        .ok_or(anyhow::anyhow!("cnat get default network iinterface"))?;
+    // assert!(cols.len() == 5);
     Ok(cols[4].to_string())
 }
 
@@ -83,9 +82,8 @@ pub fn add_interface_ipv4_address(
         .arg(mask.to_string())
         .arg(gw.to_string())
         .arg("store=active")
-        .output()
-        .expect("failed to execute command");
-    std::io::stdout().write(&out.stdout).unwrap();
+        .output()?;
+    std::io::stdout().write(&out.stdout)?;
     Ok(())
 }
 
@@ -98,15 +96,14 @@ pub fn add_interface_ipv6_address(name: &str, addr: Ipv6Addr, prefixlen: i32) ->
         .arg(format!("interface={}", name))
         .arg(format!("address={}", addr.to_string()))
         .arg("store=active")
-        .output()
-        .expect("failed to execute command");
+        .output()?;
     Ok(())
 }
 
 pub fn add_default_ipv4_route(gateway: Ipv4Addr, interface: String, primary: bool) -> Result<()> {
     let mut if_idx = 0;
 
-    let mut adapters = ipconfig::get_adapters().unwrap();
+    let mut adapters = ipconfig::get_adapters()?;
     adapters.sort_by(|ip1, ip2| ip1.ipv4_metric().cmp(&ip2.ipv4_metric()));
     for adapter in adapters {
         if adapter.adapter_name() == interface.as_str() {
@@ -125,13 +122,12 @@ pub fn add_default_ipv4_route(gateway: Ipv4Addr, interface: String, primary: boo
         .arg(gateway.to_string())
         .arg(metric)
         .arg("store=active")
-        .output()
-        .expect("failed to execute command");
+        .output()?;
     Ok(())
 }
 
 pub fn add_default_ipv6_route(gateway: Ipv6Addr, interface: String, primary: bool) -> Result<()> {
-    let if_idx = get_interface_index(interface.as_str()).unwrap();
+    let if_idx = get_interface_index(interface.as_str())?;
     Command::new("netsh")
         .arg("interface")
         .arg("ipv6")
@@ -141,14 +137,13 @@ pub fn add_default_ipv6_route(gateway: Ipv6Addr, interface: String, primary: boo
         .arg(if_idx)
         .arg(gateway.to_string())
         .arg("store=active")
-        .output()
-        .expect("failed to execute command");
+        .output()?;
     Ok(())
 }
 
 pub fn delete_default_ipv6_route(ifscope: Option<String>) -> Result<()> {
     if let Some(scope) = ifscope {
-        let if_idx = get_interface_index(scope.as_str()).unwrap();
+        let if_idx = get_interface_index(scope.as_str())?;
         let out = Command::new("netsh")
             .arg("interface")
             .arg("ipv4")
@@ -158,22 +153,20 @@ pub fn delete_default_ipv6_route(ifscope: Option<String>) -> Result<()> {
             .arg("if")
             .arg(if_idx)
             .arg("store=active")
-            .output()
-            .expect("failed to execute command");
+            .output()?;
     } else {
         let out = Command::new("route")
             .arg("-6")
             .arg("delete")
             .arg("::/0")
-            .output()
-            .expect("failed to execute command");
+            .output()?;
     }
     Ok(())
 }
 
 pub fn delete_default_ipv4_route(ifscope: Option<String>) -> Result<()> {
     if let Some(scope) = ifscope {
-        let if_idx = get_interface_index(scope.as_str()).unwrap();
+        let if_idx = get_interface_index(scope.as_str())?;
         let out = Command::new("netsh")
             .arg("interface")
             .arg("ipv4")
@@ -183,15 +176,13 @@ pub fn delete_default_ipv4_route(ifscope: Option<String>) -> Result<()> {
             .arg("if")
             .arg(if_idx)
             .arg("store=active")
-            .output()
-            .expect("failed to execute command");
+            .output()?;
     } else {
         let out = Command::new("route")
             .arg("-4")
             .arg("delete")
             .arg("0.0.0.0/0")
-            .output()
-            .expect("failed to execute command");
+            .output()?;
     }
     Ok(())
 }
@@ -240,13 +231,13 @@ fn get_default_ipv4_route_entry() -> Result<Vec<String>> {
 }
 
 fn get_interface_index(interface: &str) -> Result<String> {
-    let col = get_interface_entry(interface).unwrap();
+    let col = get_interface_entry(interface)?;
     Ok(col[0].clone())
 }
 
 fn get_default_ipv4_interface_index() -> Result<String> {
-    let cols = get_default_ipv4_route_entry().unwrap();
-    assert!(cols.len() == 6);
+    let cols = get_default_ipv4_route_entry()?;
+    // assert!(cols.len() == 6);
     Ok(cols[4].to_string())
 }
 
@@ -256,27 +247,30 @@ fn get_default_ipv6_route_entry() -> Result<String> {
         .arg("ipv6")
         .arg("show")
         .arg("route")
-        .output()
-        .expect("failed to execute command");
-    assert!(out.status.success());
+        .output()?;
+    // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
-    let line = out.lines().skip(3).next().unwrap();
+    let line = out
+        .lines()
+        .skip(3)
+        .next()
+        .ok_or(anyhow::anyhow!("cnat get default ipv6 route"))?;
     Ok(line.to_string())
 }
 
 fn get_interface_entry(interface: &str) -> Result<Vec<String>> {
-    let entries = get_interface_entries().unwrap();
+    let entries = get_interface_entries()?;
     let entry = entries
         .iter()
         .filter(|&e| e[4].eq(interface))
         .last()
-        .unwrap()
+        .ok_or(anyhow::anyhow!("cnat get interface entry"))?
         .clone();
     Ok(entry)
 }
 
 fn get_interface_indices() -> Result<Vec<String>> {
-    let entires = get_interface_entries().unwrap();
+    let entires = get_interface_entries()?;
     let indices = entires.iter().map(|e| e[0].to_string()).collect();
     Ok(indices)
 }
@@ -287,9 +281,8 @@ fn get_interface_entries() -> Result<Vec<Vec<String>>> {
         .arg("ip")
         .arg("show")
         .arg("interface")
-        .output()
-        .expect("failed to execute command");
-    assert!(out.status.success());
+        .output()?;
+    // assert!(out.status.success());
     let output = String::from_utf8_lossy(&out.stdout).to_string();
     let cols = output
         .lines()
@@ -314,7 +307,7 @@ fn get_ipv4_route_entries() -> Result<Vec<Vec<String>>> {
         .arg("show")
         .arg("route")
         .output()?;
-    assert!(out.status.success());
+    // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let entries = out
         .lines()
