@@ -304,7 +304,7 @@ pub fn start(
                         "got if event: {:?}, default_ipv4: {:?}",
                         event, &default_ipv4
                     );
-                    #[cfg(target_os = "macos")]{
+                    // #[cfg(target_os = "macos")]{
                         match event {
                             IfEvent::Up(up_ip) => {
                                 if up_ip.addr().is_ipv4()
@@ -322,7 +322,7 @@ pub fn start(
                                             } = &net_info
                                             {
                                                 default_ipv4 = ip.to_owned();
-                                                println!("UP after network interface changed,the new default ipv4 is: {},up_ip: {}", default_ipv4,&up_ip.addr().to_string()  );
+                                                println!("UP: after network interface changed,the new default ipv4 is: {},up_ip: {}", default_ipv4,&up_ip.addr().to_string()  );
 
                                                 std::env::set_var("OUTBOUND_INTERFACE", iface);
                                                 println!(
@@ -350,7 +350,7 @@ pub fn start(
                                             } = &net_info
                                             {
                                                 default_ipv4 = ip.to_owned();
-                                                println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                                println!("DOWN: after network interface changed,the new default ipv4 is: {}", default_ipv4);
                                                 std::env::set_var("OUTBOUND_INTERFACE", iface);
                                                 println!(
                                                     "OUTBOUND_INTERFACE: {:?}",
@@ -364,7 +364,7 @@ pub fn start(
                                 }
                             }
                         }
-                    }
+                    // } //macos
                 }
             });
             let signal_fut = Box::pin(async {
