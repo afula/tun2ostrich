@@ -56,8 +56,7 @@ pub fn get_default_interface() -> Result<String> {
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out
         .lines()
-        .find(|l| l.contains("interface"))
-        .unwrap()
+        .find(|l| l.contains("interface"))?
         .split_whitespace()
         .map(str::trim)
         .collect();

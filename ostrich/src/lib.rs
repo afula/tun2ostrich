@@ -420,7 +420,6 @@ pub fn start(
             match event {
                 IfEvent::Up(up_ip) => {}
                 IfEvent::Down(dw_ip) => {
-
                     if default_ipv4 == dw_ip.addr().to_string(){
                         network_changed.store(true, Ordering::Relaxed);
                         match common::cmd::get_default_ipv4_address(){
@@ -448,11 +447,9 @@ pub fn start(
                                 sys::post_tun_creation_setup(&net_info);
                             }
                             Err(_) =>{
-
                             }
                         }
                     }
-
                 }
             }*/
 
@@ -468,26 +465,26 @@ pub fn start(
                                         tokio::time::sleep(std::time::Duration::from_secs(3)).await;
                                         match sys::get_net_info(){
                                             Ok(net_info) =>{
-                                               // #[cfg(target_os = "macos")]{
-                                            if let sys::NetInfo {
-                                                default_interface: Some(iface),
-                                                default_ipv4_address: Some(ip),
-                                                ..
-                                            } = &net_info
-                                            {
-                                                // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
-                                                //     format!("{},{}", v, iface)
-                                                // } else {
-                                                //     iface.clone()
-                                                // };
-                                                default_ipv4 = ip.to_owned();
-                                                println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                            // #[cfg(target_os = "macos")]{
+                                                    if let sys::NetInfo {
+                                                        default_interface: Some(iface),
+                                                        default_ipv4_address: Some(ip),
+                                                        ..
+                                                    } = &net_info
+                                                    {
+                                                        // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+                                                        //     format!("{},{}", v, iface)
+                                                        // } else {
+                                                        //     iface.clone()
+                                                        // };
+                                                        default_ipv4 = ip.to_owned();
+                                                        println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
 
-                                                std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
-                                            }
-                                            sys::post_tun_creation_setup(&net_info);
-                                        // }
+                                                        std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                        println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
+                                                    }
+                                                    sys::post_tun_creation_setup(&net_info);
+                                            // }
                                             }
                                             Err(_) =>{
 
