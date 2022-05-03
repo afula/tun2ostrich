@@ -101,8 +101,7 @@ pub fn get_default_interface() -> Result<String> {
     let cols: Vec<&str> = out
         .lines()
         .filter(|l| l.contains("via"))
-        .next()
-        .unwrap()
+        .next().ok_or(anyhow::anyhow!("cnat get default network iinterface"))?
         .split_whitespace()
         .map(str::trim)
         .collect();
