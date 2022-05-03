@@ -333,6 +333,7 @@ pub fn start(
                                                             sys::post_tun_creation_setup(&sys_net);
                                                             break 'net
                                                         }
+                                                        network_changed.store(true, Ordering::Relaxed);
                                                         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                                                         continue 'net
                                                     }
@@ -348,6 +349,7 @@ pub fn start(
                                                             sys::post_tun_creation_setup(&sys_net);
                                                             break 'net
                                                         }
+                                                        network_changed.store(true, Ordering::Relaxed);
                                                         break 'net
                                                     }
                                                 }
