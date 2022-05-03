@@ -8,9 +8,6 @@ pub mod nat_manager;
 pub mod outbound;
 pub mod router;
 
-#[cfg(feature = "api")]
-pub mod api;
-
 pub mod copy;
 #[cfg(any(
     target_os = "ios",

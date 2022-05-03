@@ -6,7 +6,6 @@ use protobuf::Message;
 
 use crate::app::dispatcher::Dispatcher;
 use crate::app::nat_manager::NatManager;
-use crate::config;
 use crate::config::Config;
 use crate::proxy;
 use crate::proxy::AnyInboundHandler;
@@ -47,7 +46,7 @@ pub struct InboundManager {
 
 impl InboundManager {
     pub fn new(
-        mut ipset: Vec<String>,
+        #[cfg(target_os = "windows")] ipset: Vec<String>,
         config: &Config,
         dispatcher: Arc<Dispatcher>,
         nat_manager: Arc<NatManager>,

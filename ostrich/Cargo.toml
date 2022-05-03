@@ -23,7 +23,6 @@ default-ring = [
     # quinn supports only rustls as tls backend for now
     #    "inbound-quic",
     #    "outbound-quic",
-    # "api",
 ]
 
 default-openssl = [
@@ -31,7 +30,6 @@ default-openssl = [
     "all-endpoints",
     "openssl-aead",
     "openssl-tls",
-    # "api",
 ]
 
 # Grouping all features
@@ -89,7 +87,6 @@ dns-over-tls = []
 inbound-socks = []
 inbound-tun = ["tun","netstack-lwip"]
 
-api = ["warp"]
 ctrlc = ["tokio/signal"]
 
 [dependencies]
@@ -184,8 +181,6 @@ if-watch = {git = "https://github.com/mxinden/if-watch.git"}
 
 rustls = { version = "0.20.4",optional = true }
 
-# API
-warp = { version = "0.3", default-features = false, optional = true }
 
 #allocator
 rpmalloc = { version = "0.2.0", features = ["guards", "statistics","unlimited_cache", "unlimited_global_cache", "unlimited_thread_cache"] }

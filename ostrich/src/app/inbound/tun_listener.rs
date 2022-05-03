@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::app::dispatcher::Dispatcher;
 use crate::app::nat_manager::NatManager;
-use crate::config::{Config, Inbound};
+use crate::config::Inbound;
 use crate::proxy::tun;
 use crate::Runner;
 

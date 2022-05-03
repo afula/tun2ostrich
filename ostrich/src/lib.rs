@@ -1,7 +1,5 @@
 #![feature(once_cell)]
 
-#[cfg(feature = "api")]
-use crate::app::api::api_server::ApiServer;
 use anyhow::anyhow;
 use app::{
     dispatcher::Dispatcher, dns_client::DnsClient, inbound::manager::InboundManager,
@@ -9,8 +7,8 @@ use app::{
 };
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
-use protobuf::Enum;
 use std::io;
+use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -18,7 +16,6 @@ use std::sync::Once;
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::sync::RwLock;
-use tokio::time::{interval_at, Instant};
 
 pub mod app;
 pub mod common;
@@ -63,91 +60,14 @@ pub enum Error {
 pub type Runner = futures::future::BoxFuture<'static, ()>;
 
 pub struct RuntimeManager {
-    // #[cfg(feature = "auto-reload")]
-    // rt_id: RuntimeId,
-    // config_path: Option<String>,
     shutdown_tx: mpsc::Sender<()>,
-    // router: Arc<RwLock<Router>>,
-    // dns_client: Arc<RwLock<DnsClient>>,
-    // outbound_manager: Arc<RwLock<OutboundManager>>,
 }
 
 impl RuntimeManager {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        // #[cfg(feature = "auto-reload")] rt_id: RuntimeId,
-        // config_path: Option<String>,
-        shutdown_tx: mpsc::Sender<()>,
-        // router: Arc<RwLock<Router>>,
-        // dns_client: Arc<RwLock<DnsClient>>,
-        // outbound_manager: Arc<RwLock<OutboundManager>>,
-    ) -> Arc<Self> {
-        Arc::new(Self {
-            // #[cfg(feature = "auto-reload")]
-            // rt_id,
-            // config_path,
-            shutdown_tx,
-            // router,
-            // dns_client,
-            // outbound_manager,
-        })
+    pub fn new(shutdown_tx: mpsc::Sender<()>) -> Arc<Self> {
+        Arc::new(Self { shutdown_tx })
     }
-
-    /*    pub async fn set_outbound_selected(&self, outbound: &str, select: &str) -> Result<(), Error> {
-        if let Some(selector) = self.outbound_manager.read().await.get_selector(outbound) {
-            selector
-                .write()
-                .await
-                .set_selected(select)
-                .map_err(Error::Config)
-        } else {
-            Err(Error::Config(anyhow!("selector not found")))
-        }
-    }
-
-    pub async fn get_outbound_selected(&self, outbound: &str) -> Result<String, Error> {
-        if let Some(selector) = self.outbound_manager.read().await.get_selector(outbound) {
-            if let Some(tag) = selector.read().await.get_selected_tag() {
-                return Ok(tag);
-            }
-        }
-        Err(Error::Config(anyhow!("not found")))
-    }*/
-
-    /*    // This function could block by an in-progress connection dialing.
-    //
-    // TODO Reload FakeDns. And perhaps the inbounds as long as the listening
-    // addresses haven't changed.
-    pub async fn reload(&self) -> Result<(), Error> {
-        let config_path = if let Some(p) = self.config_path.as_ref() {
-            p
-        } else {
-            return Err(Error::NoConfigFile);
-        };
-        log::info!("reloading from config file: {}", config_path);
-        let mut config = config::from_file(config_path).map_err(Error::Config)?;
-        self.router.write().await.reload(&mut config.router)?;
-        self.dns_client.write().await.reload(&config.dns)?;
-        self.outbound_manager
-            .write()
-            .await
-            .reload(&config.outbounds, self.dns_client.clone())
-            .await?;
-        log::info!("reloaded from config file: {}", config_path);
-        Ok(())
-    }*/
-
-    /*    pub fn blocking_reload(&self) -> Result<(), Error> {
-        let tx = self.reload_tx.clone();
-        let (res_tx, res_rx) = sync_channel(0);
-        if let Err(e) = tx.blocking_send(res_tx) {
-            return Err(Error::AsyncChannelSend(e));
-        }
-        match res_rx.recv() {
-            Ok(res) => res,
-            Err(e) => Err(Error::SyncChannelRecv(e)),
-        }
-    }*/
 
     pub async fn shutdown(&self) -> bool {
         let tx = self.shutdown_tx.clone();
@@ -174,15 +94,6 @@ lazy_static! {
     pub static ref RUNTIME_MANAGER: Mutex<IndexMap<RuntimeId, Arc<RuntimeManager>>> =
         Mutex::new(IndexMap::new());
 }
-
-/*pub fn reload(key: RuntimeId) -> Result<(), Error> {
-    if let Ok(g) = RUNTIME_MANAGER.lock() {
-        if let Some(m) = g.get(&key) {
-            return m.blocking_reload();
-        }
-    }
-    Err(Error::RuntimeManager)
-}*/
 
 pub fn shutdown() -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
@@ -243,13 +154,7 @@ pub fn start(
 ) -> Result<(), Error> {
     println!("start with options:\n{:#?}", opts);
 
-    // let (reload_tx, mut reload_rx) = mpsc::channel(1);
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
-
-    /*    let config_path = match opts.config {
-        Config::File(ref p) => Some(p.to_owned()),
-        _ => None,
-    };*/
 
     let mut config = match opts.config {
         Config::File(p) => config::from_file(&p).map_err(Error::Config)?,
@@ -300,6 +205,7 @@ pub fn start(
     }
 
     let inbound_manager = InboundManager::new(
+        #[cfg(target_os = "windows")]
         ipset.clone(),
         &config,
         dispatcher,
@@ -377,7 +283,6 @@ pub fn start(
         feature = "inbound-tun",
         any(target_os = "macos", target_os = "linux",)
     ))]
-    // #[cfg(all(feature = "inbound-tun", any(target_os = "android")))]
     {
         use futures::stream::StreamExt;
         use signal_hook::consts::signal::*;
@@ -390,218 +295,118 @@ pub fn start(
         let mut default_ipv4 = net_info.default_ipv4_address.clone().unwrap();
 
         tokio::spawn(async move {
-            /*            use bytes::BytesMut;
-            use protobuf::Message;
-            use protocol::{
-                generated::notification::{StatusNotification, StatusRequest},
-                unpack_msg_frame,
-            };*/
-            // use std::{net::SocketAddr, str::FromStr, time::Duration};
-            // use tokio::{io::AsyncReadExt, time::timeout};
-            // use udp_stream::UdpListener;
-            /*            const UDP_BUFFER_SIZE: usize = 1024; // 17kb
-            const UDP_TIMEOUT: u64 = 10 * 1000; // 10sec
-            let listener = UdpListener::bind(SocketAddr::from_str("127.0.0.1:11771").unwrap())
-                .await
-                .expect("12345");
-            // let mut buf = BytesMut::with_capacity(UDP_BUFFER_SIZE);
-            let mut buf = vec![0u8; UDP_BUFFER_SIZE];
-            let mut interval = interval_at(
-                Instant::now() + Duration::from_secs(7),
-                Duration::from_secs(5),
-            );*/
-            // let mut should_exit = true;
             use if_watch::{IfEvent, IfWatcher};
             let mut if_set = IfWatcher::new().await.unwrap();
 
-            // let ipv4_default = common::cmd::get_default_ipv4_address().unwrap();
-
-            /*            let event = if_set.await?;
-            match event {
-                IfEvent::Up(up_ip) => {}
-                IfEvent::Down(dw_ip) => {
-                    if default_ipv4 == dw_ip.addr().to_string(){
-                        network_changed.store(true, Ordering::Relaxed);
-                        match common::cmd::get_default_ipv4_address(){
-                            Ok(ip) =>{
-                                default_ipv4 = ip;
-                                println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
-                                // #[cfg(all(feature = "inbound-tun", any(target_os = "macos")))]{
-                                //
-                                // }
-                                let net_info = sys::get_net_info();
-                                if let sys::NetInfo {
-                                    default_interface: Some(iface),
-                                    ..
-                                } = &net_info
+            let if_fut = Box::pin(async {
+                while let Ok(event) = Pin::new(&mut if_set).await {
+                    println!(
+                        "got if event: {:?}, default_ipv4: {:?}",
+                        event, &default_ipv4
+                    );
+                    #[cfg(target_os = "macos")]{
+                        match event {
+                            IfEvent::Up(up_ip) => {
+                                if up_ip.addr().is_ipv4()
+                                    && up_ip.addr().to_string() != "172.7.0.2".to_string()
+                                    && up_ip.addr().to_string() != "172.7.0.1".to_string()
+                                    && up_ip.addr().to_string() != "127.0.0.1".to_string()
                                 {
-                                    // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
-                                    //     format!("{},{}", v, iface)
-                                    // } else {
-                                    //     iface.clone()
-                                    // };
-                                    println!("OUTBOUND_INTERFACE: {:?}", iface);
-                                    std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                    println!("OUTBOUND_INTERFACE: {:?}", get_env_var_or("OUTBOUND_INTERFACE", "0.0.0.0,::".to_string()));
+                                    tokio::time::sleep(std::time::Duration::from_millis(5000)).await;
+                                    match sys::get_net_info() {
+                                        Ok(net_info) => {
+                                            if let sys::NetInfo {
+                                                default_interface: Some(iface),
+                                                default_ipv4_address: Some(ip),
+                                                ..
+                                            } = &net_info
+                                            {
+                                                default_ipv4 = ip.to_owned();
+                                                println!("UP after network interface changed,the new default ipv4 is: {},up_ip: {}", default_ipv4,&up_ip.addr().to_string()  );
+
+                                                std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                println!(
+                                                    "OUTBOUND_INTERFACE: {:?}",
+                                                    std::env::var("OUTBOUND_INTERFACE")
+                                                );
+                                            }
+                                            sys::post_tun_creation_setup(&net_info);
+                                        }
+                                        Err(_) => {}
+                                    }
                                 }
-                                sys::post_tun_creation_setup(&net_info);
                             }
-                            Err(_) =>{
+                            IfEvent::Down(dw_ip) => {
+                                println!("down: ip({:?}, default_ip({:?}))", &dw_ip, &default_ipv4);
+                                if default_ipv4 == dw_ip.addr().to_string() {
+                                    network_changed.store(true, Ordering::Relaxed);
+                                    tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
+                                    match sys::get_net_info() {
+                                        Ok(net_info) => {
+                                            if let sys::NetInfo {
+                                                default_interface: Some(iface),
+                                                default_ipv4_address: Some(ip),
+                                                ..
+                                            } = &net_info
+                                            {
+                                                default_ipv4 = ip.to_owned();
+                                                println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                                std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                println!(
+                                                    "OUTBOUND_INTERFACE: {:?}",
+                                                    std::env::var("OUTBOUND_INTERFACE")
+                                                );
+                                            }
+                                            sys::post_tun_creation_setup(&net_info);
+                                        }
+                                        Err(_) => {}
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }*/
-
-            loop {
-                tokio::select! {
-
-                        Ok(event) = &mut if_set =>{
-                           #[cfg(target_os = "macos")]{
-                            println!("got if event: {:?}, default_ipv4: {:?}", event,&default_ipv4);
-                            match event {
-                                IfEvent::Up(up_ip) => {
-
-                                      if up_ip.addr().is_ipv4()
-                                        && up_ip.addr().to_string() != "172.7.0.2".to_string()
-                                        && up_ip.addr().to_string() != "172.7.0.1".to_string()
-                                        && up_ip.addr().to_string() != "127.0.0.1".to_string(){
-                                            tokio::time::sleep(std::time::Duration::from_millis(5000)).await;
-                                            match sys::get_net_info(){
-                                                Ok(net_info) =>{
-                                                        if let sys::NetInfo {
-                                                            default_interface: Some(iface),
-                                                            default_ipv4_address: Some(ip),
-                                                            ..
-                                                        } = &net_info
-                                                        {
-                                                            // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
-                                                            //     format!("{},{}", v, iface)
-                                                            // } else {
-                                                            //     iface.clone()
-                                                            // };
-                                                            default_ipv4 = ip.to_owned();
-                                                            println!("UP after network interface changed,the new default ipv4 is: {},up_ip: {}", default_ipv4,&up_ip.addr().to_string()  );
-
-                                                            std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                            println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
-                                                        }
-                                                        sys::post_tun_creation_setup(&net_info);
-                                                }
-                                                Err(_) =>{
-
-                                                 }
-                                             }
-                                         }
-                                }
-                                IfEvent::Down(dw_ip) => {
-                                    println!("down: ip({:?}, default_ip({:?}))", &dw_ip,&default_ipv4);
-                                    if default_ipv4 == dw_ip.addr().to_string(){
-                                        network_changed.store(true, Ordering::Relaxed);
-                                        tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
-                                        match sys::get_net_info(){
-                                            Ok(net_info) =>{
-                                            // #[cfg(target_os = "macos")]{
-                                                    if let sys::NetInfo {
-                                                        default_interface: Some(iface),
-                                                        default_ipv4_address: Some(ip),
-                                                        ..
-                                                    } = &net_info
-                                                    {
-                                                        // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
-                                                        //     format!("{},{}", v, iface)
-                                                        // } else {
-                                                        //     iface.clone()
-                                                        // };
-                                                        default_ipv4 = ip.to_owned();
-                                                        println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
-
-                                                        std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                        println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
-                                                    }
-                                                    sys::post_tun_creation_setup(&net_info);
-                                            // }
-                                            }
-                                            Err(_) =>{
-
-                                             }
-                                        }
-                                    }
-
-                                }
+            });
+            let signal_fut = Box::pin(async {
+                while let Some(signal) = signals.next().await {
+                    match signal {
+                        // SIGPIPE => {
+                        //     log::trace!("signal received {}", &SIGPIPE);
+                        //     // sys::post_tun_completion_setup(old_net_info);
+                        //     // thread::sleep(std::time::Duration::from_secs(1));
+                        //     // sys::post_tun_reload_setup(new_net_info);
+                        //     network_changed.store(true, Ordering::Relaxed);
+                        //     if let Err(e) = shutdown_tx.send(()).await {
+                        //         log::warn!("sending shutdown signal failed: {}", e);
+                        //     }
+                        //     return;
+                        // }
+/*                        SIGALRM =>{
+                            log::trace!("signal received {}", &SIGALRM);
+                            // sys::post_tun_completion_setup(new_net_info);
+                            network_changed.store(true, Ordering::Relaxed);
+                            if let Err(e) = shutdown_tx.send(()).await {
+                                log::warn!("sending shutdown signal failed: {}", e);
                             }
+                            break;
+                        }*/
+                        SIGTERM
+                        // | SIGINT | SIGQUIT
+                        => {
+                            log::trace!("signal received {}", &SIGTERM);
+                            // println!("signal received {}", &SIGTERM);
+                            // sys::post_tun_completion_setup(new_net_info);
+                            if let Err(e) = shutdown_tx.send(()).await {
+                                log::warn!("sending shutdown signal failed: {}", e);
+                            }
+                            break;
                         }
+                        _ => unreachable!(),
                     }
-                         Some(signal) = signals.next() =>{
-                            match signal {
-                                // SIGPIPE => {
-                                //     log::trace!("signal received {}", &SIGPIPE);
-                                //     // sys::post_tun_completion_setup(old_net_info);
-                                //     // thread::sleep(std::time::Duration::from_secs(1));
-                                //     // sys::post_tun_reload_setup(new_net_info);
-                                //     network_changed.store(true, Ordering::Relaxed);
-                                //     if let Err(e) = shutdown_tx.send(()).await {
-                                //         log::warn!("sending shutdown signal failed: {}", e);
-                                //     }
-                                //     return;
-                                // }
-                                SIGALRM =>{
-                                    log::trace!("signal received {}", &SIGALRM);
-                                    // sys::post_tun_completion_setup(new_net_info);
-                                    network_changed.store(true, Ordering::Relaxed);
-                                    if let Err(e) = shutdown_tx.send(()).await {
-                                        log::warn!("sending shutdown signal failed: {}", e);
-                                    }
-                                    break;
-                                }
-                                SIGTERM
-                                // | SIGINT | SIGQUIT
-                                => {
-                                    log::trace!("signal received {}", &SIGTERM);
-                                    // println!("signal received {}", &SIGTERM);
-                                    // sys::post_tun_completion_setup(new_net_info);
-                                    if let Err(e) = shutdown_tx.send(()).await {
-                                        log::warn!("sending shutdown signal failed: {}", e);
-                                    }
-                                    break;
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
-                /*                    Ok((mut stream, _)) = listener.accept() =>{
-                                        // buf.clear();
-                                        match timeout(Duration::from_millis(UDP_TIMEOUT), stream.read(&mut buf))
-                                    .await
-                                    .unwrap()
-                                        {
-                                            Ok(len) => {
-                                                let mut buf = BytesMut::from(&buf[..len]);
-                                                unpack_msg_frame(&mut buf).unwrap();
-                                                println!("udp received: {:?}", buf);
-                                              let in_msg = StatusRequest::parse_from_bytes(&buf).unwrap();
-                                                println!("protocol: {:?}", in_msg.status);
-                                            if in_msg.status.value()  == StatusNotification::Running.value(){
-                                                should_exit = false;
-                                            }
-                                        },
-                                            Err(_) => {
-                                                stream.shutdown();
-                                                continue;
-                                            }
-                                        };
-                                    }
-                                    _ = interval.tick() => {
-                                        if should_exit{
-                                            if let Err(e) = shutdown_tx.send(()).await {
-                                              log::warn!("sending shutdown signal failed: {}", e);
-                                            }
-                                            break
-                                        }
-                                        should_exit = true;
-                                    }*/
-                                }
-            }
-            signals_handle.close();
+                }
+                signals_handle.close();
+            });
+            futures::future::select(if_fut, signal_fut).await;
             Ok(()) as std::io::Result<()>
         });
     }
@@ -884,3 +689,152 @@ Direct = direct
         }
     }
 }
+
+/*            loop {
+                tokio::select! {
+
+/*                        Ok(event) = &mut if_set =>{
+                           #[cfg(target_os = "macos")]{
+                            println!("got if event: {:?}, default_ipv4: {:?}", event,&default_ipv4);
+                            match event {
+                                IfEvent::Up(up_ip) => {
+
+                                      if up_ip.addr().is_ipv4()
+                                        && up_ip.addr().to_string() != "172.7.0.2".to_string()
+                                        && up_ip.addr().to_string() != "172.7.0.1".to_string()
+                                        && up_ip.addr().to_string() != "127.0.0.1".to_string(){
+                                            tokio::time::sleep(std::time::Duration::from_millis(5000)).await;
+                                            match sys::get_net_info(){
+                                                Ok(net_info) =>{
+                                                        if let sys::NetInfo {
+                                                            default_interface: Some(iface),
+                                                            default_ipv4_address: Some(ip),
+                                                            ..
+                                                        } = &net_info
+                                                        {
+                                                            // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+                                                            //     format!("{},{}", v, iface)
+                                                            // } else {
+                                                            //     iface.clone()
+                                                            // };
+                                                            default_ipv4 = ip.to_owned();
+                                                            println!("UP after network interface changed,the new default ipv4 is: {},up_ip: {}", default_ipv4,&up_ip.addr().to_string()  );
+
+                                                            std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                            println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
+                                                        }
+                                                        sys::post_tun_creation_setup(&net_info);
+                                                }
+                                                Err(_) =>{
+
+                                                 }
+                                             }
+                                         }
+                                }
+                                IfEvent::Down(dw_ip) => {
+                                    println!("down: ip({:?}, default_ip({:?}))", &dw_ip,&default_ipv4);
+                                    if default_ipv4 == dw_ip.addr().to_string(){
+                                        network_changed.store(true, Ordering::Relaxed);
+                                        tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
+                                        match sys::get_net_info(){
+                                            Ok(net_info) =>{
+                                            // #[cfg(target_os = "macos")]{
+                                                    if let sys::NetInfo {
+                                                        default_interface: Some(iface),
+                                                        default_ipv4_address: Some(ip),
+                                                        ..
+                                                    } = &net_info
+                                                    {
+                                                        // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+                                                        //     format!("{},{}", v, iface)
+                                                        // } else {
+                                                        //     iface.clone()
+                                                        // };
+                                                        default_ipv4 = ip.to_owned();
+                                                        println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+
+                                                        std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                        println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
+                                                    }
+                                                    sys::post_tun_creation_setup(&net_info);
+                                            // }
+                                            }
+                                            Err(_) =>{
+
+                                             }
+                                        }
+                                    }
+
+                                }
+                            }
+                        }
+                    }*/
+                         Some(signal) = signals.next() =>{
+                            match signal {
+                                // SIGPIPE => {
+                                //     log::trace!("signal received {}", &SIGPIPE);
+                                //     // sys::post_tun_completion_setup(old_net_info);
+                                //     // thread::sleep(std::time::Duration::from_secs(1));
+                                //     // sys::post_tun_reload_setup(new_net_info);
+                                //     network_changed.store(true, Ordering::Relaxed);
+                                //     if let Err(e) = shutdown_tx.send(()).await {
+                                //         log::warn!("sending shutdown signal failed: {}", e);
+                                //     }
+                                //     return;
+                                // }
+                                SIGALRM =>{
+                                    log::trace!("signal received {}", &SIGALRM);
+                                    // sys::post_tun_completion_setup(new_net_info);
+                                    network_changed.store(true, Ordering::Relaxed);
+                                    if let Err(e) = shutdown_tx.send(()).await {
+                                        log::warn!("sending shutdown signal failed: {}", e);
+                                    }
+                                    break;
+                                }
+                                SIGTERM
+                                // | SIGINT | SIGQUIT
+                                => {
+                                    log::trace!("signal received {}", &SIGTERM);
+                                    // println!("signal received {}", &SIGTERM);
+                                    // sys::post_tun_completion_setup(new_net_info);
+                                    if let Err(e) = shutdown_tx.send(()).await {
+                                        log::warn!("sending shutdown signal failed: {}", e);
+                                    }
+                                    break;
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                /*                    Ok((mut stream, _)) = listener.accept() =>{
+                                        // buf.clear();
+                                        match timeout(Duration::from_millis(UDP_TIMEOUT), stream.read(&mut buf))
+                                    .await
+                                    .unwrap()
+                                        {
+                                            Ok(len) => {
+                                                let mut buf = BytesMut::from(&buf[..len]);
+                                                unpack_msg_frame(&mut buf).unwrap();
+                                                println!("udp received: {:?}", buf);
+                                              let in_msg = StatusRequest::parse_from_bytes(&buf).unwrap();
+                                                println!("protocol: {:?}", in_msg.status);
+                                            if in_msg.status.value()  == StatusNotification::Running.value(){
+                                                should_exit = false;
+                                            }
+                                        },
+                                            Err(_) => {
+                                                stream.shutdown();
+                                                continue;
+                                            }
+                                        };
+                                    }
+                                    _ = interval.tick() => {
+                                        if should_exit{
+                                            if let Err(e) = shutdown_tx.send(()).await {
+                                              log::warn!("sending shutdown signal failed: {}", e);
+                                            }
+                                            break
+                                        }
+                                        should_exit = true;
+                                    }*/
+                                }
+            }*/

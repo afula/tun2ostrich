@@ -1,6 +1,6 @@
 {
   "log": {
-    "level": "error",
+    "level": "trace",
     "output": "console"
     
   },
