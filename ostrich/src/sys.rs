@@ -25,12 +25,12 @@ impl Default for NetInfo {
     }
 }
 
-pub fn get_net_info() -> NetInfo {
-    let iface = common::cmd::get_default_interface().unwrap();
+pub fn get_net_info() -> anyhow::Result<NetInfo> {
+    let iface = common::cmd::get_default_interface()?;
 
-    let ipv4_gw = common::cmd::get_default_ipv4_gateway().unwrap();
+    let ipv4_gw = common::cmd::get_default_ipv4_gateway()?;
     let ipv6_gw = if *option::ENABLE_IPV6 {
-        Some(common::cmd::get_default_ipv6_gateway().unwrap())
+        Some(common::cmd::get_default_ipv6_gateway()?)
     } else {
         None
     };
@@ -62,14 +62,14 @@ pub fn get_net_info() -> NetInfo {
     } else {
         None
     };
-    let ipv4_forwarding = common::cmd::get_ipv4_forwarding().unwrap();
+    let ipv4_forwarding = common::cmd::get_ipv4_forwarding()?;
     let ipv6_forwarding = if *option::ENABLE_IPV6 {
-        common::cmd::get_ipv6_forwarding().unwrap()
+        common::cmd::get_ipv6_forwarding()?
     } else {
         false
     };
 
-    NetInfo {
+    Ok(NetInfo {
         default_ipv4_gateway: Some(ipv4_gw),
         default_ipv6_gateway: ipv6_gw,
         default_ipv4_address: ipv4_addr,
@@ -77,7 +77,7 @@ pub fn get_net_info() -> NetInfo {
         ipv4_forwarding,
         ipv6_forwarding,
         default_interface: Some(iface),
-    }
+    })
 }
 
 pub fn post_tun_creation_setup(net_info: &NetInfo) {

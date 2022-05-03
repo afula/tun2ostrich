@@ -8,9 +8,8 @@ pub fn get_default_ipv4_gateway() -> Result<String> {
         .arg("route")
         .arg("get")
         .arg("1")
-        .output()
-        .expect("failed to execute command");
-    assert!(out.status.success());
+        .output()?;
+    // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out
         .lines()
@@ -20,7 +19,7 @@ pub fn get_default_ipv4_gateway() -> Result<String> {
         .split_whitespace()
         .map(str::trim)
         .collect();
-    assert!(cols.len() >= 3);
+    // assert!(cols.len() >= 3);
     let res = cols[2].to_string();
     Ok(res)
 }
@@ -31,9 +30,8 @@ pub fn get_default_ipv6_gateway() -> Result<String> {
         .arg("route")
         .arg("get")
         .arg("::2")
-        .output()
-        .expect("failed to execute command");
-    assert!(out.status.success());
+        .output()?;
+    // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out
         .lines()
@@ -43,7 +41,7 @@ pub fn get_default_ipv6_gateway() -> Result<String> {
         .split_whitespace()
         .map(str::trim)
         .collect();
-    assert!(cols.len() >= 5);
+    // assert!(cols.len() >= 5);
     let res = cols[4].to_string();
     Ok(res)
 }
@@ -97,9 +95,8 @@ pub fn get_default_interface() -> Result<String> {
         .arg("route")
         .arg("get")
         .arg("1")
-        .output()
-        .expect("failed to execute command");
-    assert!(out.status.success());
+        .output()?;
+    // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out
         .lines()
@@ -109,7 +106,7 @@ pub fn get_default_interface() -> Result<String> {
         .split_whitespace()
         .map(str::trim)
         .collect();
-    assert!(cols.len() >= 5);
+    // assert!(cols.len() >= 5);
     let res = cols[4].to_string();
     Ok(res)
 }
@@ -333,8 +330,7 @@ pub fn get_ipv4_forwarding() -> Result<bool> {
     let out = Command::new("sysctl")
         .arg("-n")
         .arg("net.ipv4.ip_forward")
-        .output()
-        .expect("failed to execute command");
+        .output()?;
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let res = if out
         .trim()
@@ -353,8 +349,7 @@ pub fn get_ipv6_forwarding() -> Result<bool> {
     let out = Command::new("sysctl")
         .arg("-n")
         .arg("net.ipv6.conf.all.forwarding")
-        .output()
-        .expect("failed to execute command");
+        .output()?;
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let res = if out
         .trim()

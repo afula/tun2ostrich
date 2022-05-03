@@ -231,7 +231,11 @@ pub fn set_ipv6_forwarding(val: bool) -> Result<()> {
 
 fn get_default_ipv4_route_entry() -> Result<Vec<String>> {
     let entries = get_ipv4_route_entries()?;
-    let e = entries.iter().filter(|&e| e[3] == "0.0.0.0/0").last().ok_or(anyhow::anyhow!("cant get default ip route"))?;
+    let e = entries
+        .iter()
+        .filter(|&e| e[3] == "0.0.0.0/0")
+        .last()
+        .ok_or(anyhow::anyhow!("cant get default ip route"))?;
     Ok(e.clone())
 }
 
