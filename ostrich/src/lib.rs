@@ -478,7 +478,7 @@ pub fn start(
                                                             //     iface.clone()
                                                             // };
                                                             default_ipv4 = ip.to_owned();
-                                                            println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                                            println!("UP after network interface changed,the new default ipv4 is: {}", default_ipv4);
 
                                                             std::env::set_var("OUTBOUND_INTERFACE", iface);
                                                             println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
