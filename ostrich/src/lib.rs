@@ -459,38 +459,40 @@ pub fn start(
                             println!("got if event: {:?}, default_ipv4: {:?}", event,&default_ipv4);
                             match event {
                                 IfEvent::Up(up_ip) => {
-                                      if up_ip.addr().is_ipv4()
-                            && up_ip.addr().to_string() != "172.7.0.2".to_string()
-                            && up_ip.addr().to_string() != "172.7.0.1".to_string()
-                            && up_ip.addr().to_string() != "127.0.0.1".to_string(){
-                                                                         match sys::get_net_info(){
-                                            Ok(net_info) =>{
-                                            // #[cfg(target_os = "macos")]{
-                                                    if let sys::NetInfo {
-                                                        default_interface: Some(iface),
-                                                        default_ipv4_address: Some(ip),
-                                                        ..
-                                                    } = &net_info
-                                                    {
-                                                        // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
-                                                        //     format!("{},{}", v, iface)
-                                                        // } else {
-                                                        //     iface.clone()
-                                                        // };
-                                                        default_ipv4 = ip.to_owned();
-                                                        println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                      if up_ip.addr().is_ipv4(){
+                                         if up_ip.addr().to_string() != "172.7.0.2".to_string()
+                                        && up_ip.addr().to_string() != "172.7.0.1".to_string()
+                                        && up_ip.addr().to_string() != "127.0.0.1".to_string(){
+                                            match sys::get_net_info(){
+                                                Ok(net_info) =>{
+                                                // #[cfg(target_os = "macos")]{
+                                                        if let sys::NetInfo {
+                                                            default_interface: Some(iface),
+                                                            default_ipv4_address: Some(ip),
+                                                            ..
+                                                        } = &net_info
+                                                        {
+                                                            // let binds = if let Ok(v) = std::env::var("OUTBOUND_INTERFACE") {
+                                                            //     format!("{},{}", v, iface)
+                                                            // } else {
+                                                            //     iface.clone()
+                                                            // };
+                                                            default_ipv4 = ip.to_owned();
+                                                            println!("after network interface changed,the new default ipv4 is: {}", default_ipv4);
 
-                                                        std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                        println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
-                                                    }
-                                                    sys::post_tun_creation_setup(&net_info);
-                                            // }
-                                            }
-                                            Err(_) =>{
+                                                            std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                            println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
+                                                        }
+                                                        sys::post_tun_creation_setup(&net_info);
+                                                // }
+                                                }
+                                                Err(_) =>{
 
-                                             }
+                                                 }
                                         }
-                                }
+                                         }
+
+                                     }
 
                                 }
                                 IfEvent::Down(dw_ip) => {
