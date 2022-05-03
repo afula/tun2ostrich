@@ -459,10 +459,11 @@ pub fn start(
                             println!("got if event: {:?}, default_ipv4: {:?}", event,&default_ipv4);
                             match event {
                                 IfEvent::Up(up_ip) => {
-                                      if up_ip.addr().is_ipv4(){
-                                         if up_ip.addr().to_string() != "172.7.0.2".to_string()
+                                      if up_ip.addr().is_ipv4()
+                                        && up_ip.addr().to_string() != "172.7.0.2".to_string()
                                         && up_ip.addr().to_string() != "172.7.0.1".to_string()
                                         && up_ip.addr().to_string() != "127.0.0.1".to_string(){
+                                            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                                             match sys::get_net_info(){
                                                 Ok(net_info) =>{
                                                 // #[cfg(target_os = "macos")]{
@@ -478,7 +479,7 @@ pub fn start(
                                                             //     iface.clone()
                                                             // };
                                                             default_ipv4 = ip.to_owned();
-                                                            println!("UP after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                                            println!("UP after network interface changed,the new default ipv4 is: {},up_ip: {}", default_ipv4,&up_ip.addr().to_string()  );
 
                                                             std::env::set_var("OUTBOUND_INTERFACE", iface);
                                                             println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
@@ -491,8 +492,6 @@ pub fn start(
                                                  }
                                         }
                                          }
-
-                                     }
 
                                 }
                                 IfEvent::Down(dw_ip) => {
