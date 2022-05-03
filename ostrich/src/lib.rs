@@ -292,11 +292,12 @@ pub fn start(
         let signals_handle = signals.handle();
         let shutdown_tx = shutdown_tx.clone();
         let network_changed = network_changed.clone();
-        let mut default_ipv4 = net_info.default_ipv4_address.clone().unwrap_or_default();
+        let mut default_init_ipv4 = net_info.default_ipv4_address.clone().unwrap_or_default();
 
         tokio::spawn(async move {
             use if_watch::{IfEvent, IfWatcher};
             let mut if_set = IfWatcher::new().await.unwrap();
+            let mut default_ipv4 = String::default();
 
             let if_fut = Box::pin(async {
                 while let Ok(event) = Pin::new(&mut if_set).await {
@@ -324,6 +325,9 @@ pub fn start(
                                                     #[cfg(target_os = "macos")]{
                                                         if ip != "172.7.0.2"{
                                                             default_ipv4 = ip.to_owned();
+                                                            if  default_ipv4 != default_init_ipv4{
+                                                                network_changed.store(true, Ordering::Relaxed);
+                                                            }
                                                             println!("UP: after network interface changed,the new default ipv4 is: {}", default_ipv4);
                                                             std::env::set_var("OUTBOUND_INTERFACE", iface);
                                                             println!(
@@ -333,7 +337,6 @@ pub fn start(
                                                             sys::post_tun_creation_setup(&sys_net);
                                                             break 'net
                                                         }
-                                                        network_changed.store(true, Ordering::Relaxed);
                                                         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                                                         continue 'net
                                                     }
@@ -349,7 +352,10 @@ pub fn start(
                                                             sys::post_tun_creation_setup(&sys_net);
                                                             break 'net
                                                         }
-                                                        network_changed.store(true, Ordering::Relaxed);
+                                                        if  default_ipv4 != default_init_ipv4{
+                                                            network_changed.store(true, Ordering::Relaxed);
+                                                        }
+
                                                         break 'net
                                                     }
                                                 }
@@ -366,7 +372,7 @@ pub fn start(
                             }
                             IfEvent::Down(dw_ip) => {
                                 println!("down: ip({:?}, default_ip({:?}))", &dw_ip, &default_ipv4);
-                                if default_ipv4 == dw_ip.addr().to_string() {
+                                if default_ipv4 == dw_ip.addr().to_string() && default_ipv4 != default_init_ipv4{
                                     network_changed.store(true, Ordering::Relaxed);
 /*                                    tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
                                     match sys::get_net_info() {
