@@ -3,19 +3,18 @@ name = "ostrich-bin"
 version = "0.3.1"
 edition = "2018"
 
-[[bin]]
-name = "ostrich_worker"
-path = "src/worker.rs"
+#[[bin]]
+#name = "ostrich_worker"
+#path = "src/worker.rs"
 
 # [target.'cfg(target_os = "linux")']
- [[bin]]
- name = "ostrich_manager"
- path = "src/manager.rs"
+# [[bin]]
+# name = "ostrich_manager"
+# path = "src/manager.rs"
+[[bin]]
+name = "ostrich"
+path = "src/ostrich.rs"
 
-
-#[[bin]]
-#name = "ostrich"
-#path = "src/worker.rs"
 
 
 [features]

@@ -455,8 +455,9 @@ pub fn start(
 
             loop {
                 tokio::select! {
-                       #[cfg(target_os = "macos")]{
+
                         Ok(event) = &mut if_set =>{
+                           #[cfg(target_os = "macos")]{
                             println!("got if event: {:?}, default_ipv4: {:?}", event,&default_ipv4);
                             match event {
                                 IfEvent::Up(up_ip) => {
