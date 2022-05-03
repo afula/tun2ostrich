@@ -56,7 +56,8 @@ pub fn get_default_interface() -> Result<String> {
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out
         .lines()
-        .find(|l| l.contains("interface")).ok_or(anyhow::anyhow!("cnat get default network iinterface"))?
+        .find(|l| l.contains("interface"))
+        .ok_or(anyhow::anyhow!("cnat get default network iinterface"))?
         .split_whitespace()
         .map(str::trim)
         .collect();
