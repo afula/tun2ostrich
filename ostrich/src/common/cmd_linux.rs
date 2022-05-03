@@ -52,7 +52,7 @@ pub fn get_default_ipv4_address() -> Result<String> {
         .arg("get")
         .arg("1")
         .output()?;
-    assert!(out.status.success());
+    // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out
         .lines()
@@ -62,7 +62,7 @@ pub fn get_default_ipv4_address() -> Result<String> {
         .split_whitespace()
         .map(str::trim)
         .collect();
-    assert!(cols.len() >= 7);
+    // assert!(cols.len() >= 7);
     let res = cols[6].to_string();
     Ok(res)
 }
@@ -75,7 +75,7 @@ pub fn get_default_ipv6_address() -> Result<String> {
         .arg("::2")
         .output()
         .expect("failed to execute command");
-    assert!(out.status.success());
+    // assert!(out.status.success());
     let out = String::from_utf8_lossy(&out.stdout).to_string();
     let cols: Vec<&str> = out
         .lines()
@@ -85,7 +85,7 @@ pub fn get_default_ipv6_address() -> Result<String> {
         .split_whitespace()
         .map(str::trim)
         .collect();
-    assert!(cols.len() >= 11);
+    // assert!(cols.len() >= 11);
     let res = cols[10].to_string();
     Ok(res)
 }
