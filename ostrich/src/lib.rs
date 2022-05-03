@@ -455,10 +455,12 @@ pub fn start(
 
             loop {
                 tokio::select! {
+                       #[cfg(target_os = "macos")]{
                         Ok(event) = &mut if_set =>{
                             println!("got if event: {:?}, default_ipv4: {:?}", event,&default_ipv4);
                             match event {
                                 IfEvent::Up(up_ip) => {
+
                                       if up_ip.addr().is_ipv4()
                                         && up_ip.addr().to_string() != "172.7.0.2".to_string()
                                         && up_ip.addr().to_string() != "172.7.0.1".to_string()
@@ -466,7 +468,6 @@ pub fn start(
                                             tokio::time::sleep(std::time::Duration::from_millis(5000)).await;
                                             match sys::get_net_info(){
                                                 Ok(net_info) =>{
-                                                // #[cfg(target_os = "macos")]{
                                                         if let sys::NetInfo {
                                                             default_interface: Some(iface),
                                                             default_ipv4_address: Some(ip),
@@ -485,14 +486,12 @@ pub fn start(
                                                             println!("OUTBOUND_INTERFACE: {:?}", std::env::var("OUTBOUND_INTERFACE"));
                                                         }
                                                         sys::post_tun_creation_setup(&net_info);
-                                                // }
                                                 }
                                                 Err(_) =>{
 
                                                  }
                                              }
                                          }
-
                                 }
                                 IfEvent::Down(dw_ip) => {
                                     println!("down: ip({:?}, default_ip({:?}))", &dw_ip,&default_ipv4);
@@ -531,6 +530,7 @@ pub fn start(
                                 }
                             }
                         }
+                    }
                          Some(signal) = signals.next() =>{
                             match signal {
                                 // SIGPIPE => {
