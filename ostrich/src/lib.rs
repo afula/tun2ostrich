@@ -456,7 +456,7 @@ pub fn start(
             loop {
                 tokio::select! {
                         Ok(event) = &mut if_set =>{
-                            println!("got if event: {:?}", event);
+                            println!("got if event: {:?}, default_ipv4: {:?}", event,&default_ipv4);
                             match event {
                                 IfEvent::Up(up_ip) => {}
                                 IfEvent::Down(dw_ip) => {
