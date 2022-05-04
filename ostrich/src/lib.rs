@@ -222,7 +222,6 @@ pub fn start(
         .map_err(Error::Config)?;
     runners.append(&mut inbound_net_runners);
 
-
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
         sys::get_net_info()?
@@ -279,6 +278,8 @@ pub fn start(
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
     // }
+    #[cfg(all(feature = "inbound-tun", any(target_os = "linux",)))]
+    let network_changed: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
     #[cfg(all(
         feature = "inbound-tun",
         any(target_os = "macos", target_os = "linux",)
@@ -291,6 +292,15 @@ pub fn start(
         let signals_handle = signals.handle();
         let shutdown_tx = shutdown_tx.clone();
         let mut net_info = net_info.clone();
+        #[cfg(all(feature = "inbound-tun", any(target_os = "linux",)))]
+        let mut init_ipv4 = net_info
+            .lock()
+            .unwrap()
+            .default_ipv4_address
+            .clone()
+            .unwrap_or_default();
+        #[cfg(all(feature = "inbound-tun", any(target_os = "linux",)))]
+        let network_changed = network_changed.clone();
 
         tokio::spawn(async move {
             use if_watch::{IfEvent, IfWatcher};
@@ -337,7 +347,10 @@ pub fn start(
                                                     .await;
                                                     continue 'net;
                                                 }
-                                                #[cfg(target_os = "linux")]
+                                                #[cfg(all(
+                                                    feature = "inbound-tun",
+                                                    any(target_os = "linux",)
+                                                ))]
                                                 {
                                                     if ip != "172.7.0.2" {
                                                         println!("UP: after network interface changed,the new ipv4 is: {}", ip);
@@ -352,6 +365,10 @@ pub fn start(
                                                         sys::post_tun_creation_setup(&sys_net);
                                                         *net_info.lock().unwrap() = sys_net;
                                                         break 'net;
+                                                    }
+                                                    if init_ipv4 != up_ip.addr().to_string() {
+                                                        network_changed
+                                                            .store(true, Ordering::Relaxed);
                                                     }
                                                     break 'net;
                                                 }
@@ -616,21 +633,21 @@ pub fn start(
 
     rt.block_on(futures::future::select_all(tasks));
 
-    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
+    #[cfg(all(feature = "inbound-tun", any(target_os = "macos")))]
     {
         // if !network_changed.load(Ordering::Relaxed) {
         //     log::trace!("runtime {} quit as untouched os route", &INSTANCE_ID);
         //     sys::post_tun_completion_setup(&net_info);
         // }
         let net_info = net_info.lock().unwrap();
-        let net = sys::NetInfo{
+        let net = sys::NetInfo {
             default_ipv4_gateway: net_info.default_ipv4_gateway.clone(),
             default_ipv6_gateway: net_info.default_ipv6_gateway.clone(),
             default_ipv4_address: net_info.default_ipv4_address.clone(),
             default_ipv6_address: net_info.default_ipv6_address.clone(),
             ipv4_forwarding: net_info.ipv4_forwarding,
             ipv6_forwarding: net_info.ipv6_forwarding,
-            default_interface: net_info.default_interface.clone()
+            default_interface: net_info.default_interface.clone(),
         };
 
         if let sys::NetInfo {
@@ -643,7 +660,32 @@ pub fn start(
             }
         }
     }
+    #[cfg(all(feature = "inbound-tun", any(target_os = "linux",)))]
+    {
+        if !network_changed.load(Ordering::Relaxed) {
+            log::trace!("runtime {} quit as untouched os route", &INSTANCE_ID);
+            let net_info = net_info.lock().unwrap();
+            let net = sys::NetInfo {
+                default_ipv4_gateway: net_info.default_ipv4_gateway.clone(),
+                default_ipv6_gateway: net_info.default_ipv6_gateway.clone(),
+                default_ipv4_address: net_info.default_ipv4_address.clone(),
+                default_ipv6_address: net_info.default_ipv6_address.clone(),
+                ipv4_forwarding: net_info.ipv4_forwarding,
+                ipv6_forwarding: net_info.ipv6_forwarding,
+                default_interface: net_info.default_interface.clone(),
+            };
 
+            if let sys::NetInfo {
+                default_ipv4_address: Some(ip),
+                ..
+            } = &net
+            {
+                if ip != "172.7.0.2" {
+                    sys::post_tun_completion_setup(&net);
+                }
+            }
+        }
+    }
     // #[cfg(all(any(target_os = "windows")))]
     // sys::post_tun_completion_setup(&net_info);
 
