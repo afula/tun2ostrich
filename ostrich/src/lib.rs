@@ -222,7 +222,6 @@ pub fn start(
         .map_err(Error::Config)?;
     runners.append(&mut inbound_net_runners);
 
-    let network_changed: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
@@ -291,7 +290,6 @@ pub fn start(
         let mut signals = Signals::new(&[SIGTERM, SIGPIPE, SIGALRM])?;
         let signals_handle = signals.handle();
         let shutdown_tx = shutdown_tx.clone();
-        let network_changed = network_changed.clone();
         let mut net_info = net_info.clone();
 
         tokio::spawn(async move {
