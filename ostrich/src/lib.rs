@@ -225,12 +225,12 @@ pub fn start(
     let network_changed: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
-    let mut net_info =
-    if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
+    let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
         sys::get_net_info()?
     } else {
         sys::NetInfo::default()
     };
+    let mut net_info = Arc::new(Mutex::new(net_info));
     //#[cfg(all(any(target_os = "windows")))]
     // let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
     // let net_info =   sys::get_net_info();
@@ -238,7 +238,7 @@ pub fn start(
     // } else {
     // sys::NetInfo::default()
     // };
-/*    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
+    /*    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     {
         if let sys::NetInfo {
             default_interface: Some(iface),
@@ -275,7 +275,7 @@ pub fn start(
         runners.push(r);
     }
 
-/*    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
+    /*    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     sys::post_tun_creation_setup(&net_info);*/
     // #[cfg(target_os = "windows")]{
     // sys::post_tun_creation_setup(&net_info);
@@ -292,114 +292,115 @@ pub fn start(
         let signals_handle = signals.handle();
         let shutdown_tx = shutdown_tx.clone();
         let network_changed = network_changed.clone();
-        let mut default_init_ipv4 = net_info.default_ipv4_address.clone().unwrap_or_default();
+        let mut net_info = net_info.clone();
 
         tokio::spawn(async move {
             use if_watch::{IfEvent, IfWatcher};
             let mut if_set = IfWatcher::new().await.unwrap();
-            let mut default_ipv4 = String::default();
 
             let if_fut = Box::pin(async {
                 while let Ok(event) = Pin::new(&mut if_set).await {
-                    println!(
-                        "got if event: {:?}, default_ipv4: {:?}",
-                        event, &default_ipv4
-                    );
                     // #[cfg(target_os = "macos")]{
-                        match event {
-                            IfEvent::Up(up_ip) => {
-                                if up_ip.addr().is_ipv4()
-                                    && up_ip.addr().to_string() != "172.7.0.2".to_string()
-                                    && up_ip.addr().to_string() != "172.7.0.1".to_string()
-                                    && up_ip.addr().to_string() != "127.0.0.1".to_string()
-                                {
-                                    'net: loop{
-                                        match sys::get_net_info() {
-                                            Ok(sys_net) => {
-                                                if let sys::NetInfo {
-                                                    default_interface: Some(iface),
-                                                    default_ipv4_address: Some(ip),
-                                                    ..
-                                                } = &sys_net
-                                                {
-                                                    #[cfg(target_os = "macos")]{
-                                                        if ip != "172.7.0.2"{
-                                                            default_ipv4 = ip.to_owned();
-                                                            if  default_ipv4 != default_init_ipv4{
-                                                                network_changed.store(true, Ordering::Relaxed);
-                                                            }
-                                                            println!("UP: after network interface changed,the new default ipv4 is: {}", default_ipv4);
-                                                            std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                            println!(
-                                                                "OUTBOUND_INTERFACE: {:?}",
-                                                                std::env::var("OUTBOUND_INTERFACE")
-                                                            );
-                                                            sys::post_tun_creation_setup(&sys_net);
-                                                            break 'net
-                                                        }
-                                                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                                                        continue 'net
-                                                    }
-                                                    #[cfg(target_os = "linux")]{
-                                                        if ip != "172.7.0.2"{
-                                                            default_ipv4 = ip.to_owned();
-                                                            println!("UP: after network interface changed,the new default ipv4 is: {}", default_ipv4);
-                                                            std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                            println!(
-                                                                "OUTBOUND_INTERFACE: {:?}",
-                                                                std::env::var("OUTBOUND_INTERFACE")
-                                                            );
-                                                            sys::post_tun_creation_setup(&sys_net);
-                                                            break 'net
-                                                        }
-                                                        if  default_ipv4 != default_init_ipv4{
-                                                            network_changed.store(true, Ordering::Relaxed);
-                                                        }
-
-                                                        break 'net
-                                                    }
-                                                }
-
-                                            }
-                                            Err(_) => {
-                                                tokio::time::sleep(std::time::Duration::from_millis(7000)).await;
-                                                continue 'net
-                                            }
-                                        }
-                                    }
-
-                                }
-                            }
-                            IfEvent::Down(dw_ip) => {
-                                println!("down: ip({:?}, default_ip({:?}))", &dw_ip, &default_ipv4);
-                                if default_ipv4 == dw_ip.addr().to_string() && default_ipv4 != default_init_ipv4{
-                                    network_changed.store(true, Ordering::Relaxed);
-/*                                    tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
+                    match event {
+                        IfEvent::Up(up_ip) => {
+                            if up_ip.addr().is_ipv4()
+                                && up_ip.addr().to_string() != "172.7.0.2".to_string()
+                                && up_ip.addr().to_string() != "172.7.0.1".to_string()
+                                && up_ip.addr().to_string() != "127.0.0.1".to_string()
+                            {
+                                'net: loop {
                                     match sys::get_net_info() {
-                                        Ok(net_info) => {
+                                        Ok(sys_net) => {
                                             if let sys::NetInfo {
                                                 default_interface: Some(iface),
                                                 default_ipv4_address: Some(ip),
                                                 ..
-                                            } = &net_info
+                                            } = &sys_net
                                             {
-                                                if ip != "172.7.0.2"{
-                                                    default_ipv4 = ip.to_owned();
-                                                    println!("DOWN: after network interface changed,the new default ipv4 is: {}", default_ipv4);
-                                                    std::env::set_var("OUTBOUND_INTERFACE", iface);
-                                                    println!(
-                                                        "OUTBOUND_INTERFACE: {:?}",
-                                                        std::env::var("OUTBOUND_INTERFACE")
-                                                    );
-                                                    sys::post_tun_creation_setup(&net_info);
+                                                #[cfg(target_os = "macos")]
+                                                {
+                                                    if ip != "172.7.0.2" {
+                                                        println!("UP: after network interface changed,the new ipv4 is: {}", ip);
+                                                        std::env::set_var(
+                                                            "OUTBOUND_INTERFACE",
+                                                            iface,
+                                                        );
+                                                        println!(
+                                                            "OUTBOUND_INTERFACE: {:?}",
+                                                            std::env::var("OUTBOUND_INTERFACE")
+                                                        );
+                                                        sys::post_tun_creation_setup(&sys_net);
+                                                        *net_info.lock().unwrap() = sys_net;
+                                                        break 'net;
+                                                    }
+                                                    tokio::time::sleep(
+                                                        std::time::Duration::from_millis(100),
+                                                    )
+                                                    .await;
+                                                    continue 'net;
+                                                }
+                                                #[cfg(target_os = "linux")]
+                                                {
+                                                    if ip != "172.7.0.2" {
+                                                        println!("UP: after network interface changed,the new ipv4 is: {}", ip);
+                                                        std::env::set_var(
+                                                            "OUTBOUND_INTERFACE",
+                                                            iface,
+                                                        );
+                                                        println!(
+                                                            "OUTBOUND_INTERFACE: {:?}",
+                                                            std::env::var("OUTBOUND_INTERFACE")
+                                                        );
+                                                        sys::post_tun_creation_setup(&sys_net);
+                                                        *net_info.lock().unwrap() = sys_net;
+                                                        break 'net;
+                                                    }
+                                                    break 'net;
                                                 }
                                             }
                                         }
-                                        Err(_) => {}
-                                    }*/
+                                        Err(_) => {
+                                            tokio::time::sleep(std::time::Duration::from_millis(
+                                                7000,
+                                            ))
+                                            .await;
+                                            continue 'net;
+                                        }
+                                    }
                                 }
                             }
                         }
+                        IfEvent::Down(dw_ip) => {
+                            /*                                println!("down: ip({:?}, default_ip({:?}),default_init_ip: {})", &dw_ip, &default_ipv4,&default_init_ipv4);
+                                                            if default_ipv4 == dw_ip.addr().to_string() && default_ipv4 != default_init_ipv4{
+                                                                network_changed.store(true, Ordering::Relaxed);
+                                                                println!("DOWN: tag network changed flag");
+                            /*                                    tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
+                                                                match sys::get_net_info() {
+                                                                    Ok(net_info) => {
+                                                                        if let sys::NetInfo {
+                                                                            default_interface: Some(iface),
+                                                                            default_ipv4_address: Some(ip),
+                                                                            ..
+                                                                        } = &net_info
+                                                                        {
+                                                                            if ip != "172.7.0.2"{
+                                                                                default_ipv4 = ip.to_owned();
+                                                                                println!("DOWN: after network interface changed,the new default ipv4 is: {}", default_ipv4);
+                                                                                std::env::set_var("OUTBOUND_INTERFACE", iface);
+                                                                                println!(
+                                                                                    "OUTBOUND_INTERFACE: {:?}",
+                                                                                    std::env::var("OUTBOUND_INTERFACE")
+                                                                                );
+                                                                                sys::post_tun_creation_setup(&net_info);
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    Err(_) => {}
+                                                                }*/
+                                                            }*/
+                        }
+                    }
                     // } //macos
                 }
             });
@@ -449,8 +450,8 @@ pub fn start(
     #[cfg(all(feature = "inbound-tun", any(target_os = "windows",)))]
     {
         tokio::spawn(async move {
-            use if_watch::{IfEvent, IfWatcher};
             use crate::common::cmd;
+            use if_watch::{IfEvent, IfWatcher};
             use std::pin::Pin;
             use std::process::Command;
 
@@ -499,7 +500,7 @@ pub fn start(
                             && ip.addr().to_string() != "172.7.0.2".to_string()
                             && ip.addr().to_string() != "172.7.0.1".to_string()
                             && ip.addr().to_string() != "127.0.0.1".to_string()
-                            // && ip.addr().to_string() != init_gateway
+                        // && ip.addr().to_string() != init_gateway
                         {
                             /*                             for v in &ipset {
                                 let ip: std::net::Ipv4Addr =
@@ -619,9 +620,29 @@ pub fn start(
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     {
-        if !network_changed.load(Ordering::Relaxed) {
-            log::trace!("runtime {} quit as untouched os route", &INSTANCE_ID);
-            sys::post_tun_completion_setup(&net_info);
+        // if !network_changed.load(Ordering::Relaxed) {
+        //     log::trace!("runtime {} quit as untouched os route", &INSTANCE_ID);
+        //     sys::post_tun_completion_setup(&net_info);
+        // }
+        let net_info = net_info.lock().unwrap();
+        let net = sys::NetInfo{
+            default_ipv4_gateway: net_info.default_ipv4_gateway.clone(),
+            default_ipv6_gateway: net_info.default_ipv6_gateway.clone(),
+            default_ipv4_address: net_info.default_ipv4_address.clone(),
+            default_ipv6_address: net_info.default_ipv6_address.clone(),
+            ipv4_forwarding: net_info.ipv4_forwarding,
+            ipv6_forwarding: net_info.ipv6_forwarding,
+            default_interface: net_info.default_interface.clone()
+        };
+
+        if let sys::NetInfo {
+            default_ipv4_address: Some(ip),
+            ..
+        } = &net
+        {
+            if ip != "172.7.0.2" {
+                sys::post_tun_completion_setup(&net);
+            }
         }
     }
 
