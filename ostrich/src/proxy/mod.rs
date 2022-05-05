@@ -145,6 +145,10 @@ async fn protect_socket(fd: RawFd) -> io::Result<()> {
 trait BindSocket: AsRawFd {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()>;
 }
+#[cfg(not(any(target_os = "macos", target_os = "linux",target_os = "windows")))]
+trait BindSocket {
+    fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()>;
+}
 
 #[cfg(target_os = "windows")]
 trait WinBindSocket {
@@ -199,7 +203,7 @@ impl TcpListener {
         Ok((stream, addr))
     }
 }
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[cfg(not(target_os = "windows"))]
 async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::Result<()> {
     match indicator.ip() {
         IpAddr::V4(v4) if v4.is_loopback() => {
