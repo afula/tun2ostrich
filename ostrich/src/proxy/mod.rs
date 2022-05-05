@@ -199,7 +199,7 @@ impl TcpListener {
         Ok((stream, addr))
     }
 }
-#[cfg(not(target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 async fn bind_socket<T: BindSocket>(socket: &T, indicator: &SocketAddr) -> io::Result<()> {
     match indicator.ip() {
         IpAddr::V4(v4) if v4.is_loopback() => {

@@ -228,6 +228,7 @@ pub fn start(
     } else {
         sys::NetInfo::default()
     };
+    #[cfg(all(feature = "inbound-tun", any(target_os = "macos", target_os = "linux")))]
     let mut net_info = Arc::new(Mutex::new(net_info));
     //#[cfg(all(any(target_os = "windows")))]
     // let net_info = if inbound_manager.has_tun_listener() && inbound_manager.tun_auto() {
