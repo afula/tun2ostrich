@@ -36,7 +36,7 @@ default-openssl = [
 
 [dependencies]
 ostrich = { path = "../ostrich", default-features = true }
-protocol = {path = "../protocol" }
+#protocol = {path = "../protocol" }
 tokio = { version = "1", features = ["rt"] }
 argh = "0.1"
 bytes = "1.0.1"
