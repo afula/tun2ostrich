@@ -23,8 +23,8 @@ use crate::{
 };
 const MTU: usize = 1500;
 use super::netstack;
-
-async fn handle_inbound_stream(
+use crate::proxy::tun::netstack::tun_build;
+/*async fn handle_inbound_stream(
     stream: netstack::TcpStream,
     local_addr: SocketAddr,
     remote_addr: SocketAddr,
@@ -154,7 +154,7 @@ async fn handle_inbound_datagram(
             }
         }
     }
-}
+}*/
 
 pub fn new(
     inbound: Inbound,
@@ -228,7 +228,15 @@ pub fn new(
 
             cfg.up();
         }
-        let tun = tun::create_as_async(&cfg)
+        tun_build(
+            inbound.tag.clone(),
+            cfg,
+            dispatcher,
+            nat_manager,
+            fake_dns_mode,
+            fake_dns_filters,
+        )
+/*        let tun = tun::create_as_async(&cfg)
             .map_err(|e| anyhow!("create tun failed: {}", e))
             .expect("cant create tun device");
 
@@ -289,7 +297,7 @@ pub fn new(
 
             info!("start tun inbound");
             futures::future::select_all(futs).await;
-        }))
+        }))*/
     }
 
     #[cfg(all(feature = "inbound-tun", any(target_os = "windows")))]

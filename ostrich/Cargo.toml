@@ -85,7 +85,7 @@ outbound-retry = []
 dns-over-tls = []
 # Inbounds
 inbound-socks = []
-inbound-tun = ["tun","netstack-lwip"]
+inbound-tun = ["tun","netstack-lwip","etherparse", "smoltcp"]
 
 ctrlc = ["tokio/signal"]
 
@@ -190,6 +190,13 @@ indexmap = {git = "https://github.com/bluss/indexmap.git",features =["std"]}
 #dashmap = {git = "https://github.com/xacrimon/dashmap.git"}
 futures-timer = "3"
 arc-swap = "1.5.0"
+
+etherparse = { version = "0.10", optional = true }
+smoltcp = { version = "0.8", optional = true, default-features = false, features = ["std", "log", "medium-ip", "proto-ipv4", "proto-ipv6", "socket-icmp", "socket-udp", "socket-tcp"] }
+byte_string = "1.0"
+ipnet = "2.3"
+cfg-if = "1"
+spin = { version = "0.9" }
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
 tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }

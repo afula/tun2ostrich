@@ -63,7 +63,7 @@ dependencies = [
  "heck 0.3.3",
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -189,7 +189,7 @@ checksum = "ed6aa3524a2dfcf9fe180c51eae2b58738348d819517ceadf95789c51fff7600"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -284,6 +284,12 @@ name = "bumpalo"
 version = "3.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4a45a46ab1f2412e53d3a0ade76ffad2025804294569aae387231a0cd6e0899"
+
+[[package]]
+name = "byte_string"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11aade7a05aa8c3a351cedc44c3fc45806430543382fcc4743a9b757a2a0b4ed"
 
 [[package]]
 name = "byteorder"
@@ -467,7 +473,7 @@ checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -531,7 +537,7 @@ dependencies = [
  "heck 0.4.0",
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -546,6 +552,12 @@ dependencies = [
  "regex",
  "termcolor",
 ]
+
+[[package]]
+name = "etherparse"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9feedaea5a9f602932e78b512b2fde69aaefd2ef4fd5fd744238f7424b246186"
 
 [[package]]
 name = "event-listener"
@@ -674,7 +686,7 @@ checksum = "33c1e13800337f4d4d7a316bf45a567dbcb6ffe087f16424852d97e97a91f512"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -987,9 +999,9 @@ dependencies = [
 
 [[package]]
 name = "itoa"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aab8fc367588b89dcee83ab0fd66b72b50b72fa1904d7095045ace2b0c81c35"
+checksum = "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d"
 
 [[package]]
 name = "js-sys"
@@ -1014,9 +1026,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.125"
+version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5916d2ae698f6de9bfb891ad7a8d65c09d232dc58cc4ac433c7da3b2fd84bc2b"
+checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
 
 [[package]]
 name = "libloading"
@@ -1259,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "netstack-lwip"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -1369,7 +1381,7 @@ checksum = "b501e44f11665960c7e7fcf062c7d96a14ade4aa98116c004b2e37b5be7d736c"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -1420,14 +1432,17 @@ dependencies = [
  "async-socks5",
  "async-trait",
  "bindgen",
+ "byte_string",
  "byteorder",
  "bytes",
  "cc",
+ "cfg-if",
  "chrono",
  "cidr",
  "colored 2.0.0",
  "directories",
  "env_logger",
+ "etherparse",
  "fern",
  "futures",
  "futures-timer",
@@ -1438,6 +1453,7 @@ dependencies = [
  "if-watch",
  "indexmap 2.0.0-pre",
  "ipconfig 0.3.0 (git+https://github.com/liranringel/ipconfig.git)",
+ "ipnet",
  "lazy_static",
  "libc",
  "libloading",
@@ -1471,12 +1487,13 @@ dependencies = [
  "signal-hook-tokio",
  "smoltcp",
  "socket2",
+ "spin 0.9.3",
  "thiserror",
  "tokio",
  "tokio-openssl",
  "tokio-rustls",
  "tokio-tungstenite",
- "tokio-util 0.7.1",
+ "tokio-util 0.7.2",
  "trust-dns-client",
  "trust-dns-proto",
  "trust-dns-resolver",
@@ -1681,11 +1698,11 @@ checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.38"
+version = "1.0.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9027b48e9d4c9175fa2218adf3557f91c1137021739951d4932f5f8268ac48aa"
+checksum = "c54b25569025b7fc9651de43004ae593a75ad88543b17178aa5e1b9c4f15f56f"
 dependencies = [
- "unicode-xid 0.2.3",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -1940,7 +1957,7 @@ dependencies = [
  "cc",
  "libc",
  "once_cell",
- "spin",
+ "spin 0.5.2",
  "untrusted",
  "web-sys",
  "winapi",
@@ -1998,9 +2015,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustls"
-version = "0.20.4"
+version = "0.20.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fbfeb8d0ddb84706bc597a5574ab8912817c52a397f819e5b614e2265206921"
+checksum = "a024a432ae760ab3bff924ad91ce1cfa52cb57ed16e1ef32d0d249cfee1a6c13"
 dependencies = [
  "log",
  "ring",
@@ -2019,9 +2036,9 @@ dependencies = [
 
 [[package]]
 name = "ryu"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73b4b750c782965c211b42f022f59af1fbceabdd026623714f104152f1ec149f"
+checksum = "f3f6f92acf49d1b98f7a81226834412ada05458b7364277387724a237f062695"
 
 [[package]]
 name = "scopeguard"
@@ -2066,7 +2083,7 @@ checksum = "1f26faba0c3959972377d3b2d306ee9f71faee9714294e41bb777f83f88578be"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -2122,9 +2139,9 @@ checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
 
 [[package]]
 name = "signal-hook"
-version = "0.3.13"
+version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "647c97df271007dcea485bb74ffdb57f2e683f1306c854f468a0c244badabf2d"
+checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -2171,16 +2188,15 @@ checksum = "f2dd574626839106c320a323308629dcb1acfc96e32a8cba364ddc61ac23ee83"
 
 [[package]]
 name = "smoltcp"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2308a1657c8db1f5b4993bab4e620bdbe5623bd81f254cf60326767bb243237"
+checksum = "72165c4af59f5f19c7fb774b88b95660591b612380305b5f4503157341a9f7ee"
 dependencies = [
  "bitflags",
  "byteorder",
  "libc",
  "log",
  "managed",
- "rand_core",
 ]
 
 [[package]]
@@ -2200,6 +2216,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
+name = "spin"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c530c2b0d0bf8b69304b39fe2001993e267461948b890cd037d8ad4293fa1a0d"
+dependencies = [
+ "lock_api",
+]
+
+[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2207,9 +2232,9 @@ checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
 name = "subprocess"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "055cf3ebc2981ad8f0a5a17ef6652f652d87831f79fddcba2ac57bcb9a0aa407"
+checksum = "0c2e86926081dda636c546d8c5e641661049d7562a68f5488be4a1f7f66f6086"
 dependencies = [
  "libc",
  "winapi",
@@ -2223,18 +2248,18 @@ checksum = "d3b891b9015c88c576343b9b3e41c2c11a51c219ef067b264bd9c8aa9b441dad"
 dependencies = [
  "quote 0.3.15",
  "synom",
- "unicode-xid 0.0.4",
+ "unicode-xid",
 ]
 
 [[package]]
 name = "syn"
-version = "1.0.93"
+version = "1.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04066589568b72ec65f42d65a1a52436e954b168773148893c020269563decf2"
+checksum = "fbaf6116ab8924f39d52792136fb74fd60a80194cf1b1c6ffa6453eef1c3f942"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "unicode-xid 0.2.3",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -2243,7 +2268,7 @@ version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6"
 dependencies = [
- "unicode-xid 0.0.4",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -2316,7 +2341,7 @@ checksum = "0396bc89e626244658bef819e22d0cc459e795a5ebe878e6ec336d1674a8d79a"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -2392,7 +2417,7 @@ checksum = "b557f72f448c511a979e2564e55d74e6c4432fc96ff4f6241bc6bded342643b7"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -2432,9 +2457,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.6.9"
+version = "0.6.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e99e1983e5d376cd8eb4b66604d2e99e79f5bd988c3055891dcd8c9e2604cc0"
+checksum = "36943ee01a6d67977dd3f84a5a1d2efeb4ada3a1ae771cadfaa535d9d9fc6507"
 dependencies = [
  "bytes",
  "futures-core",
@@ -2446,9 +2471,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0edfdeb067411dba2044da6d1cb2df793dd35add7888d73c16e3381ded401764"
+checksum = "f988a1a1adc2fb21f9c12aa96441da33a1728193ae0b95d2be22dbd17fcb4e5c"
 dependencies = [
  "bytes",
  "futures-core",
@@ -2583,7 +2608,7 @@ dependencies = [
  "libc",
  "thiserror",
  "tokio",
- "tokio-util 0.6.9",
+ "tokio-util 0.6.10",
 ]
 
 [[package]]
@@ -2627,6 +2652,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992"
 
 [[package]]
+name = "unicode-ident"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d22af068fba1eb5edcb4aea19d382b2a3deb4c8f9d475c589b6ada9e0fd493ee"
+
+[[package]]
 name = "unicode-normalization"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2652,12 +2683,6 @@ name = "unicode-xid"
 version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c1f860d7d29cf02cb2f3f359fd35991af3d30bac52c57d265a3c461074cb4dc"
-
-[[package]]
-name = "unicode-xid"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "957e51f3646910546462e67d5f7599b9e4fb8acdd304b087a6494730f9eebf04"
 
 [[package]]
 name = "unsafe-any"
@@ -2759,7 +2784,7 @@ dependencies = [
  "log",
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
  "wasm-bindgen-shared",
 ]
 
@@ -2781,7 +2806,7 @@ checksum = "99ec0dc7a4756fffc231aab1b9f2f578d23cd391390ab27f952ae0c9b3ece20b"
 dependencies = [
  "proc-macro2",
  "quote 1.0.18",
- "syn 1.0.93",
+ "syn 1.0.95",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -2871,7 +2896,7 @@ dependencies = [
  "subprocess",
  "thiserror",
  "tokio",
- "tokio-util 0.6.9",
+ "tokio-util 0.6.10",
  "widestring 0.5.1",
  "winapi",
  "wintun",

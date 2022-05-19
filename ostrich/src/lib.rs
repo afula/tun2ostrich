@@ -1,4 +1,5 @@
 #![feature(once_cell)]
+#![feature(ip)]
 
 use anyhow::anyhow;
 use app::{
