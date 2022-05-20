@@ -9,15 +9,17 @@ use std::{
     time::Duration,
 };
 
+use crate::app::fake_dns::{FakeDns, FakeDnsMode};
+use crate::{Dispatcher, NatManager, Runner};
 use byte_string::ByteStr;
 use ipnet::IpNet;
 use log::{debug, error, info, trace, warn};
 use smoltcp::wire::{IpProtocol, TcpPacket, UdpPacket};
-use tokio::{io::AsyncReadExt, sync::mpsc, time};
-use tun::{AsyncDevice, Configuration as TunConfiguration, Device as TunDevice, Error as TunError, Layer};
-use crate::{Dispatcher, NatManager, Runner};
-use crate::app::fake_dns::{FakeDns, FakeDnsMode};
 use tokio::sync::Mutex as TokioMutex;
+use tokio::{io::AsyncReadExt, sync::mpsc, time};
+use tun::{
+    AsyncDevice, Configuration as TunConfiguration, Device as TunDevice, Error as TunError, Layer,
+};
 // use crate::local::{context::ServiceContext, loadbalancing::PingBalancer};
 
 use self::{
@@ -159,59 +161,59 @@ impl Tun {
 
         loop {
             tokio::select! {
-                // tun device
-                n = self.device.read(&mut packet_buffer) => {
-                    let n = n?;
+                            // tun device
+                            n = self.device.read(&mut packet_buffer) => {
+                                let n = n?;
 
-                    if n <= IFF_PI_PREFIX_LEN {
-                        error!(
-                            "[TUN] packet too short, packet: {:?}",
-                            ByteStr::new(&packet_buffer[..n])
-                        );
-                        continue;
-                    }
+                                if n <= IFF_PI_PREFIX_LEN {
+                                    error!(
+                                        "[TUN] packet too short, packet: {:?}",
+                                        ByteStr::new(&packet_buffer[..n])
+                                    );
+                                    continue;
+                                }
 
-                    let packet = &mut packet_buffer[IFF_PI_PREFIX_LEN..n];
-                    trace!("[TUN] received IP packet {:?}", ByteStr::new(packet));
+                                let packet = &mut packet_buffer[IFF_PI_PREFIX_LEN..n];
+                                trace!("[TUN] received IP packet {:?}", ByteStr::new(packet));
 
-                    if let Err(err) = self.handle_tun_frame(packet,self.inbound_tag.clone()).await {
-                        error!("[TUN] handle IP frame failed, error: {}", err);
-                    }
-                }
+                                if let Err(err) = self.handle_tun_frame(packet,self.inbound_tag.clone()).await {
+                                    error!("[TUN] handle IP frame failed, error: {}", err);
+                                }
+                            }
 
-                // UDP channel sent back
-                packet = self.udp.recv_packet() => {
-                    if let Err(err) = write_packet_with_pi(&mut self.device, &packet.data).await {
-                        error!("[TUN] failed to set packet information, error: {}, {:?}", err, ByteStr::new(&packet.data));
-                    } else {
-                        trace!("[TUN] sent IP packet (UDP) {:?}", ByteStr::new(&packet.data));
-                    }
-                }
+                            // UDP channel sent back
+                            packet = self.udp.recv_packet() => {
+                                if let Err(err) = write_packet_with_pi(&mut self.device, &packet.data).await {
+                                    error!("[TUN] failed to set packet information, error: {}, {:?}", err, ByteStr::new(&packet.data));
+                                } else {
+                                    trace!("[TUN] sent IP packet (UDP) {:?}", ByteStr::new(&packet.data));
+                                }
+                            }
 
-/*                // UDP cleanup expired associations
-                _ = udp_cleanup_timer.tick() => {
-                    self.udp.cleanup_expired().await;
-                }
+            /*                // UDP cleanup expired associations
+                            _ = udp_cleanup_timer.tick() => {
+                                self.udp.cleanup_expired().await;
+                            }
 
-                // UDP keep-alive associations
-                peer_addr_opt = self.udp_keepalive_rx.recv() => {
-                    let peer_addr = peer_addr_opt.expect("UDP keep-alive channel closed unexpectly");
-                    self.udp.keep_alive(&peer_addr).await;
-                }*/
+                            // UDP keep-alive associations
+                            peer_addr_opt = self.udp_keepalive_rx.recv() => {
+                                let peer_addr = peer_addr_opt.expect("UDP keep-alive channel closed unexpectly");
+                                self.udp.keep_alive(&peer_addr).await;
+                            }*/
 
-                // TCP channel sent back
-                packet = self.tcp.recv_packet() => {
-                    if let Err(err) = write_packet_with_pi(&mut self.device, &packet.data).await {
-                        error!("[TUN] failed to set packet information, error: {}, {:?}", err, ByteStr::new(&packet));
-                    } else {
-                        trace!("[TUN] sent IP packet (TCP) {:?}", ByteStr::new(&packet));
-                    }
-                }
-            }
+                            // TCP channel sent back
+                            packet = self.tcp.recv_packet() => {
+                                if let Err(err) = write_packet_with_pi(&mut self.device, &packet).await {
+                                    error!("[TUN] failed to set packet information, error: {}, {:?}", err, ByteStr::new(&packet));
+                                } else {
+                                    trace!("[TUN] sent IP packet (TCP) {:?}", ByteStr::new(&packet));
+                                }
+                            }
+                        }
         }
     }
 
-    async fn handle_tun_frame(&mut self, frame: &[u8],    inbound_tag: String,) -> smoltcp::Result<()> {
+    async fn handle_tun_frame(&mut self, frame: &[u8], inbound_tag: String) -> smoltcp::Result<()> {
         let packet = match IpPacket::new_checked(frame)? {
             Some(packet) => packet,
             None => {
@@ -222,7 +224,7 @@ impl Tun {
 
         match packet.protocol() {
             IpProtocol::Tcp => {
-/*                if !self.mode.enable_tcp() {
+                /*                if !self.mode.enable_tcp() {
                     trace!("received TCP packet but mode is {}, throwing away", self.mode);
                     return Ok(());
                 }*/
@@ -247,10 +249,19 @@ impl Tun {
                 let src_addr = SocketAddr::new(packet.src_addr(), src_port);
                 let dst_addr = SocketAddr::new(packet.dst_addr(), dst_port);
 
-                trace!("[TUN] TCP packet {} -> {} {}", src_addr, dst_addr, tcp_packet);
+                trace!(
+                    "[TUN] TCP packet {} -> {} {}",
+                    src_addr,
+                    dst_addr,
+                    tcp_packet
+                );
 
                 // TCP first handshake packet.
-                if let Err(err) = self.tcp.handle_packet(src_addr, dst_addr, &tcp_packet,inbound_tag).await {
+                if let Err(err) = self
+                    .tcp
+                    .handle_packet(src_addr, dst_addr, &tcp_packet, inbound_tag)
+                    .await
+                {
                     error!(
                         "handle TCP packet failed, error: {}, {} <-> {}, packet: {:?}",
                         err, src_addr, dst_addr, tcp_packet
@@ -260,7 +271,7 @@ impl Tun {
                 self.tcp.drive_interface_state(frame).await;
             }
             IpProtocol::Udp => {
-/*                if !self.mode.enable_udp() {
+                /*                if !self.mode.enable_udp() {
                     trace!("received UDP packet but mode is {}, throwing away", self.mode);
                     return Ok(());
                 }*/
@@ -286,10 +297,18 @@ impl Tun {
                 let dst_addr = SocketAddr::new(packet.dst_addr(), dst_port);
 
                 let payload = udp_packet.payload();
-                trace!("[TUN] UDP packet {} -> {} {}", src_addr, dst_addr, udp_packet);
+                trace!(
+                    "[TUN] UDP packet {} -> {} {}",
+                    src_addr,
+                    dst_addr,
+                    udp_packet
+                );
 
                 if let Err(err) = self.udp.handle_packet(src_addr, dst_addr, payload).await {
-                    error!("handle UDP packet failed, err: {}, packet: {:?}", err, udp_packet);
+                    error!(
+                        "handle UDP packet failed, err: {}, packet: {:?}",
+                        err, udp_packet
+                    );
                 }
             }
             IpProtocol::Icmp | IpProtocol::Icmpv6 => {
@@ -307,7 +326,6 @@ impl Tun {
     }
 }
 
-
 pub fn tun_build(
     inbound_tag: String,
     tun_config: TunConfiguration,
@@ -316,7 +334,6 @@ pub fn tun_build(
     fake_dns_mode: FakeDnsMode,
     fake_dns_filters: Vec<String>,
 ) -> anyhow::Result<Runner> {
-
     let device = match tun::create_as_async(&tun_config) {
         Ok(d) => d,
         Err(TunError::Io(err)) => {

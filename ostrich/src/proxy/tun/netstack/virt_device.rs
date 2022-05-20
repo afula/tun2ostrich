@@ -15,7 +15,11 @@ pub struct VirtTunDevice {
 impl VirtTunDevice {
     pub fn new(
         capabilities: DeviceCapabilities,
-    ) -> (Self, mpsc::UnboundedReceiver<Vec<u8>>, mpsc::UnboundedSender<Vec<u8>>) {
+    ) -> (
+        Self,
+        mpsc::UnboundedReceiver<Vec<u8>>,
+        mpsc::UnboundedSender<Vec<u8>>,
+    ) {
         let (iface_tx, iface_output) = mpsc::unbounded_channel();
         let (iface_input, iface_rx) = mpsc::unbounded_channel();
 
@@ -75,7 +79,10 @@ impl<'a> phy::TxToken for VirtTxToken<'a> {
     {
         let mut buffer = vec![0u8; len];
         let result = f(&mut buffer);
-        self.0.out_buf.send(buffer).expect("channel closed unexpectly");
+        self.0
+            .out_buf
+            .send(buffer)
+            .expect("channel closed unexpectly");
         result
     }
 }

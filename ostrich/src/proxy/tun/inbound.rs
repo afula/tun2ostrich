@@ -236,7 +236,7 @@ pub fn new(
             fake_dns_mode,
             fake_dns_filters,
         )
-/*        let tun = tun::create_as_async(&cfg)
+        /*        let tun = tun::create_as_async(&cfg)
             .map_err(|e| anyhow!("create tun failed: {}", e))
             .expect("cant create tun device");
 

@@ -16,7 +16,10 @@ pub const IFF_PI_PREFIX_LEN: usize = 4;
 /// | Flags (0)       | Protocol        |
 /// +--------+--------+--------+--------+
 /// ```
-pub async fn write_packet_with_pi<W: AsyncWrite + Unpin>(writer: &mut W, packet: &[u8]) -> io::Result<()> {
+pub async fn write_packet_with_pi<W: AsyncWrite + Unpin>(
+    writer: &mut W,
+    packet: &[u8],
+) -> io::Result<()> {
     if packet.is_empty() {
         return Err(io::Error::new(ErrorKind::InvalidInput, "empty packet"));
     }
@@ -27,7 +30,12 @@ pub async fn write_packet_with_pi<W: AsyncWrite + Unpin>(writer: &mut W, packet:
     let protocol = match packet[0] >> 4 {
         4 => libc::ETH_P_IP,
         6 => libc::ETH_P_IPV6,
-        _ => return Err(io::Error::new(ErrorKind::InvalidData, "neither an IPv4 or IPv6 packet")),
+        _ => {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "neither an IPv4 or IPv6 packet",
+            ))
+        }
     };
 
     let protocol_buf = &mut header[2..];

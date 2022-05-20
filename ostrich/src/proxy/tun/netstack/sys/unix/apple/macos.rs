@@ -1,8 +1,7 @@
 use std::{
     ffi::CStr,
     io::{self, ErrorKind},
-    mem,
-    ptr,
+    mem, ptr,
 };
 
 use log::{error, trace};
@@ -113,7 +112,9 @@ pub async fn set_route_configuration(device: &TunDevice) -> io::Result<()> {
 
             let mut ifa = ifap;
             while !ifa.is_null() {
-                if !(*ifa).ifa_addr.is_null() && (*(*ifa).ifa_addr).sa_family as i32 == libc::AF_LINK {
+                if !(*ifa).ifa_addr.is_null()
+                    && (*(*ifa).ifa_addr).sa_family as i32 == libc::AF_LINK
+                {
                     let ifa_name = CStr::from_ptr((*ifa).ifa_name);
                     if ifa_name.to_bytes() == tun_name.as_bytes() {
                         // Found the link_addr of tun interface.

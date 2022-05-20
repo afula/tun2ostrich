@@ -24,11 +24,11 @@ use smoltcp::{
     wire::{IpAddress, IpCidr, Ipv4Address, Ipv6Address, TcpPacket},
 };
 use spin::Mutex as SpinMutex;
+use tokio::sync::Mutex as TokioMutex;
 use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
     sync::mpsc,
 };
-use tokio::sync::Mutex as TokioMutex;
 
 use crate::app::dispatcher::Dispatcher;
 use crate::app::fake_dns::FakeDns;
@@ -112,8 +112,12 @@ impl TcpConnection {
         manager_notify: Arc<ManagerNotify>,
         tcp_opts: &TcpSocketOpts,
     ) -> TcpConnection {
-        let send_buffer_size = tcp_opts.send_buffer_size.unwrap_or(DEFAULT_TCP_SEND_BUFFER_SIZE);
-        let recv_buffer_size = tcp_opts.recv_buffer_size.unwrap_or(DEFAULT_TCP_RECV_BUFFER_SIZE);
+        let send_buffer_size = tcp_opts
+            .send_buffer_size
+            .unwrap_or(DEFAULT_TCP_SEND_BUFFER_SIZE);
+        let recv_buffer_size = tcp_opts
+            .recv_buffer_size
+            .unwrap_or(DEFAULT_TCP_RECV_BUFFER_SIZE);
 
         let control = Arc::new(SpinMutex::new(TcpSocketControl {
             send_buffer: RingBuffer::new(vec![0u8; send_buffer_size as usize]),
@@ -136,7 +140,11 @@ impl TcpConnection {
 }
 
 impl AsyncRead for TcpConnection {
-    fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
+    fn poll_read(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         let mut control = self.control.lock();
 
         // If socket is already closed, just return EOF directly.
@@ -169,7 +177,11 @@ impl AsyncRead for TcpConnection {
 }
 
 impl AsyncWrite for TcpConnection {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
         let mut control = self.control.lock();
         if control.is_closed {
             return Err(io::ErrorKind::BrokenPipe.into()).into();
@@ -229,7 +241,7 @@ pub struct TcpTun {
 
     dispatcher: Arc<Dispatcher>,
     nat_manager: Arc<NatManager>,
-    fakedns: Arc<TokioMutex<FakeDns>>,
+    fakedns: Arc<FakeDns>,
 }
 
 impl Drop for TcpTun {
@@ -240,11 +252,13 @@ impl Drop for TcpTun {
 }
 
 impl TcpTun {
-    pub fn new(/*context: Arc<ServiceContext>, balancer: PingBalancer, */
-               dispatcher: Arc<Dispatcher>,
-               nat_manager: Arc<NatManager>,
-               fakedns: Arc<FakeDns>,
-               mtu: u32) -> TcpTun {
+    pub fn new(
+        /*context: Arc<ServiceContext>, balancer: PingBalancer, */
+        dispatcher: Arc<Dispatcher>,
+        nat_manager: Arc<NatManager>,
+        fakedns: Arc<FakeDns>,
+        mtu: u32,
+    ) -> TcpTun {
         let mut capabilities = DeviceCapabilities::default();
         capabilities.medium = Medium::Ip;
         capabilities.max_transmission_unit = mtu as usize;
@@ -290,7 +304,9 @@ impl TcpTun {
                 } = manager;
 
                 while manager_running.load(Ordering::Relaxed) {
-                    while let Ok(TcpSocketCreation { control, socket }) = socket_creation_rx.try_recv() {
+                    while let Ok(TcpSocketCreation { control, socket }) =
+                        socket_creation_rx.try_recv()
+                    {
                         let handle = iface.add_socket(socket);
                         sockets.insert(handle, control);
                     }
@@ -305,7 +321,10 @@ impl TcpTun {
                     };
 
                     if updated_sockets {
-                        trace!("VirtDevice::poll costed {}", SmolInstant::now() - before_poll);
+                        trace!(
+                            "VirtDevice::poll costed {}",
+                            SmolInstant::now() - before_poll
+                        );
                     }
 
                     // Check all the sockets' status
@@ -401,7 +420,9 @@ impl TcpTun {
                         iface.remove_socket(socket_handle);
                     }
 
-                    let next_duration = iface.poll_delay(before_poll).unwrap_or(SmolDuration::from_millis(5));
+                    let next_duration = iface
+                        .poll_delay(before_poll)
+                        .unwrap_or(SmolDuration::from_millis(5));
                     if next_duration != SmolDuration::ZERO {
                         thread::park_timeout(Duration::from(next_duration));
                     }
@@ -423,7 +444,6 @@ impl TcpTun {
             iface_rx,
             iface_tx,
 
-
             dispatcher,
             nat_manager,
             fakedns,
@@ -440,7 +460,7 @@ impl TcpTun {
     ) -> io::Result<()> {
         // TCP first handshake packet, create a new Connection
         if tcp_packet.syn() && !tcp_packet.ack() {
-/*            let accept_opts = self.context.accept_opts();
+            /*            let accept_opts = self.context.accept_opts();
 
             let send_buffer_size = accept_opts.tcp.send_buffer_size.unwrap_or(DEFAULT_TCP_SEND_BUFFER_SIZE);
             let recv_buffer_size = accept_opts.tcp.recv_buffer_size.unwrap_or(DEFAULT_TCP_RECV_BUFFER_SIZE);
@@ -454,7 +474,7 @@ impl TcpTun {
                 TcpSocketBuffer::new(vec![0u8; DEFAULT_TCP_RECV_BUFFER_SIZE as usize]),
             );
 
-            socket.set_keep_alive(accept_opts.tcp.keepalive.map(From::from));
+            // socket.set_keep_alive(accept_opts.tcp.keepalive.map(From::from));
             // FIXME: It should follow system's setting. 7200 is Linux's default.
             socket.set_timeout(Some(SmolDuration::from_secs(7200)));
             // NO ACK delay
@@ -488,7 +508,7 @@ impl TcpTun {
                 dispatcher.dispatch_tcp(&mut sess, connection).await;
             });
 
-/*            // establish a tunnel
+            /*            // establish a tunnel
             let context = self.context.clone();
             let balancer = self.balancer.clone();
             tokio::spawn(async move {

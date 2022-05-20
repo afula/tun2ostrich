@@ -1,6 +1,6 @@
 {
   "log": {
-    "level": "trace",
+    "level": "error",
     "output": "console"
   },
   "dns": {
@@ -26,7 +26,7 @@
       "protocol": "trojan",
       "settings": {
         "address": "walkonbit.online",
-        "password": "138c58c5",
+        "password": "a5dfce13",
         "port": 443,
         "alpn": [
           "http/1.1"

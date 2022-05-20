@@ -2,14 +2,14 @@ use crate::app::dispatcher::Dispatcher;
 use crate::app::fake_dns::FakeDns;
 use crate::app::nat_manager::{NatManager, UdpPacket};
 use crate::session::{DatagramSource, Network, Session, SocksAddr};
-use log::{warn};
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use log::warn;
 use std::{
     io::{self, ErrorKind},
     net::{IpAddr, SocketAddr},
     sync::Arc,
     time::Duration,
 };
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use async_trait::async_trait;
 use bytes::{BufMut, BytesMut};
@@ -17,7 +17,6 @@ use etherparse::PacketBuilder;
 use log::{debug, trace};
 use tokio::sync::mpsc;
 use tokio::sync::Mutex as TokioMutex;
-
 
 pub struct UdpTun {
     // tun_rx: mpsc::Receiver<BytesMut>,
@@ -46,8 +45,7 @@ impl UdpTun {
         let udp_processor_tx_nat = udp_processor_tx.clone();
         tokio::spawn(async move {
             while let Some(pkt) = udp_processor_rx.recv().await {
-
-                let dst_addr =  pkt.dst_addr ;
+                let dst_addr = pkt.dst_addr;
 
                 let src_addr = match pkt.src_addr {
                     SocksAddr::Ip(a) => SocksAddr::Ip(a),
@@ -66,10 +64,7 @@ impl UdpTun {
 
                 debug!("udp dest addr: {:?}", &dst_addr);
                 if dst_addr.port() == 53 {
-                    match fakedns
-                        .generate_fake_response(&pkt.data)
-                    .await
-                    {
+                    match udp_fakedns.generate_fake_response(&pkt.data).await {
                         Ok(resp) => {
                             // send_udp(lwip_lock.clone(), &dst_addr, &src_addr, pcb, resp.as_ref());
                             let packet = UdpPacket {
@@ -94,23 +89,23 @@ impl UdpTun {
                 // It also means the back packets on this UDP session shall only come from a
                 // single source address.
 
-                let socks_dst_addr = SocksAddr::Ip(dst_addr);
-                /*                let socks_dst_addr = if fakedns.lock().await.is_fake_ip(&dst_addr.ip()) {
-                    // TODO we're doing this for every packet! optimize needed
-                    trace!("uplink querying domain for fake ip {}", &dst_addr.ip());
-                    if let Some(domain) = fakedns.lock().await.query_domain(&dst_addr.ip()) {
-                        trace!("uplink querying domain for fake ip {} domain {}", &dst_addr.ip(),&domain);
+                // let socks_dst_addr = SocksAddr::Ip(dst_addr);
+                let socks_dst_addr = if udp_fakedns.is_fake_ip(&dst_addr.ip().unwrap()).await {
+                    if let Some(domain) = udp_fakedns.query_domain(&dst_addr.ip().unwrap()).await {
                         SocksAddr::Domain(domain, dst_addr.port())
                     } else {
-                        // Skip this packet. Requests targeting fake IPs are
-                        // assumed never happen in real network traffic.
+                        log::debug!(
+                            "No paired domain found for this fake IP: {}, datagram is rejected.",
+                            &dst_addr.ip().unwrap()
+                        );
                         continue;
                     }
                 } else {
-                    SocksAddr::Ip(dst_addr)
-                };*/
+                    // SocksAddr::Ip(dst_addr)
+                    dst_addr
+                };
 
-                let dgram_src = DatagramSource::new(src_addr, None);
+                let dgram_src = DatagramSource::new(SocketAddr::new(src_addr.ip().unwrap(), src_addr.port()), None);
                 /*                if !nat_manager.contains_key(&dgram_src).await {
                     let sess = Session {
                         network: Network::Udp,
@@ -139,12 +134,7 @@ impl UdpTun {
                     dst_addr: socks_dst_addr.clone(),
                 };
                 nat_manager
-                    .send(
-                        &dgram_src,
-                        &inbound_tag.clone(),
-                        &udp_processor_tx_nat,
-                        pkt,
-                    )
+                    .send(&dgram_src, &inbound_tag.clone(), &udp_processor_tx_nat, pkt)
                     .await;
             }
             Ok(()) as anyhow::Result<()>
@@ -154,7 +144,7 @@ impl UdpTun {
             nat_manager: udp_nat_manager,
             udp_tun_rx,
             udp_processor_tx: udp_processor_tx.clone(),
-            fakedns: udp_fakedns,
+            fakedns: fakedns,
         }
     }
 
@@ -163,7 +153,7 @@ impl UdpTun {
         src_addr: SocketAddr,
         dst_addr: SocketAddr,
         payload: &[u8],
-    ) -> io::Result<()> {
+    ) -> anyhow::Result<()> {
         trace!(
             "UDP {} -> {} payload.size: {} bytes",
             src_addr,
@@ -187,23 +177,8 @@ impl UdpTun {
             Some(udp_packet) => {
                 let data = udp_packet.data;
 
-                let socks_src_addr = match udp_packet.src_addr {
-                    Some(ref a) => a.to_owned(),
-                    None => {
-                        unreachable!("unexpected none src addr");
-                    }
-                };
-                let dst_addr = match udp_packet.dst_addr {
-                    Some(ref a) => match a {
-                        SocksAddr::Ip(a) => a.to_owned(),
-                        _ => {
-                            unreachable!("unexpected domain addr");
-                        }
-                    },
-                    None => {
-                        unreachable!("unexpected dst addr");
-                    }
-                };
+                let socks_src_addr =  udp_packet.src_addr.clone();
+                let dst_addr =  SocketAddr::new(udp_packet.dst_addr.ip().unwrap(), udp_packet.dst_addr.port());
                 let src_addr = match socks_src_addr {
                     SocksAddr::Ip(ref a) => {
                         if dst_addr.is_ipv4() {
@@ -241,21 +216,27 @@ impl UdpTun {
                 let packet = match (src_addr, dst_addr) {
                     (SocketAddr::V4(peer), SocketAddr::V4(remote)) => {
                         let builder =
-                            PacketBuilder::ipv4(remote.ip().octets(), peer.ip().octets(), 20).udp(remote.port(), peer.port());
+                            PacketBuilder::ipv4(remote.ip().octets(), peer.ip().octets(), 20)
+                                .udp(remote.port(), peer.port());
 
                         let packet = BytesMut::with_capacity(builder.size(data.len()));
                         let mut packet_writer = packet.writer();
-                        builder.write(&mut packet_writer, data.as_slice()).expect("PacketBuilder::write");
+                        builder
+                            .write(&mut packet_writer, data.as_slice())
+                            .expect("PacketBuilder::write");
 
                         packet_writer.into_inner()
                     }
                     (SocketAddr::V6(peer), SocketAddr::V6(remote)) => {
                         let builder =
-                            PacketBuilder::ipv6(remote.ip().octets(), peer.ip().octets(), 20).udp(remote.port(), peer.port());
+                            PacketBuilder::ipv6(remote.ip().octets(), peer.ip().octets(), 20)
+                                .udp(remote.port(), peer.port());
 
                         let packet = BytesMut::with_capacity(builder.size(data.len()));
                         let mut packet_writer = packet.writer();
-                        builder.write(&mut packet_writer, data.as_slice()).expect("PacketBuilder::write");
+                        builder
+                            .write(&mut packet_writer, data.as_slice())
+                            .expect("PacketBuilder::write");
 
                         packet_writer.into_inner()
                     }
@@ -274,7 +255,7 @@ impl UdpTun {
         }
     }
 
-/*    #[inline(always)]
+    /*    #[inline(always)]
     pub async fn cleanup_expired(&mut self) {
         self.manager.cleanup_expired().await;
     }
