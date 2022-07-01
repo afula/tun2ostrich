@@ -32,7 +32,7 @@ lazy_static! {
 
     /// DNS cache size in the built-in DNS client.
     pub static ref DNS_CACHE_SIZE: usize = {
-        get_env_var_or("DNS_CACHE_SIZE", 512)
+        get_env_var_or("DNS_CACHE_SIZE", 64)
     };
 }
 

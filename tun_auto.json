@@ -5,7 +5,8 @@
   },
   "dns": {
     "servers": [
-      "1.1.1.1"
+      "8.8.8.8",
+      "8.8.4.4"
     ],
     "hosts": {
         "walkonbit.online":[
@@ -26,7 +27,7 @@
       "protocol": "trojan",
       "settings": {
         "address": "walkonbit.online",
-        "password": "138c58c5",
+        "password": "a5dfce13",
         "port": 443,
         "alpn": [
           "http/1.1"
