@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 // use std::net::SocketAddr;
 use crate::config::TrojanOutboundSettings;
 use rustls;
-use rustls::{ALL_VERSIONS, OwnedTrustAnchor, RootCertStore};
+use rustls::{OwnedTrustAnchor, RootCertStore, ALL_VERSIONS};
 use std::str;
 use webpki_roots;
 
