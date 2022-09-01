@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 // use std::net::SocketAddr;
 use crate::config::TrojanOutboundSettings;
 use rustls;
-use rustls::{OwnedTrustAnchor, RootCertStore};
+use rustls::{ALL_VERSIONS, OwnedTrustAnchor, RootCertStore};
 use std::str;
 use webpki_roots;
 
@@ -101,7 +101,9 @@ fn lookup_suites(suites: &String) -> Vec<rustls::SupportedCipherSuite> {
 
 /// Make a vector of protocol versions named in `versions`
 fn lookup_versions() -> Vec<&'static rustls::SupportedProtocolVersion> {
-    let version = vec![&rustls::version::TLS13];
+    let version =/* vec![&rustls::version::TLS13];*/
+        ALL_VERSIONS.to_vec();
+
     version
 }
 
@@ -153,12 +155,13 @@ pub fn make_config(config: &TrojanOutboundSettings) -> Arc<rustls::ClientConfig>
         )
     }));
 
-    let suites = if !config.suites.is_empty() {
+    let suites =
+/*        if !config.suites.is_empty() {
         lookup_suites(&config.suites)
     } else {
         rustls::DEFAULT_CIPHER_SUITES.to_vec()
-    };
-
+    };*/
+    rustls::DEFAULT_CIPHER_SUITES.to_vec();
     let versions = lookup_versions();
 
     let mut tls_config = rustls::ClientConfig::builder()
