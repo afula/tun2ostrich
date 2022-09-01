@@ -305,10 +305,10 @@ pub fn start(
 
         tokio::spawn(async move {
             use if_watch::{IfEvent, IfWatcher};
-            let mut if_set = IfWatcher::new().await.unwrap();
+            let mut if_set = IfWatcher::new().unwrap();
 
             let if_fut = Box::pin(async {
-                while let Ok(event) = Pin::new(&mut if_set).await {
+                while let Some(Ok(event)) = if_set.next().await {
                     // #[cfg(target_os = "macos")]{
                     match event {
                         IfEvent::Up(up_ip) => {
