@@ -10,8 +10,8 @@
       "1.1.1.1"
     ],
     "hosts": {
-        "walkonbit.online":[
-      "108.61.199.26"
+        "ostrich.services":[
+      "158.247.219.253"
     ]}
   },
   "inbounds": [
@@ -26,8 +26,8 @@
     {
       "protocol": "trojan",
       "settings": {
-        "address": "walkonbit.online",
-        "password": "a5dfce13",
+        "address": "ostrich.services",
+        "password": "d8dec999",
         "port": 443,
         "alpn": [
           "http/1.1"
