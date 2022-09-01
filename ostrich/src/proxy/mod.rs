@@ -145,7 +145,7 @@ async fn protect_socket(fd: RawFd) -> io::Result<()> {
 trait BindSocket: AsRawFd {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()>;
 }
-#[cfg(not(any(target_os = "macos", target_os = "linux",target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 trait BindSocket {
     fn bind(&self, bind_addr: &SocketAddr) -> io::Result<()>;
 }
