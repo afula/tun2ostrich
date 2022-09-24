@@ -321,10 +321,10 @@ impl TcpTun {
                     };
 
                     if updated_sockets {
-                        trace!(
-                            "VirtDevice::poll costed {}",
-                            SmolInstant::now() - before_poll
-                        );
+                        // trace!(
+                        //     "VirtDevice::poll costed {}",
+                        //     SmolInstant::now() - before_poll
+                        // );
                     }
 
                     // Check all the sockets' status
@@ -517,9 +517,9 @@ impl TcpTun {
                     // for TLS traffic in dispatcher.
                     if dst_addr.port() != 443 {
                         log::debug!(
-                    "No paired domain found for this fake IP: {}, connection is rejected.",
-                    &dst_addr.ip()
-                );
+                            "No paired domain found for this fake IP: {}, connection is rejected.",
+                            &dst_addr.ip()
+                        );
                         return Ok(());
                     }
                 }

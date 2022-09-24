@@ -174,7 +174,7 @@ impl Tun {
                                 }
 
                                 let packet = &mut packet_buffer[IFF_PI_PREFIX_LEN..n];
-                                trace!("[TUN] received IP packet {:?}", ByteStr::new(packet));
+                                // trace!("[TUN] received IP packet {:?}", ByteStr::new(packet));
 
                                 if let Err(err) = self.handle_tun_frame(packet,self.inbound_tag.clone()).await {
                                     error!("[TUN] handle IP frame failed, error: {}", err);
@@ -186,7 +186,7 @@ impl Tun {
                                 if let Err(err) = write_packet_with_pi(&mut self.device, &packet.data).await {
                                     error!("[TUN] failed to set packet information, error: {}, {:?}", err, ByteStr::new(&packet.data));
                                 } else {
-                                    trace!("[TUN] sent IP packet (UDP) {:?}", ByteStr::new(&packet.data));
+                                    // trace!("[TUN] sent IP packet (UDP) {:?}", ByteStr::new(&packet.data));
                                 }
                             }
 
@@ -206,7 +206,7 @@ impl Tun {
                                 if let Err(err) = write_packet_with_pi(&mut self.device, &packet).await {
                                     error!("[TUN] failed to set packet information, error: {}, {:?}", err, ByteStr::new(&packet));
                                 } else {
-                                    trace!("[TUN] sent IP packet (TCP) {:?}", ByteStr::new(&packet));
+                                    // trace!("[TUN] sent IP packet (TCP) {:?}", ByteStr::new(&packet));
                                 }
                             }
                         }
@@ -249,12 +249,12 @@ impl Tun {
                 let src_addr = SocketAddr::new(packet.src_addr(), src_port);
                 let dst_addr = SocketAddr::new(packet.dst_addr(), dst_port);
 
-                trace!(
-                    "[TUN] TCP packet {} -> {} {}",
-                    src_addr,
-                    dst_addr,
-                    tcp_packet
-                );
+                // trace!(
+                //     "[TUN] TCP packet {} -> {} {}",
+                //     src_addr,
+                //     dst_addr,
+                //     tcp_packet
+                // );
 
                 // TCP first handshake packet.
                 if let Err(err) = self

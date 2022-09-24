@@ -45,8 +45,7 @@ pub fn setup_logger(config: &config::Log) -> Result<()> {
             }
         })
         .level(log::LevelFilter::Warn)
-        .level_for("tun", loglevel)
-        .level_for("netstack-lwip", loglevel)
+        // .level_for("tun", loglevel)
         .level_for("ostrich", loglevel);
 
     match config.output.enum_value_or_default() {

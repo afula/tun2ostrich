@@ -64,6 +64,7 @@ impl UdpTun {
 
                 debug!("udp dest addr: {:?}", &dst_addr);
                 if dst_addr.port() == 53 {
+                    debug!("udp dns query: {:?}", &dst_addr);
                     match udp_fakedns.generate_fake_response(&pkt.data).await {
                         Ok(resp) => {
                             // send_udp(lwip_lock.clone(), &dst_addr, &src_addr, pcb, resp.as_ref());
@@ -105,7 +106,10 @@ impl UdpTun {
                     dst_addr
                 };
 
-                let dgram_src = DatagramSource::new(SocketAddr::new(src_addr.ip().unwrap(), src_addr.port()), None);
+                let dgram_src = DatagramSource::new(
+                    SocketAddr::new(src_addr.ip().unwrap(), src_addr.port()),
+                    None,
+                );
                 /*                if !nat_manager.contains_key(&dgram_src).await {
                     let sess = Session {
                         network: Network::Udp,
@@ -177,8 +181,11 @@ impl UdpTun {
             Some(udp_packet) => {
                 let data = udp_packet.data;
 
-                let socks_src_addr =  udp_packet.src_addr.clone();
-                let dst_addr =  SocketAddr::new(udp_packet.dst_addr.ip().unwrap(), udp_packet.dst_addr.port());
+                let socks_src_addr = udp_packet.src_addr.clone();
+                let dst_addr = SocketAddr::new(
+                    udp_packet.dst_addr.ip().unwrap(),
+                    udp_packet.dst_addr.port(),
+                );
                 let src_addr = match socks_src_addr {
                     SocksAddr::Ip(ref a) => {
                         if dst_addr.is_ipv4() {
