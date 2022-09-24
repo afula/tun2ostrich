@@ -1,4 +1,3 @@
-
 // @generated
 
 use std::path::Path;

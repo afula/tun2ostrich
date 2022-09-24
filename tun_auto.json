@@ -1,6 +1,6 @@
 {
   "log": {
-    "level": "error",
+    "level": "info",
     "output": "console"
   },
   "dns": {
@@ -8,8 +8,8 @@
       "1.1.1.1"
     ],
     "hosts": {
-        "walkonbit.online":[
-      "108.61.199.26"
+        "dev.kamel.services":[
+      "158.247.219.199"
     ]}
   },
   "inbounds": [
@@ -25,8 +25,8 @@
     {
       "protocol": "trojan",
       "settings": {
-        "address": "walkonbit.online",
-        "password": "a5dfce13",
+        "address": "dev.kamel.services",
+        "password": "a30ed2d5",
         "port": 443,
         "alpn": [
           "http/1.1"
@@ -59,7 +59,7 @@
           "89.233.43.71",
           "84.200.69.80",
           "84.200.70.40",
-          "108.61.199.26"
+          "158.247.219.199"
         ],
         "target": "direct_out"
       }

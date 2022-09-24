@@ -496,6 +496,7 @@ impl TcpTun {
             let inbound_tag = inbound_tag.clone();
             let dispatcher = self.dispatcher.clone();
             let fakedns = self.fakedns.clone();
+
             let mut sess = Session {
                 network: Network::Tcp,
                 source: src_addr,
@@ -504,6 +505,25 @@ impl TcpTun {
                 inbound_tag,
                 ..Default::default()
             };
+            // Whether to override the destination according to Fake DNS.
+            if fakedns.is_fake_ip(&dst_addr.ip()).await {
+                if let Some(domain) = fakedns.query_domain(&dst_addr.ip()).await {
+                    sess.destination = SocksAddr::Domain(domain, dst_addr.port());
+                } else {
+                    // Although requests targeting fake IPs are assumed
+                    // never happen in real network traffic, which are
+                    // likely caused by poisoned DNS cache records, we
+                    // still have a chance to sniff the request domain
+                    // for TLS traffic in dispatcher.
+                    if dst_addr.port() != 443 {
+                        log::debug!(
+                    "No paired domain found for this fake IP: {}, connection is rejected.",
+                    &dst_addr.ip()
+                );
+                        return Ok(());
+                    }
+                }
+            }
             tokio::spawn(async move {
                 dispatcher.dispatch_tcp(&mut sess, connection).await;
             });
