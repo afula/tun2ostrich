@@ -116,6 +116,7 @@ pub struct TrojanOutboundSettings {
     pub address: Option<String>,
     pub port: Option<u16>,
     pub password: Option<String>,
+    pub server_name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -579,6 +580,9 @@ pub fn to_internal(json: &mut Config) -> Result<internal::Config> {
                             .unwrap();
                     if let Some(ext_address) = ext_settings.address {
                         settings.address = ext_address; // TODO checks
+                    }
+                    if let Some(server_name) = ext_settings.server_name {
+                        settings.server_name = server_name; // TODO checks
                     }
                     if let Some(ext_port) = ext_settings.port {
                         settings.port = ext_port as u32; // TODO checks

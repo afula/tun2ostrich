@@ -1,33 +1,32 @@
 {
   "log": {
-    "level": "error",
+    "level": "trace",
     "output": "console"
   },
   "dns": {
     "servers": [
-      "8.8.8.8",
-      "8.8.4.4",
       "1.1.1.1"
     ],
     "hosts": {
-        "ostrich.services":[
-      "158.247.219.253"
+        "dev.kamel.services":[
+      "158.247.219.199"
     ]}
   },
   "inbounds": [
     {
-      "protocol": "socks",
-      "address": "127.0.0.1",
-      "port": 1086,
-      "tag": "socks_in"
+      "protocol": "tun",
+      "settings": {
+        "auto": true
+      },
+      "tag": "tun_in"
     }
   ],
   "outbounds": [
     {
       "protocol": "trojan",
       "settings": {
-        "address": "ostrich.services",
-        "password": "d8dec999",
+        "address": "158.247.219.199",
+        "password": "a30ed2d5",
         "port": 443,
         "alpn": [
           "http/1.1"
@@ -60,7 +59,7 @@
           "89.233.43.71",
           "84.200.69.80",
           "84.200.70.40",
-          "108.61.199.26"
+          "158.247.219.199"
         ],
         "target": "direct_out"
       }

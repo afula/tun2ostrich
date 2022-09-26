@@ -5,12 +5,11 @@
   },
   "dns": {
     "servers": [
-      "8.8.8.8",
-      "8.8.4.4"
+      "1.1.1.1"
     ],
     "hosts": {
-        "walkonbit.online":[
-      "108.61.199.26"
+        "dev.kamel.services":[
+      "158.247.219.199"
     ]}
   },
   "inbounds": [
@@ -26,13 +25,14 @@
     {
       "protocol": "trojan",
       "settings": {
-        "address": "walkonbit.online",
-        "password": "a5dfce13",
+        "server_name": "dev.kamel.services",
+        "address": "158.247.219.199",
+        "password": "a30ed2d5",
         "port": 443,
         "alpn": [
           "http/1.1"
         ],
-        "suites": "TLS13_AES_256_GCM_SHA384:TLS13_AES_128_GCM_SHA256:TLS13_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
+        "suites": "TLS13_AES_256_GCM_SHA384:TLS13_AES_128_GCM_SHA256:TLS13_CHACHA20_POLY1305_SHA256"
       },
       "tag": "proxy_out"
     },
@@ -60,7 +60,7 @@
           "89.233.43.71",
           "84.200.69.80",
           "84.200.70.40",
-          "108.61.199.26"
+          "158.247.219.199"
         ],
         "target": "direct_out"
       }
