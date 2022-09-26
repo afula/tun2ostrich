@@ -61,8 +61,8 @@ impl UdpOutboundHandler for Handler {
             return Err(io::Error::new(io::ErrorKind::Other, "invalid input"));
         };
 
-        let name = if !&self.address.is_empty() {
-            self.address.clone()
+        let name = if !&self.server_name.is_empty() {
+            self.server_name.clone()
         } else {
             sess.destination.host()
         };

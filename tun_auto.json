@@ -25,7 +25,8 @@
     {
       "protocol": "trojan",
       "settings": {
-        "address": "dev.kamel.services",
+        "server_name": "dev.kamel.services",
+        "address": "158.247.219.199",
         "password": "a30ed2d5",
         "port": 443,
         "alpn": [

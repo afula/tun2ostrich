@@ -68,6 +68,7 @@ pub use stream::BufHeadProxyStream;
 
 #[cfg(target_os = "windows")]
 use std::{io::ErrorKind, mem};
+use std::fmt::format;
 #[cfg(target_os = "windows")]
 use winapi::{
     ctypes::{c_char, c_int},
@@ -535,7 +536,7 @@ pub async fn new_tcp_stream(
     address: &String,
     port: &u16,
 ) -> io::Result<AnyStream> {
-    let mut resolver = Resolver::new(dns_client.clone(), address, port)
+/*    let mut resolver = Resolver::new(dns_client.clone(), address, port)
         .map_err(|e| {
             io::Error::new(
                 io::ErrorKind::Other,
@@ -577,14 +578,19 @@ pub async fn new_tcp_stream(
                 }
             }
         }
+    }*/
+    let addr = format!("{}:{}",address,port);
+    match tcp_dial_task(addr.parse().unwrap()).await{
+        Ok((stream, _addr)) =>{
+            Ok(stream)
+        }
+        Err(e) =>{
+            Err(        io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "could not resolve to any address",
+            ))
+        }
     }
-
-    Err(last_err.unwrap_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "could not resolve to any address",
-        )
-    }))
 }
 
 /// An interface with the ability to dial TCP connections.
