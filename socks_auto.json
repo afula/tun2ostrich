@@ -1,10 +1,12 @@
 {
   "log": {
-    "level": "trace",
+    "level": "error",
     "output": "console"
   },
   "dns": {
     "servers": [
+      "8.8.8.8",
+      "8.8.4.4",
       "1.1.1.1"
     ],
     "hosts": {
@@ -14,18 +16,18 @@
   },
   "inbounds": [
     {
-      "protocol": "tun",
-      "settings": {
-        "auto": true
-      },
-      "tag": "tun_in"
+      "protocol": "socks",
+      "address": "127.0.0.1",
+      "port": 1086,
+      "tag": "socks_in"
     }
   ],
   "outbounds": [
     {
       "protocol": "trojan",
       "settings": {
-        "address": "158.247.219.199",
+        "server_name": "dev.kamel.services",
+	"address": "158.247.219.199",
         "password": "a30ed2d5",
         "port": 443,
         "alpn": [

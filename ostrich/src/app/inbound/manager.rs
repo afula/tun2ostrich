@@ -97,7 +97,7 @@ impl InboundManager {
 
                         tokio::spawn(async move {
                             let _ = tun_rx.recv().await;
-                            std::thread::sleep(std::time::Duration::from_secs(2));
+                            // std::thread::sleep(std::time::Duration::from_secs(2));
 
                             let gateway = cmd::get_default_ipv4_gateway().unwrap();
                             println!("gateway: {:?}", gateway);
