@@ -506,9 +506,9 @@ pub fn start(
                         use crate::proxy::tun::win::route::route_add_with_if;
                         println!("if_index: {:?}, if_name: {:?}, default ip: {:?} ",if_index,if_name,&default_ipv4); */
             tokio::time::sleep(std::time::Duration::from_secs(7)).await;
-            let mut if_set = IfWatcher::new().await.unwrap();
-            loop {
-                let if_event = Pin::new(&mut if_set).await?;
+            let mut if_set = IfWatcher::new().unwrap();
+            use futures::StreamExt;
+            while let Some(Ok(if_event)) = if_set.next().await {
                 println!("network ifterface event: {:?}", if_event);
                 match if_event {
                     IfEvent::Up(ip) => {
@@ -584,6 +584,7 @@ pub fn start(
                     IfEvent::Down(ip) => {}
                 }
             }
+
             Ok(()) as std::io::Result<()>
         });
     }
