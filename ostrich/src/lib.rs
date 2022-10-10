@@ -505,7 +505,7 @@ pub fn start(
                         let prefix = 32;
                         use crate::proxy::tun::win::route::route_add_with_if;
                         println!("if_index: {:?}, if_name: {:?}, default ip: {:?} ",if_index,if_name,&default_ipv4); */
-            tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+            // tokio::time::sleep(std::time::Duration::from_secs(7)).await;
             let mut if_set = IfWatcher::new().unwrap();
             use futures::StreamExt;
             while let Some(Ok(if_event)) = if_set.next().await {
@@ -545,7 +545,7 @@ pub fn start(
                                 .status()
                                 .expect("failed to execute command");
                             println!("route delete command finished with: {}", out);
-                            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                            // tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                             match cmd::get_default_ipv4_gateway() {
                                 Ok(gw) => {
                                     let out = Command::new("netsh")
