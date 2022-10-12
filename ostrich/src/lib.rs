@@ -505,7 +505,7 @@ pub fn start(
                         let prefix = 32;
                         use crate::proxy::tun::win::route::route_add_with_if;
                         println!("if_index: {:?}, if_name: {:?}, default ip: {:?} ",if_index,if_name,&default_ipv4); */
-            // tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             let mut if_set = IfWatcher::new().unwrap();
             use futures::StreamExt;
             while let Some(Ok(if_event)) = if_set.next().await {
