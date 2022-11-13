@@ -535,7 +535,7 @@ pub async fn new_tcp_stream(
     address: &String,
     port: &u16,
 ) -> io::Result<AnyStream> {
-    /*    let mut resolver = Resolver::new(dns_client.clone(), address, port)
+    let mut resolver = Resolver::new(dns_client.clone(), address, port)
         .map_err(|e| {
             io::Error::new(
                 io::ErrorKind::Other,
@@ -577,15 +577,22 @@ pub async fn new_tcp_stream(
                 }
             }
         }
-    }*/
-    let addr = format!("{}:{}", address, port);
+    }
+
+    Err(last_err.unwrap_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "could not resolve to any address",
+        )
+    }))
+/*     let addr = format!("{}:{}", address, port);
     match tcp_dial_task(addr.parse().unwrap()).await {
         Ok((stream, _)) => Ok(stream),
         Err(_) => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "could not resolve to any address",
         )),
-    }
+    } */
 }
 
 /// An interface with the ability to dial TCP connections.
