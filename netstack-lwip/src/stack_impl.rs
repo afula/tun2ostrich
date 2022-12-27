@@ -1,26 +1,17 @@
-use std::{
-    io,
-    os::raw,
-    pin::Pin,
-    sync::{
-        mpsc::{self, Receiver, Sender},
-        Arc, Once,
-    },
-    time,
-};
+use std::{io, os::raw, pin::Pin, sync::Once, time};
 
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::task::{Context, Poll, Waker};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use super::lwip::*;
 use super::output::{output_ip4, output_ip6, OUTPUT_CB_PTR};
-use super::LWIPMutex;
+use super::LWIP_MUTEX;
 
 static LWIP_INIT: Once = Once::new();
 
 pub struct NetStackImpl {
-    pub lwip_mutex: Arc<LWIPMutex>,
     waker: Option<Waker>,
     tx: Sender<Vec<u8>>,
     rx: Receiver<Vec<u8>>,
@@ -28,7 +19,7 @@ pub struct NetStackImpl {
 }
 
 impl NetStackImpl {
-    pub fn new(lwip_mutex: Arc<LWIPMutex>) -> Box<Self> {
+    pub fn new(buffer_size: usize) -> Box<Self> {
         LWIP_INIT.call_once(|| unsafe { lwip_init() });
 
         unsafe {
@@ -37,10 +28,9 @@ impl NetStackImpl {
             (*netif_list).mtu = 1500;
         }
 
-        let (tx, rx): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
+        let (tx, rx): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel(buffer_size);
 
         let stack = Box::new(NetStackImpl {
-            lwip_mutex,
             waker: None,
             tx,
             rx,
@@ -51,11 +41,10 @@ impl NetStackImpl {
             OUTPUT_CB_PTR = &*stack as *const NetStackImpl as usize;
         }
 
-        let lwip_mutex = stack.lwip_mutex.clone();
         tokio::spawn(async move {
             loop {
                 {
-                    let _g = lwip_mutex.lock();
+                    let _g = LWIP_MUTEX.lock();
                     unsafe { sys_check_timeouts() };
                 }
                 tokio::time::sleep(time::Duration::from_millis(250)).await;
@@ -65,16 +54,13 @@ impl NetStackImpl {
         stack
     }
 
-    pub fn output(&mut self, pkt: Vec<u8>) -> io::Result<usize> {
-        let n = pkt.len();
-        if let Err(_) = self.tx.send(pkt) {
-            return Ok(0);
+    pub fn output(&mut self, pkt: Vec<u8>) {
+        if let Err(e) = self.tx.try_send(pkt) {
+            // log::trace!("try send stack output pkt failed: {}", e);
         }
         if let Some(waker) = self.waker.as_ref() {
             waker.wake_by_ref();
-            return Ok(n);
         }
-        Ok(0)
     }
 }
 
@@ -82,7 +68,7 @@ impl Drop for NetStackImpl {
     fn drop(&mut self) {
         log::trace!("drop netstack");
         unsafe {
-            let _g = self.lwip_mutex.lock();
+            let _g = LWIP_MUTEX.lock();
             OUTPUT_CB_PTR = 0x0;
         };
     }
@@ -92,16 +78,11 @@ impl Stream for NetStackImpl {
     type Item = io::Result<Vec<u8>>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        match self.rx.try_recv() {
-            Ok(pkt) => Poll::Ready(Some(Ok(pkt))),
-            Err(_) => {
-                if let Some(waker) = self.waker.as_ref() {
-                    if !waker.will_wake(cx.waker()) {
-                        self.waker.replace(cx.waker().clone());
-                    }
-                } else {
-                    self.waker.replace(cx.waker().clone());
-                }
+        match self.rx.poll_recv(cx) {
+            Poll::Ready(Some(pkt)) => Poll::Ready(Some(Ok(pkt))),
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => {
+                self.waker.replace(cx.waker().clone());
                 Poll::Pending
             }
         }
@@ -130,10 +111,11 @@ impl Sink<Vec<u8>> for NetStackImpl {
     ) -> Poll<Result<(), Self::Error>> {
         if let Some(item) = self.sink_buf.take() {
             unsafe {
-                let _g = self.lwip_mutex.lock();
+                let _g = LWIP_MUTEX.lock();
 
                 let pbuf = pbuf_alloc(pbuf_layer_PBUF_RAW, item.len() as u16_t, pbuf_type_PBUF_RAM);
                 if pbuf.is_null() {
+                    log::trace!("pbuf_alloc null alloc");
                     return Poll::Pending;
                 }
                 pbuf_take(

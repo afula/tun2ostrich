@@ -1,38 +1,100 @@
-use std::{
-    ffi, mem,
-    net::{IpAddr, SocketAddr},
-};
-
-use anyhow::anyhow;
-use anyhow::Result;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use super::lwip::*;
 
-// TODO optimize
+// FIXME Need to verify the byte order of Ipv6 address in lwIP.
 
-pub fn to_socket_addr(addr: &ip_addr_t, port: u16_t) -> Result<SocketAddr> {
+pub fn to_socket_addr(addr: &ip_addr_t, port: u16_t) -> SocketAddr {
     unsafe {
-        let src_ip = ffi::CStr::from_ptr(ipaddr_ntoa(addr))
-            .to_str()
-            .map_err(|_| anyhow!("to_sockset_addr failed"))?;
-        Ok(SocketAddr::new(src_ip.parse::<IpAddr>()?, port as u16))
+        match addr.type_ {
+            // Ipv4
+            0 => SocketAddr::new(IpAddr::V4(addr.u_addr.ip4.addr.swap_bytes().into()), port),
+            // Ipv6
+            6 => {
+                let addr = addr.u_addr.ip6.addr;
+                assert!(addr.len() == 4);
+                let p0 = addr[0].to_be_bytes();
+                let p1 = addr[1].to_be_bytes();
+                let p2 = addr[2].to_be_bytes();
+                let p3 = addr[3].to_be_bytes();
+                let mut p = [0u8; 16];
+                (&mut p[0..4]).copy_from_slice(&p0);
+                (&mut p[4..8]).copy_from_slice(&p1);
+                (&mut p[8..12]).copy_from_slice(&p2);
+                (&mut p[12..16]).copy_from_slice(&p3);
+                let addr = Ipv6Addr::from(p);
+                SocketAddr::new(IpAddr::V6(addr), port)
+            }
+            // FIXME Ipv4+Ipv6 (dual-stack)
+            _ => {
+                log::warn!("Unsupported IP address type");
+                SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port)
+            }
+        }
     }
 }
 
-pub fn to_ip_addr_t(ip: &IpAddr) -> Result<ip_addr_t> {
-    let mut ip_addr = ip_addr_t {
-        u_addr: unsafe { mem::zeroed() },
-        type_: unsafe { mem::zeroed() },
-    };
-    let addr_str = ip.to_string();
-    let addr_str_bytes = addr_str.as_bytes();
-    let addr_cstring =
-        ffi::CString::new(addr_str_bytes).map_err(|_| anyhow!("to_ip_addr_t failed"))?;
-    let addr_cstring_bytes = addr_cstring.to_bytes_with_nul();
-    let cp = unsafe { ffi::CStr::from_bytes_with_nul_unchecked(addr_cstring_bytes).as_ptr() };
-    let ret = unsafe { ipaddr_aton(cp, &mut ip_addr as *mut ip_addr_t) };
-    if ret == 0 {
-        return Err(anyhow!("ipaddr_aton failed"));
+pub fn to_ip_addr_t(ip: IpAddr) -> ip_addr_t {
+    unsafe {
+        match ip {
+            IpAddr::V4(ip4) => {
+                ip_addr_t {
+                    u_addr: ip_addr__bindgen_ty_1 {
+                        ip4: ip4_addr {
+                            addr: u32::from(ip4).swap_bytes(),
+                        },
+                    },
+                    type_: 0, // Ipv4
+                }
+            }
+            IpAddr::V6(ip6) => {
+                let bytes = ip6.octets();
+                let mut p0 = [0u8; 4];
+                let mut p1 = [0u8; 4];
+                let mut p2 = [0u8; 4];
+                let mut p3 = [0u8; 4];
+                p0.copy_from_slice(&bytes[0..4]);
+                p1.copy_from_slice(&bytes[4..8]);
+                p2.copy_from_slice(&bytes[8..12]);
+                p3.copy_from_slice(&bytes[12..16]);
+                let addr = [
+                    u32::from_be_bytes(p0),
+                    u32::from_be_bytes(p1),
+                    u32::from_be_bytes(p2),
+                    u32::from_be_bytes(p3),
+                ];
+                ip_addr_t {
+                    u_addr: ip_addr__bindgen_ty_1 {
+                        ip6: ip6_addr { addr, zone: 0 },
+                    },
+                    type_: 6, // Ipv6
+                }
+            }
+        }
     }
-    Ok(ip_addr)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_to_socket_addr() {
+        unsafe {
+            let addr = to_socket_addr(&ip_addr_any_type, 80);
+            assert_eq!(addr, SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 80));
+            let mut v6_addr = ip_addr_any_type;
+            v6_addr.type_ = 6;
+            let addr = to_socket_addr(&v6_addr, 80);
+            assert_eq!(addr, SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 80));
+        }
+    }
+
+    #[test]
+    fn test_to_ip_addr_t() {
+        let addr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+        assert_eq!(to_ip_addr_t(addr).type_, 0);
+        let addr = IpAddr::V6(Ipv6Addr::UNSPECIFIED);
+        assert_eq!(to_ip_addr_t(addr).type_, 6);
+    }
 }
