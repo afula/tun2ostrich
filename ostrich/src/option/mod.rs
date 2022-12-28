@@ -69,22 +69,22 @@ lazy_static! {
 
     /// Uplink timeout after downlink EOF.
     pub static ref TCP_UPLINK_TIMEOUT: u64 = {
-        get_env_var_or("TCP_UPLINK_TIMEOUT", 30)
+        get_env_var_or("TCP_UPLINK_TIMEOUT", 10)
     };
 
     /// Downlink timeout after uplink EOF.
     pub static ref TCP_DOWNLINK_TIMEOUT: u64 = {
-        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 30)
+        get_env_var_or("TCP_DOWNLINK_TIMEOUT", 10)
     };
 
     /// Buffer size for uplink and downlink connections, in KB.
     pub static ref LINK_BUFFER_SIZE: usize = {
-        get_env_var_or("LINK_BUFFER_SIZE", 4)
+        get_env_var_or("LINK_BUFFER_SIZE", 8)
     };
 
     /// Buffer size for UDP datagrams receiving/sending, in KB.
     pub static ref DATAGRAM_BUFFER_SIZE: usize = {
-        get_env_var_or("DATAGRAM_BUFFER_SIZE", 4)
+        get_env_var_or("DATAGRAM_BUFFER_SIZE", 8)
     };
 
     pub static ref OUTBOUND_DIAL_TIMEOUT: u64 = {
