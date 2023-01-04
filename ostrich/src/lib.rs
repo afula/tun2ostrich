@@ -468,7 +468,7 @@ pub fn start(
     {
         tokio::spawn(async move {
             use crate::common::cmd;
-            use if_watch::{IfEvent, IfWatcher};
+            use if_watch::smol::IfWatcher;
             use std::pin::Pin;
             use std::process::Command;
 
