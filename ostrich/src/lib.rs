@@ -95,7 +95,15 @@ lazy_static! {
         Mutex::new(IndexMap::new());
 }
 
-pub fn shutdown() -> bool {
+pub fn async_shutdown() -> bool {
+    if let Ok(g) = RUNTIME_MANAGER.lock() {
+        if let Some(m) = g.get(&INSTANCE_ID) {
+            return m.shutdown();
+        }
+    }
+    false
+}
+pub fn sync_shutdown() -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&INSTANCE_ID) {
             return m.blocking_shutdown();
@@ -103,6 +111,7 @@ pub fn shutdown() -> bool {
     }
     false
 }
+
 
 pub fn is_running() -> bool {
     RUNTIME_MANAGER.lock().unwrap().contains_key(&INSTANCE_ID)
