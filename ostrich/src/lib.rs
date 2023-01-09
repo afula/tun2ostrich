@@ -98,7 +98,7 @@ lazy_static! {
 pub fn async_shutdown() -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&INSTANCE_ID) {
-            return m.shutdown();
+            return m.shutdown().await;
         }
     }
     false
