@@ -11,7 +11,7 @@
     ],
     "hosts": {
         "dev.kamel.services":[
-      "158.247.219.199"
+      "45.32.86.119"
     ]}
   },
   "inbounds": [
@@ -27,8 +27,8 @@
       "protocol": "trojan",
       "settings": {
         "server_name": "dev.kamel.services",
-	"address": "158.247.219.199",
-        "password": "a30ed2d5",
+	"address": "45.32.86.119",
+        "password": "94a565ae",
         "port": 443,
         "alpn": [
           "http/1.1"
@@ -61,7 +61,7 @@
           "89.233.43.71",
           "84.200.69.80",
           "84.200.70.40",
-          "158.247.219.199"
+          "45.32.86.119"
         ],
         "target": "direct_out"
       }
