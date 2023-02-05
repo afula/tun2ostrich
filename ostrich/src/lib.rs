@@ -103,7 +103,15 @@ lazy_static! {
         Mutex::new(IndexMap::new());
 }
 
-pub fn shutdown() -> bool {
+pub async fn async_shutdown() -> bool {
+    if let Ok(g) = RUNTIME_MANAGER.lock() {
+        if let Some(m) = g.get(&INSTANCE_ID) {
+            return m.shutdown().await;
+        }
+    }
+    false
+}
+pub fn sync_shutdown() -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&INSTANCE_ID) {
             return m.blocking_shutdown();
@@ -111,6 +119,7 @@ pub fn shutdown() -> bool {
     }
     false
 }
+
 
 pub fn is_running() -> bool {
     RUNTIME_MANAGER.lock().unwrap().contains_key(&INSTANCE_ID)
@@ -477,6 +486,7 @@ pub fn start(
         tokio::spawn(async move {
             use crate::common::cmd;
             use if_watch::smol::IfWatcher;
+            use if_watch::IfEvent;
             use std::pin::Pin;
             use std::process::Command;
 
