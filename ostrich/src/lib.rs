@@ -32,7 +32,15 @@ pub mod session;
 mod sys;
 pub mod util;
 
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 // #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows",target_os = "ios"))]
+#[cfg(target_env = "msvc")]
 #[global_allocator]
 static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc;
 

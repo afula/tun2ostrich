@@ -73,7 +73,7 @@ async fn handle_inbound_datagram(
     let ls = Arc::new(ls);
 
     // The channel for sending back datagrams from NAT manager to netstack.
-    let (l_tx, mut l_rx): (TokioSender<UdpPacket>, TokioReceiver<UdpPacket>) = tokio_channel(32);
+    let (l_tx, mut l_rx): (TokioSender<UdpPacket>, TokioReceiver<UdpPacket>) = tokio_channel(*crate::option::UDP_DOWNLINK_CHANNEL_SIZE);
 
     // Receive datagrams from NAT manager and send back to netstack.
     let fakedns_cloned = fakedns.clone();
@@ -241,16 +241,24 @@ pub fn new(
             let inbound_tag = inbound.tag.clone();
             let framed = tun.into_framed();
             let (mut tun_sink, mut tun_stream) = framed.split();
-            let (stack, mut tcp_listener, udp_socket) = netstack::NetStack::new();
+            let (stack, mut tcp_listener, udp_socket) = netstack::NetStack::with_buffer_size(
+                *crate::option::NETSTACK_OUTPUT_CHANNEL_SIZE,
+                *crate::option::NETSTACK_UDP_UPLINK_CHANNEL_SIZE,
+            );
             let (mut stack_sink, mut stack_stream) = stack.split();
 
             let mut futs: Vec<Runner> = Vec::new();
+
 
             // Reads packet from stack and sends to TUN.
             futs.push(Box::pin(async move {
                 while let Some(pkt) = stack_stream.next().await {
                     if let Ok(pkt) = pkt {
-                        tun_sink.send(TunPacket::new(pkt)).await.unwrap();
+                        if let Err(e) = tun_sink.send(TunPacket::new(pkt)).await {
+                            // TODO Return the error
+                            log::error!("Sending packet to TUN failed: {}", e);
+                            return;
+                        }
                     }
                 }
             }));
@@ -259,10 +267,14 @@ pub fn new(
             futs.push(Box::pin(async move {
                 while let Some(pkt) = tun_stream.next().await {
                     if let Ok(pkt) = pkt {
-                        stack_sink.send(pkt.get_bytes().to_vec()).await.unwrap();
+                        if let Err(e) = stack_sink.send(pkt.into_bytes().into()).await {
+                            log::error!("Sending packet to NetStack failed: {}", e);
+                            return;
+                        }
                     }
                 }
             }));
+
 
             // Extracts TCP connections from stack and sends them to the dispatcher.
             let inbound_tag_cloned = inbound_tag.clone();

@@ -168,7 +168,7 @@ impl NatManager {
             tokio::spawn(task);
         }
 
-        let (target_ch_tx, mut target_ch_rx) = mpsc::channel(64);
+        let (target_ch_tx, mut target_ch_rx) = mpsc::channel(*crate::option::UDP_UPLINK_CHANNEL_SIZE);
         let (downlink_abort_tx, downlink_abort_rx) = oneshot::channel();
 
         guard.insert(raddr, (target_ch_tx, downlink_abort_tx, Instant::now()));

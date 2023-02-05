@@ -7,8 +7,8 @@ use lazy_static::lazy_static;
 // Gets an environment variable by a key and parses as type `T` or returns
 // the provided default value.
 fn get_env_var_or<T>(key: &str, default: T) -> T
-where
-    T: FromStr,
+    where
+        T: FromStr,
 {
     if let Ok(v) = env::var(key) {
         if let Ok(v) = v.parse::<T>() {
@@ -16,6 +16,19 @@ where
         }
     }
     default
+}
+
+fn get_env_var_or_else<T, F>(key: &str, f: F) -> T
+    where
+        T: FromStr,
+        F: FnOnce() -> T,
+{
+    if let Ok(v) = env::var(key) {
+        if let Ok(v) = v.parse::<T>() {
+            return v;
+        }
+    }
+    f()
 }
 
 #[cfg(target_os = "ios")]
@@ -54,9 +67,26 @@ lazy_static! {
     };
 }
 
+#[cfg(feature = "stat")]
 lazy_static! {
-    pub static ref USER_AGENT: String = {
-        get_env_var_or("USER_AGENT", "".to_string())
+    pub static ref ENABLE_STATS: bool = get_env_var_or("ENABLE_STATS", false);
+}
+
+lazy_static! {
+    pub static ref HTTP_USER_AGENT: String = {
+        get_env_var_or_else(
+            "HTTP_USER_AGENT",
+            || get_env_var_or("USER_AGENT", "".to_string()), // legacy support
+        )
+    };
+
+    // The purpose is not to propagate the header, but to extract the forwarded
+    // source IP. Expects only comma separated IP list and only the first IP is
+    // taken as the forwarded source. Having this value customizable would benefit
+    // in case you don't trust the X-Forwarded-For header but there is another header
+    // which you can trust, for example the CF-Connecting-IP provided by Cloudflare.
+    pub static ref HTTP_FORWARDED_HEADER: String = {
+        get_env_var_or("HTTP_FORWARDED_HEADER", "X-Forwarded-For".to_string())
     };
 
     pub static ref LOG_CONSOLE_OUT: bool = {
@@ -79,12 +109,28 @@ lazy_static! {
 
     /// Buffer size for uplink and downlink connections, in KB.
     pub static ref LINK_BUFFER_SIZE: usize = {
-        get_env_var_or("LINK_BUFFER_SIZE", 8)
+        get_env_var_or("LINK_BUFFER_SIZE", 2)
+    };
+
+    pub static ref NETSTACK_OUTPUT_CHANNEL_SIZE: usize = {
+        get_env_var_or("NETSTACK_OUTPUT_CHANNEL_SIZE", 512)
+    };
+
+    pub static ref NETSTACK_UDP_UPLINK_CHANNEL_SIZE: usize = {
+        get_env_var_or("NETSTACK_UDP_UPLINK_CHANNEL_SIZE", 256)
+    };
+
+    pub static ref UDP_UPLINK_CHANNEL_SIZE: usize = {
+        get_env_var_or("UDP_UPLINK_CHANNEL_SIZE", 256)
+    };
+
+    pub static ref UDP_DOWNLINK_CHANNEL_SIZE: usize = {
+        get_env_var_or("UDP_DOWNLINK_CHANNEL_SIZE", 256)
     };
 
     /// Buffer size for UDP datagrams receiving/sending, in KB.
     pub static ref DATAGRAM_BUFFER_SIZE: usize = {
-        get_env_var_or("DATAGRAM_BUFFER_SIZE", 8)
+        get_env_var_or("DATAGRAM_BUFFER_SIZE", 2)
     };
 
     pub static ref OUTBOUND_DIAL_TIMEOUT: u64 = {
@@ -97,9 +143,11 @@ lazy_static! {
     };
 
     pub static ref ASSET_LOCATION: String = {
-        let mut file = std::env::current_exe().unwrap();
-        file.pop();
-        get_env_var_or("ASSET_LOCATION", file.to_str().unwrap().to_string())
+        get_env_var_or_else("ASSET_LOCATION", || {
+            let mut file = std::env::current_exe().unwrap();
+            file.pop();
+            file.to_str().unwrap().to_string()
+        })
     };
 
     pub static ref CACHE_LOCATION: String = {
@@ -119,12 +167,13 @@ lazy_static! {
     };
 
     pub static ref UNSPECIFIED_BIND_ADDR: SocketAddr = {
-        let default =  if *ENABLE_IPV6 {
-            "[::]:0".to_string().parse().unwrap()
-        } else {
-            "0.0.0.0:0".to_string().parse().unwrap()
-        };
-        get_env_var_or("UNSPECIFIED_BIND_ADDR", default)
+        get_env_var_or_else("UNSPECIFIED_BIND_ADDR", || {
+            if *ENABLE_IPV6 {
+                "[::]:0".to_string().parse().unwrap()
+            } else {
+                "0.0.0.0:0".to_string().parse().unwrap()
+            }
+        })
     };
 
     pub static ref OUTBOUND_BINDS: Vec<crate::proxy::OutboundBind> = {
@@ -185,11 +234,11 @@ lazy_static! {
     };
 
     pub static ref DEFAULT_TUN_IPV4_ADDR: String = {
-        get_env_var_or("DEFAULT_TUN_IPV4_ADDR", "172.7.0.2".to_string())
+        get_env_var_or("DEFAULT_TUN_IPV4_ADDR", "240.255.0.2".to_string())
     };
 
     pub static ref DEFAULT_TUN_IPV4_GW: String = {
-        get_env_var_or("DEFAULT_TUN_IPV4_GW", "172.7.0.1".to_string())
+        get_env_var_or("DEFAULT_TUN_IPV4_GW", "240.255.0.1".to_string())
     };
 
     pub static ref DEFAULT_TUN_IPV4_MASK: String = {

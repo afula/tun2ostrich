@@ -182,8 +182,6 @@ if-watch = {git = "https://github.com/mxinden/if-watch.git",features = ["smol"]}
 rustls = { version = "0.20.4",features = ["tls12"],optional = true }
 
 
-#allocator
-rpmalloc = { version = "0.2.0", features = ["guards", "statistics","unlimited_cache", "unlimited_global_cache", "unlimited_thread_cache"] }
 
 #hashmap
 indexmap = {git = "https://github.com/bluss/indexmap.git",features =["std"]}
@@ -192,7 +190,7 @@ futures-timer = "3"
 arc-swap = "1.5.0"
 # TUN
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux"))'.dependencies]
-tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "upgrade", features = ["async"], optional = true }
+tun = { git = "https://github.com/eycorsican/rust-tun.git", branch = "fork", features = ["async"], optional = true }
 # netstack-lwip = { git = "https://github.com/eycorsican/netstack-lwip.git", optional = true }
 signal-hook = "0.3.13"
 signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
@@ -222,7 +220,11 @@ ipconfig = {git = "https://github.com/liranringel/ipconfig.git"}
 ##allocator
 #[target.'cfg(any(target_os = "macos", target_os = "linux",target_os = "windows"))'.dependencies]
 #rpmalloc = { version = "0.2.0", features = ["guards", "statistics","unlimited_cache", "unlimited_global_cache", "unlimited_thread_cache"] }
-
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = "0.5"
+#allocator
+[target.'cfg(target_env = "msvc")'.dependencies]
+rpmalloc = { version = "0.2.0", features = ["guards", "statistics","unlimited_cache", "unlimited_global_cache", "unlimited_thread_cache"] }
 
 
 [dev-dependencies]
