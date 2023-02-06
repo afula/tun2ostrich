@@ -580,6 +580,16 @@ pub fn start(
                                         .arg("3")
                                         .status()
                                         .expect("failed to execute command");
+                                        let out = Command::new("netsh")
+                                        .arg("interface")
+                                        .arg("ip")
+                                        .arg("set")
+                                        .arg("dns")
+                                        .arg("name=utun233")
+                                        .arg("static")
+                                        .arg("8.8.8.8")
+                                        .status()
+                                        .expect("failed to execute command");
                                     println!("setup tun device command finished with: {}", out);
                                     for v in &ipset {
                                         let out = Command::new("route")
