@@ -115,6 +115,18 @@ impl InboundManager {
                                 .arg("3")
                                 .status()
                                 .expect("failed to execute command");
+
+                                // netsh interface ip set dns name=%tun_device% static 8.8.8.8
+                                let out = Command::new("netsh")
+                                .arg("interface")
+                                .arg("ip")
+                                .arg("set")
+                                .arg("dns")
+                                .arg("name=utun233")
+                                .arg("static")
+                                .arg("8.8.8.8")
+                                .status()
+                                .expect("failed to execute command");
                             println!("process finished with: {}", out);
                             for ip in &ipset {
                                 let out = Command::new("route")
