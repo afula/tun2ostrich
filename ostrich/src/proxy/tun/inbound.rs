@@ -73,7 +73,8 @@ async fn handle_inbound_datagram(
     let ls = Arc::new(ls);
 
     // The channel for sending back datagrams from NAT manager to netstack.
-    let (l_tx, mut l_rx): (TokioSender<UdpPacket>, TokioReceiver<UdpPacket>) = tokio_channel(*crate::option::UDP_DOWNLINK_CHANNEL_SIZE);
+    let (l_tx, mut l_rx): (TokioSender<UdpPacket>, TokioReceiver<UdpPacket>) =
+        tokio_channel(*crate::option::UDP_DOWNLINK_CHANNEL_SIZE);
 
     // Receive datagrams from NAT manager and send back to netstack.
     let fakedns_cloned = fakedns.clone();
@@ -249,7 +250,6 @@ pub fn new(
 
             let mut futs: Vec<Runner> = Vec::new();
 
-
             // Reads packet from stack and sends to TUN.
             futs.push(Box::pin(async move {
                 while let Some(pkt) = stack_stream.next().await {
@@ -274,7 +274,6 @@ pub fn new(
                     }
                 }
             }));
-
 
             // Extracts TCP connections from stack and sends them to the dispatcher.
             let inbound_tag_cloned = inbound_tag.clone();

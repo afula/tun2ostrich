@@ -28,7 +28,8 @@ async fn handle_inbound_datagram(
     // by dispatching UDP sessions, then datagrams are sent to the socket by the NAT manager.
     // When the NAT manager reads some packets from the right-hand side socket, they would
     // be sent back here through a channel, then we can send them to left-hand side socket.
-    let (l_tx, mut l_rx): (TokioSender<UdpPacket>, TokioReceiver<UdpPacket>) = tokio_channel(*crate::option::UDP_UPLINK_CHANNEL_SIZE);
+    let (l_tx, mut l_rx): (TokioSender<UdpPacket>, TokioReceiver<UdpPacket>) =
+        tokio_channel(*crate::option::UDP_UPLINK_CHANNEL_SIZE);
 
     tokio::spawn(async move {
         while let Some(pkt) = l_rx.recv().await {

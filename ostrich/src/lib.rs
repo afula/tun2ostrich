@@ -120,7 +120,6 @@ pub fn sync_shutdown() -> bool {
     false
 }
 
-
 pub fn is_running() -> bool {
     RUNTIME_MANAGER.lock().unwrap().contains_key(&INSTANCE_ID)
 }
@@ -321,8 +320,8 @@ pub fn start(
         let network_changed = network_changed.clone();
 
         tokio::spawn(async move {
-            use if_watch::{IfEvent};
             use if_watch::smol::IfWatcher;
+            use if_watch::IfEvent;
             let mut if_set = IfWatcher::new().unwrap();
 
             let if_fut = Box::pin(async {
@@ -580,7 +579,7 @@ pub fn start(
                                         .arg("3")
                                         .status()
                                         .expect("failed to execute command");
-                                        let out = Command::new("netsh")
+                                    let out = Command::new("netsh")
                                         .arg("interface")
                                         .arg("ip")
                                         .arg("set")

@@ -58,9 +58,9 @@ impl CopyBuffer {
         mut reader: Pin<&mut R>,
         mut writer: Pin<&mut W>,
     ) -> Poll<io::Result<u64>>
-        where
-            R: AsyncRead + ?Sized,
-            W: AsyncWrite + ?Sized,
+    where
+        R: AsyncRead + ?Sized,
+        W: AsyncWrite + ?Sized,
     {
         loop {
             // If our buffer is empty, then we need to read some data to
@@ -147,9 +147,9 @@ struct CopyBidirectional<'a, A: ?Sized, B: ?Sized> {
 }
 
 impl<'a, A, B> Future for CopyBidirectional<'a, A, B>
-    where
-        A: AsyncRead + AsyncWrite + Unpin + ?Sized,
-        B: AsyncRead + AsyncWrite + Unpin + ?Sized,
+where
+    A: AsyncRead + AsyncWrite + Unpin + ?Sized,
+    B: AsyncRead + AsyncWrite + Unpin + ?Sized,
 {
     type Output = io::Result<(u64, u64)>;
 
@@ -269,9 +269,9 @@ pub async fn copy_buf_bidirectional_with_timeout<A, B>(
     a_to_b_timeout_duration: Duration,
     b_to_a_timeout_duration: Duration,
 ) -> Result<(u64, u64), std::io::Error>
-    where
-        A: AsyncRead + AsyncWrite + Unpin + ?Sized,
-        B: AsyncRead + AsyncWrite + Unpin + ?Sized,
+where
+    A: AsyncRead + AsyncWrite + Unpin + ?Sized,
+    B: AsyncRead + AsyncWrite + Unpin + ?Sized,
 {
     CopyBidirectional {
         a,
@@ -285,5 +285,5 @@ pub async fn copy_buf_bidirectional_with_timeout<A, B>(
         a_to_b_timeout_duration,
         b_to_a_timeout_duration,
     }
-        .await
+    .await
 }

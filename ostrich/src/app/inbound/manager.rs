@@ -97,6 +97,18 @@ impl InboundManager {
 
                         tokio::spawn(async move {
                             let _ = tun_rx.recv().await;
+                            'netif: loop {
+                                use local_ip_address::list_afinet_netifas;
+                                std::thread::sleep(std::time::Duration::from_millis(500));
+                                let network_interfaces = list_afinet_netifas().unwrap();
+
+                                for (name, _g) in network_interfaces.iter() {
+                                    if name == "utun233" {
+                                        println!("tun device up");
+                                        break 'netif;
+                                    }
+                                }
+                            }
                             // std::thread::sleep(std::time::Duration::from_secs(2));
 
                             let gateway = cmd::get_default_ipv4_gateway().unwrap();
@@ -116,8 +128,8 @@ impl InboundManager {
                                 .status()
                                 .expect("failed to execute command");
 
-                                // netsh interface ip set dns name=%tun_device% static 8.8.8.8
-                                let out = Command::new("netsh")
+                            // netsh interface ip set dns name=%tun_device% static 8.8.8.8
+                            let out = Command::new("netsh")
                                 .arg("interface")
                                 .arg("ip")
                                 .arg("set")

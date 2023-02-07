@@ -128,10 +128,10 @@ memmap = "0.7"
 cidr = { version = "0.1.0", default-features = false }
 
 # DNS
-trust-dns-proto = "0.21.0-alpha.4"
+trust-dns-proto = "0.22.0"
 trust-dns-resolver = { version = "0.21.0-alpha.4",features = ["dns-over-rustls"] }
 trust-dns-client = {version = "0.21.0-alpha.4", features = ["dns-over-rustls"]}
-lru = "0.7.3"
+lru = "0.9.0"
 
 # Logging
 log = { version = "0.4", features = ["std"] }
@@ -198,6 +198,7 @@ signal-hook-tokio = {version = "0.3.1", features = ["futures-v0_3"]}
 [target.'cfg(any(target_os = "ios", target_os = "android", target_os = "macos", target_os = "linux", target_os = "windows"))'.dependencies]
 netstack-lwip = { path = "../netstack-lwip", optional = true }
 [target.'cfg(target_os = "windows")'.dependencies]
+local-ip-address = {git = "https://github.com/EstebanBorai/local-ip-address.git"}
 win_tun = { path = "../win_tun", features = ["async"], optional = true }
 wintun = "0.2"
 smoltcp = "0.8.0"
