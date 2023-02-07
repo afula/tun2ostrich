@@ -1,15 +1,15 @@
 // use std::collections::HashMap;
-use indexmap::IndexMap;
-use std::net::{IpAddr, SocketAddr};
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-
 use anyhow::{anyhow, Result};
 use futures::future::select_ok;
+use indexmap::IndexMap;
 use log::*;
 use lru::LruCache;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::net::{IpAddr, SocketAddr};
+use std::num::NonZeroUsize;
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::time::timeout;
 use trust_dns_proto::{
@@ -74,10 +74,10 @@ impl DnsClient {
         let servers = Self::load_servers(dns)?;
         let hosts = Self::load_hosts(dns);
         let ipv4_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-            *option::DNS_CACHE_SIZE,
+            NonZeroUsize::new(*option::DNS_CACHE_SIZE).unwrap(),
         )));
         let ipv6_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-            *option::DNS_CACHE_SIZE,
+            NonZeroUsize::new(*option::DNS_CACHE_SIZE).unwrap(),
         )));
 
         Ok(DnsClient {
