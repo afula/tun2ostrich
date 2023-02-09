@@ -586,7 +586,7 @@ pub fn start(
                                         .arg("dns")
                                         .arg("name=utun233")
                                         .arg("static")
-                                        .arg("8.8.8.8")
+                                        .arg("127.0.0.1")
                                         .status()
                                         .expect("failed to execute command");
                                     println!("setup tun device command finished with: {}", out);
@@ -596,7 +596,7 @@ pub fn start(
                                             .arg(v)
                                             .arg(&gw)
                                             .arg("metric")
-                                            .arg("5")
+                                            .arg("3")
                                             .status()
                                             .expect("failed to execute command");
                                         println!("route add command finished with: {}", out);

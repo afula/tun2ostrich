@@ -136,7 +136,7 @@ impl InboundManager {
                                 .arg("dns")
                                 .arg("name=utun233")
                                 .arg("static")
-                                .arg("8.8.8.8")
+                                .arg("127.0.0.1")
                                 .status()
                                 .expect("failed to execute command");
                             println!("process finished with: {}", out);
@@ -146,7 +146,7 @@ impl InboundManager {
                                     .arg(ip)
                                     .arg(&gateway)
                                     .arg("metric")
-                                    .arg("5")
+                                    .arg("3")
                                     .status()
                                     .expect("failed to execute command");
                                 println!("process finished with: {}", out);
