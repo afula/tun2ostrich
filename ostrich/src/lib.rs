@@ -102,16 +102,7 @@ lazy_static! {
     pub static ref RUNTIME_MANAGER: Mutex<IndexMap<RuntimeId, Arc<RuntimeManager>>> =
         Mutex::new(IndexMap::new());
 }
-
-pub async fn shutdown() -> bool {
-    if let Ok(g) = RUNTIME_MANAGER.lock() {
-        if let Some(m) = g.get(&INSTANCE_ID) {
-            return m.shutdown().await;
-        }
-    }
-    false
-}
-pub fn blocking_shutdown() -> bool {
+pub fn shutdown() -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&INSTANCE_ID) {
             return m.blocking_shutdown();
@@ -119,6 +110,7 @@ pub fn blocking_shutdown() -> bool {
     }
     false
 }
+
 
 pub fn is_running() -> bool {
     RUNTIME_MANAGER.lock().unwrap().contains_key(&INSTANCE_ID)
