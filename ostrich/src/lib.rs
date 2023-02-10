@@ -103,7 +103,7 @@ lazy_static! {
         Mutex::new(IndexMap::new());
 }
 
-pub async fn async_shutdown() -> bool {
+pub async fn shutdown() -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&INSTANCE_ID) {
             return m.shutdown().await;
@@ -111,7 +111,7 @@ pub async fn async_shutdown() -> bool {
     }
     false
 }
-pub fn sync_shutdown() -> bool {
+pub fn blocking_shutdown() -> bool {
     if let Ok(g) = RUNTIME_MANAGER.lock() {
         if let Some(m) = g.get(&INSTANCE_ID) {
             return m.blocking_shutdown();
