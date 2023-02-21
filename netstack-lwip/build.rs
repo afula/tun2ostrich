@@ -73,7 +73,6 @@ fn compile_lwip() {
         // .file("src/lwip/core/ipv6/mld6.c")
         .file("src/lwip/core/ipv6/nd6.c")
         .file("src/lwip/custom/sys_arch.c")
-        .file("src/lwiperr.c") // MARKER BEGIN - END Fixing the Windows builds
         .include("src/lwip/custom")
         .include("src/lwip/include")
         .warnings(false)
@@ -81,7 +80,8 @@ fn compile_lwip() {
     if let Some(sdk_include_path) = sdk_include_path() {
         build.include(sdk_include_path);
     }
-    build.compile("liblwip"); // MARKER BEGIN - END Remove lib suffix
+    build.debug(true);
+    build.compile("liblwip.a");
 }
 
 fn generate_lwip_bindings() {
@@ -118,12 +118,12 @@ fn generate_lwip_bindings() {
 
 fn main() {
     let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
-    if os == "ios" || os == "android" || os == "linux" || os == "macos" || os == "windows" {
+    if os == "ios" || os == "android" || os == "linux" || os == "macos" {
         compile_lwip();
     }
 
     if env::var("BINDINGS_GEN").is_ok()
-        && (os == "ios" || os == "android" || os == "linux" || os == "macos" || os == "windows")
+        && (os == "ios" || os == "android" || os == "linux" || os == "macos")
     {
         generate_lwip_bindings();
     }

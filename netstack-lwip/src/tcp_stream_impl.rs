@@ -28,7 +28,7 @@ pub unsafe extern "C" fn tcp_recv_cb(
 
     if p.is_null() {
         trace!("netstack tcp eof {}", ctx.local_addr);
-        ctx.eof = true;
+        ctx.read_tx.as_ref().map(|tx| tx.send(Vec::new()));
         return err_enum_t_ERR_OK as err_t;
     }
 
@@ -38,11 +38,8 @@ pub unsafe extern "C" fn tcp_recv_cb(
     pbuf_copy_partial(p, buf.as_mut_ptr() as _, pbuflen, 0);
     buf.set_len(pbuflen as usize);
 
-    if let Some(Err(err)) = ctx.read_tx.as_ref().map(|tx| tx.send(buf)) {
-        // rx is closed
-        // call recvd?
-        log::trace!("rx is closed");
-        return tcp_shutdown(tpcb, 1, 0);
+    if !buf.is_empty() {
+        ctx.read_tx.as_ref().map(|tx| tx.send(buf));
     }
 
     pbuf_free(p);
@@ -168,6 +165,9 @@ impl AsyncRead for TcpStreamImpl {
         }
         match Pin::new(&mut ctx.read_rx).poll_recv(cx) {
             Poll::Ready(Some(data)) => {
+                if data.is_empty() {
+                    return Poll::Ready(Ok(())); // eof
+                }
                 let to_read = min(buf.remaining(), data.len());
                 buf.put_slice(&data[..to_read]);
                 if to_read < data.len() {
@@ -177,14 +177,7 @@ impl AsyncRead for TcpStreamImpl {
                 Poll::Ready(Ok(()))
             }
             Poll::Ready(None) => Poll::Ready(Err(broken_pipe())),
-            Poll::Pending => {
-                // no more buffered data
-                if ctx.eof {
-                    Poll::Ready(Ok(())) // eof
-                } else {
-                    Poll::Pending
-                }
-            }
+            Poll::Pending => Poll::Pending,
         }
     }
 }
@@ -201,7 +194,9 @@ impl Drop for TcpStreamImpl {
                 tcp_sent(self.pcb as *mut tcp_pcb, None);
                 tcp_err(self.pcb as *mut tcp_pcb, None);
                 tcp_poll(self.pcb as *mut tcp_pcb, None, 0);
-                tcp_abort(self.pcb as *mut tcp_pcb);
+                if !ctx.closed {
+                    tcp_abort(self.pcb as *mut tcp_pcb);
+                }
             }
         }
     }
@@ -268,7 +263,7 @@ impl AsyncWrite for TcpStreamImpl {
 
     fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<io::Result<()>> {
         let guard = LWIP_MUTEX.lock();
-        let ctx = &*self.callback_ctx.with_lock(&guard);
+        let ctx = &mut *self.callback_ctx.with_lock(&guard);
         if ctx.errored {
             return Poll::Ready(Err(broken_pipe()));
         }
@@ -280,6 +275,7 @@ impl AsyncWrite for TcpStreamImpl {
                 format!("netstack tcp_shutdown tx error {}", err),
             )))
         } else {
+            ctx.closed = true;
             Poll::Ready(Ok(()))
         }
     }

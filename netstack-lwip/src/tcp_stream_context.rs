@@ -14,8 +14,8 @@ pub struct TcpStreamContextInner {
     pub remote_addr: SocketAddr,
     pub read_tx: Option<UnboundedSender<Vec<u8>>>,
     pub read_rx: UnboundedReceiver<Vec<u8>>,
-    pub eof: bool,
     pub errored: bool,
+    pub closed: bool,
     pub write_waker: Option<Waker>,
 }
 
@@ -66,8 +66,8 @@ impl TcpStreamContext {
                 remote_addr,
                 read_tx: Some(read_tx),
                 read_rx,
-                eof: false,
                 errored: false,
+                closed: false,
                 write_waker: None,
             }),
             borrowed: AtomicBool::new(false),

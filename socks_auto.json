@@ -1,6 +1,6 @@
 {
   "log": {
-    "level": "error",
+    "level": "debug",
     "output": "console"
   },
   "dns": {
@@ -10,8 +10,8 @@
       "1.1.1.1"
     ],
     "hosts": {
-        "dev.kamel.services":[
-      "45.32.86.119"
+        "ostrich.services":[
+      "158.247.219.199"
     ]}
   },
   "inbounds": [
@@ -26,9 +26,9 @@
     {
       "protocol": "trojan",
       "settings": {
-        "server_name": "dev.kamel.services",
-	"address": "45.32.86.119",
-        "password": "94a565ae",
+        "server_name": "ostrich.services",
+	"address": "158.247.219.199",
+        "password": "f94a2d93",
         "port": 443,
         "alpn": [
           "http/1.1"
@@ -61,7 +61,7 @@
           "89.233.43.71",
           "84.200.69.80",
           "84.200.70.40",
-          "45.32.86.119"
+          "158.247.219.199"
         ],
         "target": "direct_out"
       }
