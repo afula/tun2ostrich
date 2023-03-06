@@ -1,14 +1,16 @@
-use std::collections::HashMap;
-use std::net::{IpAddr, SocketAddr};
-use std::str::FromStr;
-use std::sync::{Arc, Weak};
-use std::time::{Duration, Instant};
 
+// use std::collections::HashMap;
 use anyhow::{anyhow, Result};
 use futures::future::select_ok;
+use indexmap::IndexMap;
 use log::*;
 use lru::LruCache;
 use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::net::{IpAddr, SocketAddr};
+use std::num::NonZeroUsize;
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex as TokioMutex;
 use tokio::time::timeout;
 use trust_dns_proto::{
@@ -18,7 +20,7 @@ use trust_dns_proto::{
     rr::{record_data::RData, record_type::RecordType, Name},
 };
 
-use crate::{app::dispatcher::Dispatcher, option, proxy::*, session::*};
+use crate::{option, proxy::UdpConnector};
 
 #[derive(Clone, Debug)]
 struct CacheEntry {
@@ -28,9 +30,8 @@ struct CacheEntry {
 }
 
 pub struct DnsClient {
-    dispatcher: Option<Weak<Dispatcher>>,
     servers: Vec<SocketAddr>,
-    hosts: HashMap<String, Vec<IpAddr>>,
+    hosts: IndexMap<String, Vec<IpAddr>>,
     ipv4_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
     ipv6_cache: Arc<TokioMutex<LruCache<String, CacheEntry>>>,
 }
@@ -47,12 +48,12 @@ impl DnsClient {
         Ok(servers)
     }
 
-    fn load_hosts(dns: &crate::config::Dns) -> HashMap<String, Vec<IpAddr>> {
-        let mut hosts = HashMap::new();
+    fn load_hosts(dns: &crate::config::Dns) -> IndexMap<String, Vec<IpAddr>> {
+        let mut hosts = IndexMap::new();
         for (name, ips) in dns.hosts.iter() {
             hosts.insert(name.to_owned(), ips.values.to_vec());
         }
-        let mut parsed_hosts = HashMap::new();
+        let mut parsed_hosts = IndexMap::new();
         for (name, static_ips) in hosts.iter() {
             let mut ips = Vec::new();
             for ip in static_ips {
@@ -65,7 +66,7 @@ impl DnsClient {
         parsed_hosts
     }
 
-    pub fn new(dns: &protobuf::SingularPtrField<crate::config::Dns>) -> Result<Self> {
+    pub fn new(dns: &protobuf::MessageField<crate::config::Dns>) -> Result<Self> {
         let dns = if let Some(dns) = dns.as_ref() {
             dns
         } else {
@@ -74,14 +75,13 @@ impl DnsClient {
         let servers = Self::load_servers(dns)?;
         let hosts = Self::load_hosts(dns);
         let ipv4_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-            *option::DNS_CACHE_SIZE,
+            NonZeroUsize::new(*option::DNS_CACHE_SIZE).unwrap(),
         )));
         let ipv6_cache = Arc::new(TokioMutex::new(LruCache::<String, CacheEntry>::new(
-            *option::DNS_CACHE_SIZE,
+            NonZeroUsize::new(*option::DNS_CACHE_SIZE).unwrap(),
         )));
 
-        Ok(Self {
-            dispatcher: None,
+        Ok(DnsClient {
             servers,
             hosts,
             ipv4_cache,
@@ -89,11 +89,7 @@ impl DnsClient {
         })
     }
 
-    pub fn replace_dispatcher(&mut self, dispatcher: Weak<Dispatcher>) {
-        self.dispatcher.replace(dispatcher);
-    }
-
-    pub fn reload(&mut self, dns: &protobuf::SingularPtrField<crate::config::Dns>) -> Result<()> {
+    pub fn reload(&mut self, dns: &protobuf::MessageField<crate::config::Dns>) -> Result<()> {
         let dns = if let Some(dns) = dns.as_ref() {
             dns
         } else {
@@ -170,42 +166,21 @@ impl DnsClient {
 
     async fn query_task(
         &self,
-        is_direct: bool,
         request: Vec<u8>,
         host: &str,
         server: &SocketAddr,
     ) -> Result<CacheEntry> {
-        let socket = if is_direct {
-            let socket = self.new_udp_socket(server).await?;
-            Box::new(StdOutboundDatagram::new(socket))
-        } else {
-            if let Some(dispatcher_weak) = self.dispatcher.as_ref() {
-                let sess = Session {
-                    network: Network::Udp,
-                    destination: SocksAddr::from(server),
-                    ..Default::default()
-                };
-                if let Some(dispatcher) = dispatcher_weak.upgrade() {
-                    dispatcher.dispatch_datagram(sess).await?
-                } else {
-                    return Err(anyhow!("dispatcher is deallocated"));
-                }
-            } else {
-                return Err(anyhow!("could not find a dispatcher"));
-            }
-        };
-        let (mut r, mut s) = socket.split();
-        let server = SocksAddr::from(server);
+        let socket = self.new_udp_socket(server).await?;
         let mut last_err = None;
         for _i in 0..*option::MAX_DNS_RETRIES {
             debug!("looking up host {} on {}", host, server);
             let start = tokio::time::Instant::now();
-            match s.send_to(&request, &server).await {
+            match socket.send_to(&request, server).await {
                 Ok(_) => {
                     let mut buf = vec![0u8; 512];
                     match timeout(
                         Duration::from_secs(*option::DNS_TIMEOUT),
-                        r.recv_from(&mut buf),
+                        socket.recv_from(&mut buf),
                     )
                         .await
                     {
@@ -231,11 +206,11 @@ impl DnsClient {
                                 let mut ips = Vec::new();
                                 for ans in resp.answers() {
                                     // TODO checks?
-                                    match ans.rdata() {
-                                        RData::A(ip) => {
+                                    match ans.data() {
+                                        Some(RData::A(ip)) => {
                                             ips.push(IpAddr::V4(ip.to_owned()));
                                         }
-                                        RData::AAAA(ip) => {
+                                        Some(RData::AAAA(ip)) => {
                                             ips.push(IpAddr::V6(ip.to_owned()));
                                         }
                                         _ => (),
@@ -389,14 +364,6 @@ impl DnsClient {
     }
 
     pub async fn lookup(&self, host: &String) -> Result<Vec<IpAddr>> {
-        self._lookup(host, false).await
-    }
-
-    pub async fn direct_lookup(&self, host: &String) -> Result<Vec<IpAddr>> {
-        self._lookup(host, true).await
-    }
-
-    pub async fn _lookup(&self, host: &String, is_direct: bool) -> Result<Vec<IpAddr>> {
         if let Ok(ip) = host.parse::<IpAddr>() {
             return Ok(vec![ip]);
         }
@@ -448,7 +415,7 @@ impl DnsClient {
                 };
                 let mut tasks = Vec::new();
                 for server in &self.servers {
-                    let t = self.query_task(is_direct, msg_buf.clone(), host, server);
+                    let t = self.query_task(msg_buf.clone(), host, server);
                     tasks.push(Box::pin(t));
                 }
                 let query_task = select_ok(tasks.into_iter());
@@ -461,7 +428,7 @@ impl DnsClient {
                 };
                 let mut tasks = Vec::new();
                 for server in &self.servers {
-                    let t = self.query_task(is_direct, msg_buf.clone(), host, server);
+                    let t = self.query_task(msg_buf.clone(), host, server);
                     tasks.push(Box::pin(t));
                 }
                 let query_task = select_ok(tasks.into_iter());
@@ -475,7 +442,7 @@ impl DnsClient {
                 };
                 let mut tasks = Vec::new();
                 for server in &self.servers {
-                    let t = self.query_task(is_direct, msg_buf.clone(), host, server);
+                    let t = self.query_task(msg_buf.clone(), host, server);
                     tasks.push(Box::pin(t));
                 }
                 let query_task = select_ok(tasks.into_iter());
@@ -488,7 +455,7 @@ impl DnsClient {
                 };
                 let mut tasks = Vec::new();
                 for server in &self.servers {
-                    let t = self.query_task(is_direct, msg_buf.clone(), host, server);
+                    let t = self.query_task(msg_buf.clone(), host, server);
                     tasks.push(Box::pin(t));
                 }
                 let query_task = select_ok(tasks.into_iter());
@@ -502,7 +469,7 @@ impl DnsClient {
                 };
                 let mut tasks = Vec::new();
                 for server in &self.servers {
-                    let t = self.query_task(is_direct, msg_buf.clone(), host, server);
+                    let t = self.query_task(msg_buf.clone(), host, server);
                     tasks.push(Box::pin(t));
                 }
                 let query_task = select_ok(tasks.into_iter());

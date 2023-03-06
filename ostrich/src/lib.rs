@@ -305,7 +305,8 @@ pub fn start(
         let network_changed = network_changed.clone();
 
         tokio::spawn(async move {
-            use if_watch::{IfEvent, IfWatcher};
+            use if_watch::smol::IfWatcher;
+            use if_watch::IfEvent;
             let mut if_set = IfWatcher::new().unwrap();
 
             let if_fut = Box::pin(async {

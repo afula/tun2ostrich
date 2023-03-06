@@ -1,5 +1,7 @@
+
+
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     io::{self, ErrorKind},
     mem,
     net::{IpAddr, SocketAddr},
@@ -14,45 +16,32 @@ use std::{
 };
 
 use log::{error, trace};
-
+use shadowsocks::{net::TcpSocketOpts, relay::socks5::Address};
 use smoltcp::{
-    iface::{Interface, InterfaceBuilder, Routes, SocketHandle},
+    iface::{Config as InterfaceConfig, Interface, SocketHandle, SocketSet},
     phy::{DeviceCapabilities, Medium},
-    socket::{TcpSocket, TcpSocketBuffer, TcpState},
+    socket::tcp::{Socket as TcpSocket, SocketBuffer as TcpSocketBuffer, State as TcpState},
     storage::RingBuffer,
     time::{Duration as SmolDuration, Instant as SmolInstant},
     wire::{IpAddress, IpCidr, Ipv4Address, Ipv6Address, TcpPacket},
 };
 use spin::Mutex as SpinMutex;
-use tokio::sync::Mutex as TokioMutex;
 use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
     sync::mpsc,
 };
 
-use crate::app::dispatcher::Dispatcher;
-use crate::app::fake_dns::FakeDns;
-use crate::app::nat_manager::NatManager;
-
-use crate::session::{Network, Session, SocksAddr};
+use crate::{
+    local::{
+        context::ServiceContext,
+        loadbalancing::PingBalancer,
+        net::AutoProxyClientStream,
+        utils::{establish_tcp_tunnel, establish_tcp_tunnel_bypassed},
+    },
+    net::utils::to_ipv4_mapped,
+};
 
 use super::virt_device::VirtTunDevice;
-/// Options for connecting to TCP remote server
-#[derive(Debug, Clone, Default)]
-pub struct TcpSocketOpts {
-    /// TCP socket's `SO_SNDBUF`
-    pub send_buffer_size: Option<u32>,
-
-    /// TCP socket's `SO_RCVBUF`
-    pub recv_buffer_size: Option<u32>,
-    /*    /// `TCP_NODELAY`
-    pub nodelay: bool,
-    /// `TCP_FASTOPEN`, enables TFO
-    pub fastopen: bool,
-    /// `SO_KEEPALIVE` and sets `TCP_KEEPIDLE`, `TCP_KEEPINTVL` and `TCP_KEEPCNT` respectively,
-    /// enables keep-alive messages on connection-oriented sockets
-    pub keepalive: Option<Duration>,*/
-}
 
 // NOTE: Default buffer could contain 20 AEAD packets
 const DEFAULT_TCP_SEND_BUFFER_SIZE: u32 = 0x3FFF * 20;
@@ -81,7 +70,8 @@ impl ManagerNotify {
 }
 
 struct TcpSocketManager {
-    iface: Interface<'static, VirtTunDevice>,
+    device: VirtTunDevice,
+    iface: Interface,
     sockets: HashMap<SocketHandle, SharedTcpConnectionControl>,
     socket_creation_rx: mpsc::UnboundedReceiver<TcpSocketCreation>,
 }
@@ -112,12 +102,8 @@ impl TcpConnection {
         manager_notify: Arc<ManagerNotify>,
         tcp_opts: &TcpSocketOpts,
     ) -> TcpConnection {
-        let send_buffer_size = tcp_opts
-            .send_buffer_size
-            .unwrap_or(DEFAULT_TCP_SEND_BUFFER_SIZE);
-        let recv_buffer_size = tcp_opts
-            .recv_buffer_size
-            .unwrap_or(DEFAULT_TCP_RECV_BUFFER_SIZE);
+        let send_buffer_size = tcp_opts.send_buffer_size.unwrap_or(DEFAULT_TCP_SEND_BUFFER_SIZE);
+        let recv_buffer_size = tcp_opts.recv_buffer_size.unwrap_or(DEFAULT_TCP_RECV_BUFFER_SIZE);
 
         let control = Arc::new(SpinMutex::new(TcpSocketControl {
             send_buffer: RingBuffer::new(vec![0u8; send_buffer_size as usize]),
@@ -140,11 +126,7 @@ impl TcpConnection {
 }
 
 impl AsyncRead for TcpConnection {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
+    fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
         let mut control = self.control.lock();
 
         // If socket is already closed, just return EOF directly.
@@ -177,11 +159,7 @@ impl AsyncRead for TcpConnection {
 }
 
 impl AsyncWrite for TcpConnection {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
+    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
         let mut control = self.control.lock();
         if control.is_closed {
             return Err(io::ErrorKind::BrokenPipe.into()).into();
@@ -230,18 +208,14 @@ impl AsyncWrite for TcpConnection {
 }
 
 pub struct TcpTun {
-    // context: Arc<ServiceContext>,
+    context: Arc<ServiceContext>,
     manager_handle: Option<JoinHandle<()>>,
     manager_notify: Arc<ManagerNotify>,
     manager_socket_creation_tx: mpsc::UnboundedSender<TcpSocketCreation>,
     manager_running: Arc<AtomicBool>,
-    // balancer: PingBalancer,
+    balancer: PingBalancer,
     iface_rx: mpsc::UnboundedReceiver<Vec<u8>>,
     iface_tx: mpsc::UnboundedSender<Vec<u8>>,
-
-    dispatcher: Arc<Dispatcher>,
-    nat_manager: Arc<NatManager>,
-    fakedns: Arc<FakeDns>,
 }
 
 impl Drop for TcpTun {
@@ -252,39 +226,37 @@ impl Drop for TcpTun {
 }
 
 impl TcpTun {
-    pub fn new(
-        /*context: Arc<ServiceContext>, balancer: PingBalancer, */
-        dispatcher: Arc<Dispatcher>,
-        nat_manager: Arc<NatManager>,
-        fakedns: Arc<FakeDns>,
-        mtu: u32,
-    ) -> TcpTun {
+    pub fn new(context: Arc<ServiceContext>, balancer: PingBalancer, mtu: u32) -> TcpTun {
         let mut capabilities = DeviceCapabilities::default();
         capabilities.medium = Medium::Ip;
         capabilities.max_transmission_unit = mtu as usize;
 
-        let (virt, iface_rx, iface_tx) = VirtTunDevice::new(capabilities);
+        let (mut device, iface_rx, iface_tx) = VirtTunDevice::new(capabilities);
 
-        let iface_builder = InterfaceBuilder::new(virt, vec![]);
-        let iface_ipaddrs = [
-            IpCidr::new(IpAddress::v4(0, 0, 0, 1), 0),
-            IpCidr::new(IpAddress::v6(0, 0, 0, 0, 0, 0, 0, 1), 0),
-        ];
-        let mut iface_routes = Routes::new(BTreeMap::new());
-        iface_routes
+        let mut iface_config = InterfaceConfig::default();
+        iface_config.random_seed = rand::random();
+        let mut iface = Interface::new(iface_config, &mut device);
+        iface.update_ip_addrs(|ip_addrs| {
+            ip_addrs
+                .push(IpCidr::new(IpAddress::v4(0, 0, 0, 1), 0))
+                .expect("iface IPv4");
+            ip_addrs
+                .push(IpCidr::new(IpAddress::v6(0, 0, 0, 0, 0, 0, 0, 1), 0))
+                .expect("iface IPv6");
+        });
+        iface
+            .routes_mut()
             .add_default_ipv4_route(Ipv4Address::new(0, 0, 0, 1))
-            .expect("IPv4 route");
-        iface_routes
+            .expect("IPv4 default route");
+        iface
+            .routes_mut()
             .add_default_ipv6_route(Ipv6Address::new(0, 0, 0, 0, 0, 0, 0, 1))
-            .expect("IPv6 route");
-        let iface = iface_builder
-            .any_ip(true)
-            .ip_addrs(iface_ipaddrs)
-            .routes(iface_routes)
-            .finalize();
+            .expect("IPv6 default route");
+        iface.set_any_ip(true);
 
         let (manager_socket_creation_tx, manager_socket_creation_rx) = mpsc::unbounded_channel();
         let mut manager = TcpSocketManager {
+            device,
             iface,
             sockets: HashMap::new(),
             socket_creation_rx: manager_socket_creation_rx,
@@ -297,42 +269,34 @@ impl TcpTun {
 
             thread::spawn(move || {
                 let TcpSocketManager {
+                    ref mut device,
                     ref mut iface,
                     ref mut sockets,
                     ref mut socket_creation_rx,
                     ..
                 } = manager;
 
+                let mut socket_set = SocketSet::new(vec![]);
+
                 while manager_running.load(Ordering::Relaxed) {
-                    while let Ok(TcpSocketCreation { control, socket }) =
-                        socket_creation_rx.try_recv()
-                    {
-                        let handle = iface.add_socket(socket);
+                    while let Ok(TcpSocketCreation { control, socket }) = socket_creation_rx.try_recv() {
+                        let handle = socket_set.add(socket);
                         sockets.insert(handle, control);
                     }
 
                     let before_poll = SmolInstant::now();
-                    let updated_sockets = match iface.poll(before_poll) {
-                        Ok(u) => u,
-                        Err(err) => {
-                            error!("VirtDevice::poll error: {}", err);
-                            false
-                        }
-                    };
+                    let updated_sockets = iface.poll(before_poll, device, &mut socket_set);
 
                     if updated_sockets {
-                        // trace!(
-                        //     "VirtDevice::poll costed {}",
-                        //     SmolInstant::now() - before_poll
-                        // );
+                        trace!("VirtDevice::poll costed {}", SmolInstant::now() - before_poll);
                     }
 
                     // Check all the sockets' status
                     let mut sockets_to_remove = Vec::new();
 
                     for (socket_handle, control) in sockets.iter() {
-                        let socket_handle = socket_handle.clone();
-                        let socket = iface.get_socket::<TcpSocket>(socket_handle);
+                        let socket_handle = *socket_handle;
+                        let socket = socket_set.get_mut::<TcpSocket>(socket_handle);
                         let mut control = control.lock();
 
                         #[inline]
@@ -348,7 +312,7 @@ impl TcpTun {
 
                         if !socket.is_open() || socket.state() == TcpState::Closed {
                             sockets_to_remove.push(socket_handle);
-                            close_socket_control(&mut *control);
+                            close_socket_control(&mut control);
                             continue;
                         }
 
@@ -373,9 +337,9 @@ impl TcpTun {
                                     has_received = true;
                                 }
                                 Err(err) => {
-                                    error!("socket recv error: {}", err);
+                                    error!("socket recv error: {:?}", err);
                                     sockets_to_remove.push(socket_handle);
-                                    close_socket_control(&mut *control);
+                                    close_socket_control(&mut control);
                                     break;
                                 }
                             }
@@ -400,9 +364,9 @@ impl TcpTun {
                                     has_sent = true;
                                 }
                                 Err(err) => {
-                                    error!("socket send error: {}", err);
+                                    error!("socket send error: {:?}", err);
                                     sockets_to_remove.push(socket_handle);
-                                    close_socket_control(&mut *control);
+                                    close_socket_control(&mut control);
                                     break;
                                 }
                             }
@@ -417,11 +381,11 @@ impl TcpTun {
 
                     for socket_handle in sockets_to_remove {
                         sockets.remove(&socket_handle);
-                        iface.remove_socket(socket_handle);
+                        socket_set.remove(socket_handle);
                     }
 
                     let next_duration = iface
-                        .poll_delay(before_poll)
+                        .poll_delay(before_poll, &socket_set)
                         .unwrap_or(SmolDuration::from_millis(5));
                     if next_duration != SmolDuration::ZERO {
                         thread::park_timeout(Duration::from(next_duration));
@@ -435,18 +399,14 @@ impl TcpTun {
         let manager_notify = Arc::new(ManagerNotify::new(manager_handle.thread().clone()));
 
         TcpTun {
-            // context,
+            context,
             manager_handle: Some(manager_handle),
             manager_notify,
             manager_socket_creation_tx,
             manager_running,
-            // balancer,
+            balancer,
             iface_rx,
             iface_tx,
-
-            dispatcher,
-            nat_manager,
-            fakedns,
         }
     }
 
@@ -455,12 +415,10 @@ impl TcpTun {
         src_addr: SocketAddr,
         dst_addr: SocketAddr,
         tcp_packet: &TcpPacket<&[u8]>,
-
-        inbound_tag: String,
     ) -> io::Result<()> {
         // TCP first handshake packet, create a new Connection
         if tcp_packet.syn() && !tcp_packet.ack() {
-            /*            let accept_opts = self.context.accept_opts();
+            let accept_opts = self.context.accept_opts();
 
             let send_buffer_size = accept_opts.tcp.send_buffer_size.unwrap_or(DEFAULT_TCP_SEND_BUFFER_SIZE);
             let recv_buffer_size = accept_opts.tcp.recv_buffer_size.unwrap_or(DEFAULT_TCP_RECV_BUFFER_SIZE);
@@ -468,20 +426,15 @@ impl TcpTun {
             let mut socket = TcpSocket::new(
                 TcpSocketBuffer::new(vec![0u8; recv_buffer_size as usize]),
                 TcpSocketBuffer::new(vec![0u8; send_buffer_size as usize]),
-            );*/
-            let mut socket = TcpSocket::new(
-                TcpSocketBuffer::new(vec![0u8; DEFAULT_TCP_SEND_BUFFER_SIZE as usize]),
-                TcpSocketBuffer::new(vec![0u8; DEFAULT_TCP_RECV_BUFFER_SIZE as usize]),
             );
-
-            // socket.set_keep_alive(accept_opts.tcp.keepalive.map(From::from));
+            socket.set_keep_alive(accept_opts.tcp.keepalive.map(From::from));
             // FIXME: It should follow system's setting. 7200 is Linux's default.
             socket.set_timeout(Some(SmolDuration::from_secs(7200)));
             // NO ACK delay
             // socket.set_ack_delay(None);
 
             if let Err(err) = socket.listen(dst_addr) {
-                return Err(io::Error::new(ErrorKind::Other, err));
+                return Err(io::Error::new(ErrorKind::Other, format!("listen error: {:?}", err)));
             }
 
             trace!("created TCP connection for {} <-> {}", src_addr, dst_addr);
@@ -490,52 +443,17 @@ impl TcpTun {
                 socket,
                 &self.manager_socket_creation_tx,
                 self.manager_notify.clone(),
-                &TcpSocketOpts::default(),
+                &accept_opts.tcp,
             );
 
-            let inbound_tag = inbound_tag.clone();
-            let dispatcher = self.dispatcher.clone();
-            let fakedns = self.fakedns.clone();
-
-            let mut sess = Session {
-                network: Network::Tcp,
-                source: src_addr,
-                local_addr: dst_addr,
-                destination: SocksAddr::Ip(dst_addr),
-                inbound_tag,
-                ..Default::default()
-            };
-            // Whether to override the destination according to Fake DNS.
-            if fakedns.is_fake_ip(&dst_addr.ip()).await {
-                if let Some(domain) = fakedns.query_domain(&dst_addr.ip()).await {
-                    sess.destination = SocksAddr::Domain(domain, dst_addr.port());
-                } else {
-                    // Although requests targeting fake IPs are assumed
-                    // never happen in real network traffic, which are
-                    // likely caused by poisoned DNS cache records, we
-                    // still have a chance to sniff the request domain
-                    // for TLS traffic in dispatcher.
-                    if dst_addr.port() != 443 {
-                        log::debug!(
-                            "No paired domain found for this fake IP: {}, connection is rejected.",
-                            &dst_addr.ip()
-                        );
-                        return Ok(());
-                    }
-                }
-            }
-            tokio::spawn(async move {
-                dispatcher.dispatch_tcp(&mut sess, connection).await;
-            });
-
-            /*            // establish a tunnel
+            // establish a tunnel
             let context = self.context.clone();
             let balancer = self.balancer.clone();
             tokio::spawn(async move {
                 if let Err(err) = handle_redir_client(context, balancer, connection, src_addr, dst_addr).await {
                     error!("TCP tunnel failure, {} <-> {}, error: {}", src_addr, dst_addr, err);
                 }
-            });*/
+            });
         }
 
         Ok(())
@@ -558,7 +476,7 @@ impl TcpTun {
     }
 }
 
-/*/// Established Client Transparent Proxy
+/// Established Client Transparent Proxy
 ///
 /// This method must be called after handshaking with client (for example, socks5 handshaking)
 async fn establish_client_tcp_redir<'a>(
@@ -598,4 +516,4 @@ async fn handle_redir_client(
     let target_addr = Address::from(daddr);
     establish_client_tcp_redir(context, balancer, s, peer_addr, &target_addr).await
 }
-*/
+Footer

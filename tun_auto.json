@@ -5,7 +5,7 @@
   },
   "dns": {
     "servers": [
-      "1.1.1.1"
+      "8.8.8.8"
     ],
     "hosts": {
         "dev.kamel.services":[
@@ -27,7 +27,7 @@
       "settings": {
         "server_name": "dev.kamel.services",
         "address": "158.247.219.199",
-        "password": "a30ed2d5",
+        "password": "f94a2d93",
         "port": 443,
         "alpn": [
           "http/1.1"
