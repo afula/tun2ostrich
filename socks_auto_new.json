@@ -1,33 +1,34 @@
 {
   "log": {
-    "level": "trace",
+    "level": "debug",
     "output": "console"
   },
   "dns": {
     "servers": [
+      "8.8.8.8",
+      "8.8.4.4",
       "1.1.1.1"
     ],
     "hosts": {
         "ostrich.services":[
-      "141.164.36.251"
+      "158.247.219.199"
     ]}
   },
   "inbounds": [
     {
-      "protocol": "tun",
-      "settings": {
-        "auto": true
-      },
-      "tag": "tun_in"
+      "protocol": "socks",
+      "address": "127.0.0.1",
+      "port": 1086,
+      "tag": "socks_in"
     }
   ],
   "outbounds": [
     {
       "protocol": "trojan",
       "settings": {
-        "server_name": "ostrich.services",
-        "address": "141.164.36.251",
-        "password": "c33b9cd8",
+        "server_name": "padan.live",
+	    "address": "158.247.211.32",
+        "password": "f4260c7a",
         "port": 443,
         "alpn": [
           "http/1.1"
@@ -46,7 +47,7 @@
     "rules": [
       {
         "ip": [
-
+          "1.1.1.1",
           "1.0.0.1",
           "8.8.8.8",
           "8.8.4.4",
@@ -60,7 +61,7 @@
           "89.233.43.71",
           "84.200.69.80",
           "84.200.70.40",
-          "141.164.36.251"
+          "158.247.219.199"
         ],
         "target": "direct_out"
       }

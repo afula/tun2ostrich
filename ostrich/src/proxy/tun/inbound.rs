@@ -234,7 +234,12 @@ pub fn new(
             .expect("cant create tun device");
 
         Ok(Box::pin(async move {
-            let fakedns = Arc::new(FakeDns::new(fake_dns_mode));
+            // let fu = futures::future::pending();
+            // futures::future::select_all(fu).await;
+            let _framed = tun.into_framed();
+            futures::future::pending::<()>().await; // will never finish
+
+        /*    let fakedns = Arc::new(FakeDns::new(fake_dns_mode));
             for filter in fake_dns_filters.into_iter() {
                 fakedns.add_filter(filter).await;
             }
@@ -299,7 +304,7 @@ pub fn new(
             }));
 
             info!("start tun inbound");
-            futures::future::select_all(futs).await;
+            futures::future::select_all(futs).await;*/
         }))
     }
 

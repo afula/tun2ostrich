@@ -5,13 +5,11 @@
   },
   "dns": {
     "servers": [
-      "8.8.8.8",
-      "8.8.4.4",
       "1.1.1.1"
     ],
     "hosts": {
         "ostrich.services":[
-      "158.247.219.199"
+      "141.164.36.251"
     ]}
   },
   "inbounds": [
@@ -27,8 +25,8 @@
       "protocol": "trojan",
       "settings": {
         "server_name": "ostrich.services",
-	"address": "158.247.219.199",
-        "password": "f94a2d93",
+	    "address": "141.164.36.251",
+        "password": "c33b9cd8",
         "port": 443,
         "alpn": [
           "http/1.1"
